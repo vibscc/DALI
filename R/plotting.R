@@ -12,7 +12,7 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
     } else if (chain == 'light' || chain == 'l') {
         chain.column <- 'l.V.fam'
     } else {
-        stop("Invalid chain ", chain)
+        chain.column <- 'l.c_gene'
     }
 
     if (is.null(group.by)) {
@@ -23,7 +23,9 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
         stop("Invalid group.by column ", group.by)
     }
 
-    families <- object@meta.data[, chain.column] %>% na.omit() %>% unique() %>% gtools::mixedsort(decreasing = T)
+
+    families <- object@meta.data[, chain.column] %>% na.omit() %>% unique()
+    families <- families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
 
     data <- object@meta.data %>%
         count(.data[[chain.column]], .data[[group.by]]) %>%
