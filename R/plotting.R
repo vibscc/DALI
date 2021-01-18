@@ -40,7 +40,7 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
     for (group in colnames(data)) {
         plot.data <- data[, group] %>%
             as.data.frame() %>%
-            rename(freq = .data[['.']])
+            rename(freq = .data[["."]])
         plot.data$family <- factor(rownames(data), levels = families)
 
         plots[[group]] <- ggplot(plot.data, aes(x = family, y = freq, fill = family)) +
@@ -63,4 +63,43 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
     }
 
     grid.arrange(grobs = plots, ncol = 3)
+}
+
+#' Circosplot for family to gene distribution
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param subset Subset data to these groups
+#'
+#' @export
+circosplot <- function(object, group.by = NULL, subset = NULL) {
+    if (is.null(group.by)) {
+        group.by <- "seurat_clusters"
+    }
+
+    if (!group.by %in% colnames(object@meta.data)) {
+        stop("Invalid group.by column ", group.by)
+    }
+
+    if (!is.null(subset)) {
+        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+        object <- subset(object, cells = cells)
+    }
+
+    plot.data <- object@meta.data %>%
+                    select(h.V.fam, l.v_gene) %>%
+                    na.omit() %>%
+                    table() %>%
+                    as.matrix()
+
+    plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
+
+    annotation.height <- plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()
+
+    chordDiagram(plot.data, annotationTrack = "grid",
+                 preAllocateTracks = list(track.height = annotation.height/3))
+    circos.track(track.index = 1, panel.fun = function(x, y) {
+        circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index,
+                    facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5), cex = 0.5)
+    }, bg.border = NA)
 }

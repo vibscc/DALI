@@ -2,3 +2,4 @@
 
 export(Read10X_vdj)
 export(barplot_vh)
+export(circosplot)
