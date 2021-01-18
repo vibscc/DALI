@@ -2,4 +2,5 @@
 
 export(Read10X_vdj)
 export(barplot_vh)
+export(cdr3length)
 export(circosplot)

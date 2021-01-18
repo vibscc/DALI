@@ -103,3 +103,68 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
                     facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5), cex = 0.5)
     }, bg.border = NA)
 }
+
+#' Lineplot with the CDR3 lenght per group
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param subset Subset data to these groups
+#'
+#' @export
+
+cdr3length <- function(object, group.by = NULL, subset = NULL) {
+    if (is.null(group.by)) {
+        group.by <- "seurat_clusters"
+    }
+
+    if (!group.by %in% colnames(object@meta.data)) {
+        stop("Invalid group.by column ", group.by)
+    }
+
+    if (!is.null(subset)) {
+        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+        object <- subset(object, cells = cells)
+    }
+
+    plots <- list()
+    groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort()
+
+    for(group in groups) {
+        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] == group]
+        subset <- subset(object, cells = cells)
+
+        plot.data.h <- subset@meta.data %>%
+            mutate(len = nchar(h.cdr3)) %>%
+            count(len) %>%
+            na.omit() %>%
+            mutate(freq = n/sum(n) * 100) %>%
+            select(len, freq)
+        plot.data.l <- subset@meta.data %>%
+            mutate(len = nchar(l.cdr3)) %>%
+            count(len) %>%
+            na.omit() %>%
+            mutate(freq = n/sum(n) * 100) %>%
+            select(len, freq)
+
+        plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
+        colnames(plot.data) <- c("cdr3.length", "heavy.chain", "light.chain")
+
+        plots[[group]] <- ggplot(plot.data, aes(x = cdr3.length)) +
+            geom_line(aes(y = heavy.chain), color = "black") +
+            geom_line(aes(y = light.chain), color = "red") +
+            labs(x = "CDR3 length (AA)", y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
+            theme(
+                panel.background = element_rect(fill = "white"), # bg of the panel
+                plot.background = element_rect(fill = "white"), # bg of the plot
+                axis.line = element_line(colour = "black"),
+                panel.grid.major = element_blank(), # get rid of major grid
+                panel.grid.minor = element_blank(), # get rid of minor grid
+                legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+                legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+                legend.key.size = unit(0.1, "cm"),
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+            )
+    }
+
+    grid.arrange(grobs = plots, ncol = 3)
+}
