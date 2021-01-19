@@ -3,8 +3,7 @@
 #' @param object Seurat object
 #' @param data.dir Cellranger output directory
 #'
-#' @import dplyr
-#' @importFrom Seurat AddMetaData
+#' @importFrom dplyr %>% all_of mutate rename_all select filter
 #' @importFrom tibble column_to_rownames
 #'
 #' @export
@@ -26,7 +25,7 @@ Read10X_vdj <- function(object, data.dir) {
         filter(!duplicated(barcode)) %>%
         select(all_of(columns)) %>%
         mutate(V.fam = get_v_families(v_gene)) %>%
-        tibble::column_to_rownames('barcode') %>%
+        column_to_rownames('barcode') %>%
         rename_all(~ paste0("h.", .))
 
 
