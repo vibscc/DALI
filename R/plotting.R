@@ -3,6 +3,11 @@
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #'
+#' @importFrom dplyr %>% arrange count
+#' @importFrom tibble column_to_rownames
+#' @importFrom tidyr spread
+#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
+#'
 #' @export
 
 barplot_vh <- function(object, group.by = NULL, chain = "h") {
@@ -30,7 +35,7 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
     data <- object@meta.data %>%
         count(.data[[chain.column]], .data[[group.by]]) %>%
         na.omit() %>%
-        tidyr::spread(.data[[group.by]], n) %>%
+        spread(.data[[group.by]], n) %>%
         replace(is.na(.), 0) %>%
         arrange(factor(.data[[chain.column]], levels = families)) %>%
         column_to_rownames(chain.column)
@@ -62,7 +67,7 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
 
     }
 
-    grid.arrange(grobs = plots, ncol = 3)
+    gridExtra::grid.arrange(grobs = plots, ncol = 3)
 }
 
 #' Circosplot for family to gene distribution
@@ -70,6 +75,9 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
+#'
+#' @importFrom circlize chordDiagram circos.track circos.text CELL_META
+#' @importFrom dplyr %>% select
 #'
 #' @export
 circosplot <- function(object, group.by = NULL, subset = NULL) {
@@ -94,10 +102,8 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 
     plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
 
-    annotation.height <- plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()
-
     chordDiagram(plot.data, annotationTrack = "grid",
-                 preAllocateTracks = list(track.height = annotation.height/3))
+                 preAllocateTracks = list(track.height = plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()/3))
     circos.track(track.index = 1, panel.fun = function(x, y) {
         circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index,
                     facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5), cex = 0.5)
@@ -109,6 +115,9 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
+#'
+#' @importFrom dplyr %>% mutate select full_join count
+#' @importFrom ggplot2 ggplot aes geom_line labs theme element_rect element_line element_blank unit element_text
 #'
 #' @export
 
@@ -166,5 +175,5 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
             )
     }
 
-    grid.arrange(grobs = plots, ncol = 3)
+    gridExtra::grid.arrange(grobs = plots, ncol = 3)
 }

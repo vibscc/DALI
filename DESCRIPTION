@@ -11,7 +11,11 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
 Imports:
-    Seurat,
-    tidyverse,
+    circlize,
+    dplyr,
     ggplot2,
-    
+    gridExtra,
+    gtools,
+    Seurat,
+    tibble,
+    tidyr

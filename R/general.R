@@ -3,6 +3,10 @@
 #' @param object Seurat object
 #' @param data.dir Cellranger output directory
 #'
+#' @import dplyr
+#' @importFrom Seurat AddMetaData
+#' @importFrom tibble column_to_rownames
+#'
 #' @export
 
 Read10X_vdj <- function(object, data.dir) {
@@ -19,24 +23,24 @@ Read10X_vdj <- function(object, data.dir) {
 
     heavy <- annotation.contig %>%
         subset(grepl("^IGH", c_gene)) %>%
-        dplyr::filter(!duplicated(barcode)) %>%
+        filter(!duplicated(barcode)) %>%
         select(all_of(columns)) %>%
         mutate(V.fam = get_v_families(v_gene)) %>%
-        column_to_rownames('barcode') %>%
+        tibble::column_to_rownames('barcode') %>%
         rename_all(~ paste0("h.", .))
 
 
     light <- annotation.contig %>%
         subset(grepl("^IG[KL]", c_gene)) %>%
-        dplyr::filter(!duplicated(barcode)) %>%
+        filter(!duplicated(barcode)) %>%
         select(all_of(columns)) %>%
         mutate(V.fam = get_v_families(v_gene)) %>%
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("l.", .))
 
 
-    object <- AddMetaData(object, heavy)
-    object <- AddMetaData(object, light)
+    object <- Seurat::AddMetaData(object, heavy)
+    object <- Seurat::AddMetaData(object, light)
 
     return(object)
 }
