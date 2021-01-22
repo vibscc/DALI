@@ -58,7 +58,6 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 }
 
 #' @method DefaultAssayVDJ<- Seurat
-#' @importFrom Seurat Tool
 #'
 #' @export
 
