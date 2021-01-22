@@ -4,12 +4,14 @@
 \alias{Read10X_vdj}
 \title{Load 10x VDJ data in a seurat object}
 \usage{
-Read10X_vdj(object, data.dir)
+Read10X_vdj(object, data.dir, type = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
 
 \item{data.dir}{Cellranger output directory}
+
+\item{type}{VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.}
 }
 \description{
 Load 10x VDJ data in a seurat object

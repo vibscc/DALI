@@ -2,13 +2,14 @@
 #'
 #' @param object Seurat object
 #' @param data.dir Cellranger output directory
+#' @param type VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #'
 #' @importFrom dplyr %>% all_of mutate rename_all select filter
 #' @importFrom tibble column_to_rownames
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir) {
+Read10X_vdj <- function(object, data.dir, type = NULL) {
 
     location.annotation.contig <- file.path(data.dir, 'filtered_contig_annotations.csv')
 
@@ -17,6 +18,10 @@ Read10X_vdj <- function(object, data.dir) {
     }
 
     annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% subset(productive == 'True')
+
+    if (is.null(type)) {
+        type <- getDefaultVDJAssay(data.dir)
+    }
 
     columns <- c("barcode", "v_gene","d_gene","j_gene","c_gene", "cdr3","cdr3_nt")
 
@@ -37,11 +42,46 @@ Read10X_vdj <- function(object, data.dir) {
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("l.", .))
 
-
-    object <- Seurat::AddMetaData(object, heavy)
-    object <- Seurat::AddMetaData(object, light)
+    object <- AddVDJDataForType(type, object, heavy, light)
+    DefaultAssayVDJ(object) <- type
 
     return(object)
+}
+
+#' @method DefaultAssayVDJ Seurat
+#'
+#' @export
+
+DefaultAssayVDJ.Seurat <- function(object, ...) {
+
+    return(slot(object, 'misc')[['default.assay.VDJ']])
+}
+
+#' @method DefaultAssayVDJ<- Seurat
+#' @importFrom Seurat Tool
+#'
+#' @export
+
+"DefaultAssayVDJ<-.Seurat" <- function(object, ..., value) {
+
+    if (!value %in% names(x = slot(object, 'misc')[['VDJ']])) {
+        stop("Cannot find assay ", value)
+    }
+
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][['heavy']])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][['light']])
+
+    slot(object, 'misc')[['default.assay.VDJ']] <- value
+
+    return(object)
+}
+
+#' Determine assay type from cellranger output
+#'
+#' @param data.dir Cellranger output directory
+
+getDefaultVDJAssay <- function(data.dir) {
+    return('BCR')
 }
 
 #' Extract V-family from a vector of v-genes
@@ -64,4 +104,21 @@ get_v_families <- function(v_genes) {
     }
 
     return(v_families)
+}
+
+#' Add VDJ metadata to misc slot in object
+#'
+#' @param type VDJ assay type
+#' @param object Seurat object
+#' @param heavy Data frame with the metadata columns for the heavy chains
+#' @param light Data frame with the metadata columns for the light chains
+
+AddVDJDataForType <- function(type, object, heavy, light) {
+    if (!'VDJ' %in% names(slot(object, 'misc'))) {
+        slot(object, 'misc')[['VDJ']] <- list()
+    }
+
+    slot(object, 'misc')[['VDJ']][[type]] <- list(heavy = heavy, light = light)
+
+    return(object)
 }
