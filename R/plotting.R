@@ -3,7 +3,7 @@
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #'
-#' @importFrom dplyr %>% arrange count
+#' @importFrom dplyr %>% arrange count rename
 #' @importFrom tibble column_to_rownames
 #' @importFrom tidyr spread
 #' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
