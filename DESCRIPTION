@@ -19,3 +19,5 @@ Imports:
     Seurat,
     tibble,
     tidyr
+Suggests:
+    shiny
