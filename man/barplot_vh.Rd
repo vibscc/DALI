@@ -10,6 +10,8 @@ barplot_vh(object, group.by = NULL, chain = "h")
 \item{object}{Seurat object}
 
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+
+\item{chain}{Chain to plot. Can be any of c('l', 'light', 'h', 'heavy')}
 }
 \description{
 Barplot for IGHV-family per group

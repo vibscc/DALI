@@ -12,8 +12,9 @@ DefaultAssayVDJ <- function(object, ...) {
     UseMethod(generic = 'DefaultAssayVDJ', object = object)
 }
 
-#' @inheritParams DefaultAssayVDJ
-#' @param value Name of assay to set as default
+#' @param object An object
+#' @param ... Arguments passed to other methods
+#' @param value New VDJ assay
 #'
 #' @return An object with the new default VDJ assay
 #'

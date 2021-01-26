@@ -14,7 +14,7 @@ DefaultAssayVDJ(object, ...) <- value
 
 \item{...}{Arguments passed to other methods}
 
-\item{value}{Name of assay to set as default}
+\item{value}{New VDJ assay}
 }
 \value{
 The name of the default VDJ assay

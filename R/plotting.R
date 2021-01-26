@@ -2,11 +2,14 @@
 #'
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param chain Chain to plot. Can be any of c('l', 'light', 'h', 'heavy')
 #'
 #' @importFrom dplyr %>% arrange count rename
+#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
+#' @importFrom grDevices colorRampPalette
+#' @importFrom stats na.omit
 #' @importFrom tibble column_to_rownames
 #' @importFrom tidyr spread
-#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
 #'
 #' @export
 
@@ -46,9 +49,9 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
         plot.data <- data[, group] %>%
             as.data.frame() %>%
             rename(freq = .data[["."]])
-        plot.data$family <- factor(rownames(data), levels = families)
+        plot.data$fam <- factor(rownames(data), levels = families)
 
-        plots[[group]] <- ggplot(plot.data, aes(x = family, y = freq, fill = family)) +
+        plots[[group]] <- ggplot(plot.data, aes(x = fam, y = freq, fill = fam)) +
             geom_col() +
             labs(y = "Cell number", x = "Family", title = group) +
             scale_fill_manual(values = colorRampPalette(c("darkblue", "lightblue"))(nrow(data))) +
@@ -78,6 +81,8 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
 #'
 #' @importFrom circlize chordDiagram circos.track circos.text CELL_META
 #' @importFrom dplyr %>% select
+#' @importFrom graphics strwidth
+#' @importFrom stats na.omit
 #'
 #' @export
 circosplot <- function(object, group.by = NULL, subset = NULL) {
@@ -118,6 +123,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @importFrom dplyr %>% mutate select full_join count
 #' @importFrom ggplot2 ggplot aes geom_line labs theme element_rect element_line element_blank unit element_text
+#' @importFrom stats na.omit
 #'
 #' @export
 

@@ -16,6 +16,7 @@ Imports:
     ggplot2,
     gridExtra,
     gtools,
+    methods,
     Seurat,
     tibble,
     tidyr

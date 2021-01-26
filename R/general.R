@@ -6,6 +6,7 @@
 #'
 #' @importFrom dplyr %>% all_of mutate rename_all select filter
 #' @importFrom tibble column_to_rownames
+#' @importFrom utils read.csv
 #'
 #' @export
 
@@ -50,6 +51,8 @@ Read10X_vdj <- function(object, data.dir, type = NULL) {
 
 #' @method DefaultAssayVDJ Seurat
 #'
+#' @importFrom methods slot
+#'
 #' @export
 
 DefaultAssayVDJ.Seurat <- function(object, ...) {
@@ -58,6 +61,8 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 }
 
 #' @method DefaultAssayVDJ<- Seurat
+#'
+#' @importFrom methods slot slot<-
 #'
 #' @export
 
