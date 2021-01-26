@@ -1,4 +1,4 @@
-test_that("can load TCR data", {
+test_that("can load data", {
     seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
     seuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC")
 
@@ -6,5 +6,9 @@ test_that("can load TCR data", {
 
     expect_vector(metadata.columns, ptype = character(), size = 14)
     expect_setequal(metadata.columns, c("h.v_gene", "h.d_gene", "h.j_gene", "h.c_gene", "h.cdr3", "h.cdr3_nt", "h.v_fam", "l.v_gene", "l.d_gene", "l.j_gene", "l.c_gene", "l.cdr3", "l.cdr3_nt", "l.v_fam"))
+
+    # Fail on invalid cellranger directory
+    expect_error(Read10X_vdj(seuratObj, "../testdata"))
 })
+
 
