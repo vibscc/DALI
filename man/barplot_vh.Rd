@@ -4,14 +4,27 @@
 \alias{barplot_vh}
 \title{Barplot for IGHV-family per group}
 \usage{
-barplot_vh(object, group.by = NULL, chain = "h")
+barplot_vh(
+  object,
+  group.by = NULL,
+  groups.to.plot = NULL,
+  region = c("V", "C"),
+  chain = c("H", "L"),
+  by.family = T
+)
 }
 \arguments{
 \item{object}{Seurat object}
 
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 
-\item{chain}{Chain to plot. Can be any of c('l', 'light', 'h', 'heavy')}
+\item{groups.to.plot}{Which groups of the group by column should be plotted. Default = NULL (all)}
+
+\item{region}{Region to plot. Available options: 'V'(ariable) or 'C'(onstant)}
+
+\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight)}
+
+\item{by.family}{Group genes of 1 family together. Default = TRUE}
 }
 \description{
 Barplot for IGHV-family per group

@@ -2,9 +2,12 @@
 #'
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
-#' @param chain Chain to plot. Can be any of c('l', 'light', 'h', 'heavy')
+#' @param groups.to.plot Which groups of the group by column should be plotted. Default = NULL (all)
+#' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
+#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight)
+#' @param by.family Group genes of 1 family together. Default = TRUE
 #'
-#' @importFrom dplyr %>% arrange count rename
+#' @importFrom dplyr %>% arrange count case_when rename
 #' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
 #' @importFrom grDevices colorRampPalette
 #' @importFrom rlang .data
@@ -14,14 +17,16 @@
 #'
 #' @export
 
-barplot_vh <- function(object, group.by = NULL, chain = "h") {
-    chain <- tolower(chain)
-    if (chain == 'heavy' || chain == 'h') {
-        chain.column <- 'h.V.fam'
-    } else if (chain == 'light' || chain == 'l') {
-        chain.column <- 'l.V.fam'
+barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = c("V", "C"), chain = c("H", "L"), by.family = T) {
+    region <- match.arg(region) %>% tolower()
+    chain <- match.arg(chain) %>% tolower()
+
+    data.column <- paste0(chain, '.', region, '_')
+
+    if (by.family && region == 'v') {
+        data.column <- paste0(data.column, 'fam')
     } else {
-        chain.column <- 'l.c_gene'
+        data.column <- paste0(data.column, 'gene')
     }
 
     if (is.null(group.by)) {
@@ -33,16 +38,18 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
     }
 
 
-    families <- object@meta.data[, chain.column] %>% na.omit() %>% unique()
+    families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
     families <- families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
 
     data <- object@meta.data %>%
-        count(.data[[chain.column]], .data[[group.by]]) %>%
+        filter(case_when(!is.null(groups.to.plot) ~ .data[[group.by]] %in% groups.to.plot,
+                         T ~ T)) %>%
+        count(.data[[data.column]], .data[[group.by]]) %>%
         na.omit() %>%
         spread(.data[[group.by]], n) %>%
         replace(is.na(.), 0) %>%
-        arrange(factor(.data[[chain.column]], levels = families)) %>%
-        column_to_rownames(chain.column)
+        arrange(factor(.data[[data.column]], levels = families)) %>%
+        column_to_rownames(data.column)
 
     plots <- list()
 
@@ -71,7 +78,7 @@ barplot_vh <- function(object, group.by = NULL, chain = "h") {
 
     }
 
-    gridExtra::grid.arrange(grobs = plots, ncol = 3)
+    gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
 
 #' Circosplot for family to gene distribution
@@ -101,7 +108,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
     }
 
     plot.data <- object@meta.data %>%
-                    select(h.V.fam, l.v_gene) %>%
+                    select(h.v_fam, l.v_gene) %>%
                     na.omit() %>%
                     table() %>%
                     as.matrix()
