@@ -30,7 +30,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL) {
         subset(grepl("^IGH", c_gene)) %>%
         filter(!duplicated(barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(V.fam = get_v_families(v_gene)) %>%
+        mutate(v_fam = get_v_families(v_gene)) %>%
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("h.", .))
 
@@ -39,7 +39,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL) {
         subset(grepl("^IG[KL]", c_gene)) %>%
         filter(!duplicated(barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(V.fam = get_v_families(v_gene)) %>%
+        mutate(v_fam = get_v_families(v_gene)) %>%
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("l.", .))
 
