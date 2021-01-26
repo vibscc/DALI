@@ -7,6 +7,7 @@
 #' @importFrom dplyr %>% arrange count rename
 #' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
 #' @importFrom grDevices colorRampPalette
+#' @importFrom rlang .data
 #' @importFrom stats na.omit
 #' @importFrom tibble column_to_rownames
 #' @importFrom tidyr spread
