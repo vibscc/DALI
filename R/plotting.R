@@ -8,7 +8,7 @@
 #' @param by.family Group genes of 1 family together. Default = TRUE
 #'
 #' @importFrom dplyr %>% arrange count case_when rename
-#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit
+#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit ylim
 #' @importFrom grDevices colorRampPalette
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
@@ -37,8 +37,18 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
         stop("Invalid group.by column ", group.by)
     }
 
-
     families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
+
+    # Add missing families
+    if (by.family) {
+        prefix <- gsub("[0-9-]", "", families[1])
+        family.numbers <- c()
+        for(family in families) {
+            family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family) %>% as.numeric())
+        }
+        families <- paste0(prefix, '-', seq(1,max(family.numbers)))
+    }
+
     families <- families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
 
     data <- object@meta.data %>%
@@ -47,8 +57,19 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
         count(.data[[data.column]], .data[[group.by]]) %>%
         na.omit() %>%
         spread(.data[[group.by]], .data$n) %>%
-        replace(is.na(.), 0) %>%
-        arrange(factor(.data[[data.column]], levels = families)) %>%
+        replace(is.na(.), 0)
+
+    missing.families <- setdiff(families, data[[data.column]])
+
+    if (length(missing.families) > 0) {
+        missing.data <- matrix(0, nrow = length(missing.families), ncol = ncol(data) - 1, dimnames = list(NULL, colnames(data)[-1]))
+        missing.data <- cbind(missing.families, missing.data)
+        colnames(missing.data) <- c(data.column, colnames(data)[-1])
+        data <- rbind(data, missing.data)
+    }
+
+    data <- data %>%
+        arrange(factor(.data[[data.column]], levels = families))  %>%
         column_to_rownames(data.column)
 
     plots <- list()
@@ -56,11 +77,13 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
     for (group in colnames(data)) {
         plot.data <- data[, group] %>%
             as.data.frame() %>%
-            rename(freq = .data[["."]])
+            rename(freq = .data[["."]]) %>%
+            mutate(freq = as.numeric(.data$freq))
         plot.data$fam <- factor(rownames(data), levels = families)
 
         plots[[group]] <- ggplot(plot.data, aes(x = .data$fam, y = .data$freq, fill = .data$fam)) +
             geom_col() +
+            ylim(0, NA) +
             labs(y = "Cell number", x = "Family", title = group) +
             scale_fill_manual(values = colorRampPalette(c("darkblue", "lightblue"))(nrow(data))) +
             geom_label(data = NULL, aes(label = .data$freq), fill = "white", size = 2) +
@@ -71,7 +94,7 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
                 panel.grid.minor = element_blank(), # get rid of minor grid
                 legend.background = element_rect(fill = "transparent"), # get rid of legend bg
                 legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
-                legend.position="none",
+                legend.position = "none",
                 legend.key.size = unit(0.1, "cm"),
                 axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
             )
