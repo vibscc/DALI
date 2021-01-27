@@ -17,3 +17,23 @@ interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
     options(shiny.maxRequestSize = max.upload.size*1024^2)
     shiny::runApp(app.directory, display.mode = "normal")
 }
+#' Nicer formatting for the most common dimensionality reductions
+#'
+#' @param reduction Dimensionality reduction
+
+formatDimred <- function(reduction) {
+    for(pattern in c('pca', 'tsne', 'umap')) {
+        if (grepl(pattern, reduction, ignore.case = T)) {
+            replacement = switch (pattern,
+                'pca' = 'PCA',
+                'tsne' = 'tSNE',
+                'umap' = 'UMAP',
+                pattern
+            )
+
+            return(sub(pattern, replacement, reduction))
+        }
+    }
+
+    return(reduction)
+}
