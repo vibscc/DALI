@@ -1,22 +1,33 @@
 function(input, output) {
 
-    # Histogram of the Old Faithful Geyser Data ----
-    # with requested number of bins
-    # This expression that generates a histogram is wrapped in a call
-    # to renderPlot to indicate that:
-    #
-    # 1. It is "reactive" and therefore should be automatically
-    #    re-executed when inputs (input$bins) change
-    # 2. Its output type is a plot
-    output$distPlot <- renderPlot({
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
 
-        x    <- faithful$waiting
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    dataUploadModal <- function(failed = F) {
+        modalDialog(
+            fileInput("file", "Choose an rds file to load", accept = ".rds"),
+            if (failed) {
+                div("Invalid file!")
+            },
 
-        hist(x, breaks = bins, col = "#75AADB", border = "white",
-             xlab = "Waiting time to next eruption (in mins)",
-             main = "Histogram of waiting times")
+            footer = tagList(
+                actionButton("load", "Load")
+            ),
+            easyClose = F
+        )
+    }
 
+    if (is.null(isolate(vals$data)) || !isValidSeuratObject(isolate(vals$data))) {
+        showModal(dataUploadModal())
+    }
+
+    observeEvent(input$load, {
+        data <- readRDS(input$file$datapath)
+
+        if (isValidSeuratObject(data)) {
+            vals$data <- readRDS(input$file$datapath)
+            removeModal()
+        } else {
+            showModal(dataUploadModal(failed = T))
+        }
     })
-
 }
