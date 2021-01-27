@@ -191,5 +191,5 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
             )
     }
 
-    gridExtra::grid.arrange(grobs = plots, ncol = 3)
+    gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
