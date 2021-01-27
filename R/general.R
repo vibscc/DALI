@@ -6,19 +6,20 @@
 #'
 #' @importFrom dplyr %>% all_of mutate rename_all select filter
 #' @importFrom tibble column_to_rownames
+#' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
 #' @export
 
 Read10X_vdj <- function(object, data.dir, type = NULL) {
 
-    location.annotation.contig <- file.path(data.dir, 'filtered_contig_annotations.csv')
+    location.annotation.contig <- file.path(data.dir, "filtered_contig_annotations.csv")
 
     if (!file.exists(location.annotation.contig)) {
         stop("Contig annotation file (", location.annotation.contig, ") is missing!")
     }
 
-    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% subset(productive == 'True')
+    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive == 'True')
 
     if (is.null(type)) {
         type <- getDefaultVDJAssay(data.dir)
@@ -27,19 +28,19 @@ Read10X_vdj <- function(object, data.dir, type = NULL) {
     columns <- c("barcode", "v_gene","d_gene","j_gene","c_gene", "cdr3","cdr3_nt")
 
     heavy <- annotation.contig %>%
-        subset(grepl("^IGH", c_gene)) %>%
-        filter(!duplicated(barcode)) %>%
+        filter(grepl("^IGH", .data$c_gene)) %>%
+        filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(v_gene)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene)) %>%
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("h.", .))
 
 
     light <- annotation.contig %>%
-        subset(grepl("^IG[KL]", c_gene)) %>%
-        filter(!duplicated(barcode)) %>%
+        filter(grepl("^IG[KL]", .data$c_gene)) %>%
+        filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(v_gene)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene)) %>%
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("l.", .))
 

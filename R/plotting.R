@@ -46,7 +46,7 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
                          T ~ T)) %>%
         count(.data[[data.column]], .data[[group.by]]) %>%
         na.omit() %>%
-        spread(.data[[group.by]], n) %>%
+        spread(.data[[group.by]], .data$n) %>%
         replace(is.na(.), 0) %>%
         arrange(factor(.data[[data.column]], levels = families)) %>%
         column_to_rownames(data.column)
@@ -59,11 +59,11 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
             rename(freq = .data[["."]])
         plot.data$fam <- factor(rownames(data), levels = families)
 
-        plots[[group]] <- ggplot(plot.data, aes(x = fam, y = freq, fill = fam)) +
+        plots[[group]] <- ggplot(plot.data, aes(x = .data$fam, y = .data$freq, fill = .data$fam)) +
             geom_col() +
             labs(y = "Cell number", x = "Family", title = group) +
             scale_fill_manual(values = colorRampPalette(c("darkblue", "lightblue"))(nrow(data))) +
-            geom_label(data = NULL, aes(label = freq), fill = "white", size = 2) +
+            geom_label(data = NULL, aes(label = .data$freq), fill = "white", size = 2) +
             theme(
                 panel.background = element_rect(fill = "white"), # bg of the panel
                 plot.background = element_rect(fill = "white"), # bg of the plot
@@ -90,6 +90,7 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
 #' @importFrom circlize chordDiagram circos.track circos.text CELL_META
 #' @importFrom dplyr %>% select
 #' @importFrom graphics strwidth
+#' @importFrom rlang .data
 #' @importFrom stats na.omit
 #'
 #' @export
@@ -108,7 +109,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
     }
 
     plot.data <- object@meta.data %>%
-                    select(h.v_fam, l.v_gene) %>%
+                    select(.data$h.v_fam, .data$l.v_gene) %>%
                     na.omit() %>%
                     table() %>%
                     as.matrix()
@@ -131,6 +132,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @importFrom dplyr %>% mutate select full_join count
 #' @importFrom ggplot2 ggplot aes geom_line labs theme element_rect element_line element_blank unit element_text
+#' @importFrom rlang .data
 #' @importFrom stats na.omit
 #'
 #' @export
@@ -157,24 +159,24 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
         subset <- subset(object, cells = cells)
 
         plot.data.h <- subset@meta.data %>%
-            mutate(len = nchar(h.cdr3)) %>%
-            count(len) %>%
+            mutate(len = nchar(.data$h.cdr3)) %>%
+            count(.data$len) %>%
             na.omit() %>%
-            mutate(freq = n/sum(n) * 100) %>%
-            select(len, freq)
+            mutate(freq = .data$n/sum(.data$n) * 100) %>%
+            select(.data$len, .data$freq)
         plot.data.l <- subset@meta.data %>%
-            mutate(len = nchar(l.cdr3)) %>%
-            count(len) %>%
+            mutate(len = nchar(.data$l.cdr3)) %>%
+            count(.data$len) %>%
             na.omit() %>%
-            mutate(freq = n/sum(n) * 100) %>%
-            select(len, freq)
+            mutate(freq = .data$n/sum(.data$n) * 100) %>%
+            select(.data$len, .data$freq)
 
         plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
         colnames(plot.data) <- c("cdr3.length", "heavy.chain", "light.chain")
 
-        plots[[group]] <- ggplot(plot.data, aes(x = cdr3.length)) +
-            geom_line(aes(y = heavy.chain), color = "black") +
-            geom_line(aes(y = light.chain), color = "red") +
+        plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
+            geom_line(aes(y = .data$heavy.chain), color = "black") +
+            geom_line(aes(y = .data$light.chain), color = "red") +
             labs(x = "CDR3 length (AA)", y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
             theme(
                 panel.background = element_rect(fill = "white"), # bg of the panel
