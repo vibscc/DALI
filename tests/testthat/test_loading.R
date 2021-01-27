@@ -2,6 +2,8 @@ test_that("can load data", {
     seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
     seuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC")
 
+    expect_s4_class(seuratObj, "Seurat")
+
     metadata.columns <- colnames(seuratObj@meta.data)[7:ncol(seuratObj@meta.data)]
 
     expect_vector(metadata.columns, ptype = character(), size = 14)
