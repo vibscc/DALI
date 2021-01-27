@@ -127,3 +127,22 @@ AddVDJDataForType <- function(type, object, heavy, light) {
 
     return(object)
 }
+
+#' Check validity of an object
+#'
+#' @param object Seurat object
+#'
+#' @importFrom methods is slot
+#' @export
+
+isValidSeuratObject <- function(object) {
+    if (!is(object, "Seurat")) {
+        return(F)
+    }
+
+    if (is.null(slot(object, 'misc')[['VDJ']])) {
+        return(F)
+    }
+
+    return(T)
+}
