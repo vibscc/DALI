@@ -1,6 +1,52 @@
 function(input, output, session) {
 
+    # ======================================================================= #
+    # Initialize app
+    # ======================================================================= #
+
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
+
+    app.initialize <- function() {
+        updateSelectInput(session, "group.highlight", choices = levels(isolate(vals$data@meta.data$seurat_clusters)))
+        renderReductionPlots(isolate(vals$data))
+    }
+
+    # ======================================================================= #
+    # Function defenitions
+    # ======================================================================= #
+
+    # Render DimPlots for each reduction
+    # TODO: replace with reduction plot, colored by VDJ data (v_gene, c_gene...)
+    renderReductionPlots <- function(object) {
+        for (reduction in names(object@reductions)) {
+            local({
+                plotname <- paste0('reduction.plot.', reduction)
+                r <- reduction
+                output[[plotname]] <- renderPlotly({
+                    ggplotly(Seurat::DimPlot(object, reduction = r)) %>%
+                        onRender("
+                    function(el) {
+                        el.on('plotly_legendclick', function(d) {
+
+                            // const input = document.getElementById('group.highlight');
+
+                            // Create fake keyup-event to trigger shiny
+                            // const ev = document.createEvent('Event');
+                            // ev.initEvent('keyup');
+                            // ev.which = ev.keyCode = 13;
+
+                            // input.value = d.curveNumber;
+                            // input.dispatchEvent(ev);
+
+                            // Prevent other handlers from firing
+                            // return false;
+                        })
+                    }
+                ")
+                })
+            })
+        }
+    }
 
     # ======================================================================= #
     # Load data if necessary
@@ -22,6 +68,8 @@ function(input, output, session) {
 
     if (is.null(isolate(vals$data)) || !isValidSeuratObject(isolate(vals$data))) {
         showModal(dataUploadModal())
+    } else {
+        app.initialize()
     }
 
     observeEvent(input$load, {
@@ -29,6 +77,7 @@ function(input, output, session) {
 
         if (isValidSeuratObject(data)) {
             vals$data <- readRDS(input$file$datapath)
+            app.initialize()
             removeModal()
         } else {
             showModal(dataUploadModal(failed = T))
@@ -36,17 +85,13 @@ function(input, output, session) {
     })
 
     # ======================================================================= #
-    # Initialize dropdowns
-    # ======================================================================= #
-
-    updateSelectInput(session, "group.highlight", choices = levels(isolate(vals$data@meta.data$seurat_clusters)))
-
-    # ======================================================================= #
-    # Reduction plots
+    # Reduction plots UI tabs
     # ======================================================================= #
 
     # Create tabsetPanel with tabPanel for each dimensionality reducion in the dataset
     output$reduction.tabs <- renderUI({
+        req(vals$data)
+
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname <- paste0('reduction.plot.', reduction)
             tabPanel(Diversity:::formatDimred(reduction), plotlyOutput(plotname))
@@ -56,44 +101,12 @@ function(input, output, session) {
         do.call(tabsetPanel, tabs)
     })
 
-    # Render DimPlots for each reduction
-    # TODO: replace with reduction plot, colored by VDJ data (v_gene, c_gene...)
-    for (reduction in names(isolate(vals$data@reductions))) {
-        local({
-            plotname <- paste0('reduction.plot.', reduction)
-            r <- reduction
-            output[[plotname]] <- renderPlotly({
-                ggplotly(Seurat::DimPlot(vals$data, reduction = r)) %>%
-                onRender("
-                    function(el) {
-                        el.on('plotly_legendclick', function(d) {
-
-                            // const input = document.getElementById('group.highlight');
-
-                            // Create fake keyup-event to trigger shiny
-                            // const ev = document.createEvent('Event');
-                            // ev.initEvent('keyup');
-                            // ev.which = ev.keyCode = 13;
-
-                            // input.value = d.curveNumber;
-                            // input.dispatchEvent(ev);
-
-                            // Prevent other handlers from firing
-                            // return false;
-                        })
-                    }
-                ")
-            })
-        })
-    }
-
     # ======================================================================= #
     # Barplot
     # ======================================================================= #
 
     output$barplot <- renderPlot({
-        if (is.null(input$group.highlight) || input$group.highlight == ''){ return(F) }
-
+        req(input$group.highlight)
         barplot_vh(vals$data, groups.to.plot = input$group.highlight)
     })
 
@@ -102,13 +115,8 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$lineplot <- renderPlot({
-        if (is.null(input$group.highlight) || input$group.highlight == ''){ return(F) }
+        req(input$group.highlight)
 
         cdr3length(vals$data, subset = input$group.highlight)
     })
-
-    # ======================================================================= #
-    # Event handling
-    # ======================================================================= #
-
 }

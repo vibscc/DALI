@@ -1,7 +1,7 @@
-library(Diversity)
-library(htmlwidgets)
-library(plotly)
-library(shiny)
+suppressPackageStartupMessages(library(Diversity))
+suppressPackageStartupMessages(library(htmlwidgets))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(shiny))
 
 fluidPage(
     sidebarLayout(
