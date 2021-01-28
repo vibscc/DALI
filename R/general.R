@@ -3,6 +3,7 @@
 #' @param object Seurat object
 #' @param data.dir Cellranger output directory
 #' @param type VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #'
 #' @importFrom dplyr %>% all_of mutate rename_all select filter
 #' @importFrom tibble column_to_rownames
@@ -11,7 +12,7 @@
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir, type = NULL) {
+Read10X_vdj <- function(object, data.dir, type = NULL, force = F) {
 
     location.annotation.contig <- file.path(data.dir, "filtered_contig_annotations.csv")
 
@@ -44,7 +45,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL) {
         column_to_rownames('barcode') %>%
         rename_all(~ paste0("l.", .))
 
-    object <- AddVDJDataForType(type, object, heavy, light)
+    object <- AddVDJDataForType(type, object, heavy, light, force)
     DefaultAssayVDJ(object) <- type
 
     return(object)
@@ -117,8 +118,18 @@ get_v_families <- function(v_genes) {
 #' @param object Seurat object
 #' @param heavy Data frame with the metadata columns for the heavy chains
 #' @param light Data frame with the metadata columns for the light chains
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 
-AddVDJDataForType <- function(type, object, heavy, light) {
+AddVDJDataForType <- function(type, object, heavy, light, force = F) {
+    if (!force) {
+        overlap <- min(length(intersect(colnames(object), rownames(heavy))) / nrow(heavy), length(intersect(colnames(object), rownames(light))) / nrow(light))
+
+        if (overlap < 0.50) {
+            stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n",
+                 "To ignore this check, add the parameter `force = T`", call. = F)
+        }
+    }
+
     if (!'VDJ' %in% names(slot(object, 'misc'))) {
         slot(object, 'misc')[['VDJ']] <- list()
     }

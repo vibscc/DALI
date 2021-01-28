@@ -4,7 +4,7 @@
 \alias{Read10X_vdj}
 \title{Load 10x VDJ data in a seurat object}
 \usage{
-Read10X_vdj(object, data.dir, type = NULL)
+Read10X_vdj(object, data.dir, type = NULL, force = F)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,6 +12,8 @@ Read10X_vdj(object, data.dir, type = NULL)
 \item{data.dir}{Cellranger output directory}
 
 \item{type}{VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.}
+
+\item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
 }
 \description{
 Load 10x VDJ data in a seurat object
