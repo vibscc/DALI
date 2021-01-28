@@ -10,7 +10,7 @@ function(input, output, session) {
         modalDialog(
             fileInput("file", "Choose an rds file to load", accept = ".rds"),
             if (failed) {
-                div("Invalid file!")
+                div("Invalid file! Make sure the object already contains VDJ data. This can be done with the `Read10X_vdj` function of `Diversity`")
             },
 
             footer = tagList(
