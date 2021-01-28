@@ -31,7 +31,7 @@ formatDimred <- function(reduction) {
                 pattern
             )
 
-            return(sub(pattern, replacement, reduction))
+            return(sub(pattern, replacement, reduction, ignore.case = T))
         }
     }
 
