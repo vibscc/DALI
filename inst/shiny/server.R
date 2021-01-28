@@ -1,4 +1,4 @@
-function(input, output) {
+function(input, output, session) {
 
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
 
@@ -36,6 +36,12 @@ function(input, output) {
     })
 
     # ======================================================================= #
+    # Initialize dropdowns
+    # ======================================================================= #
+
+    updateSelectInput(session, "group.highlight", choices = levels(isolate(vals$data@meta.data$seurat_clusters)))
+
+    # ======================================================================= #
     # Reduction plots
     # ======================================================================= #
 
@@ -43,7 +49,7 @@ function(input, output) {
     output$reduction.tabs <- renderUI({
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname <- paste0('reduction.plot.', reduction)
-            tabPanel(formatDimred(reduction), plotlyOutput(plotname))
+            tabPanel(Diversity:::formatDimred(reduction), plotlyOutput(plotname))
         })
         # TODO: select default tab in a more elegant way. PCA should be avoided as default tab, since this is the least informative
         tabs[['selected']] <- if('umap' %in% names(vals$data@reductions)) 'UMAP' else if('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
@@ -60,24 +66,20 @@ function(input, output) {
                 ggplotly(Seurat::DimPlot(vals$data, reduction = r)) %>%
                 onRender("
                     function(el) {
-                        el.on('plotly_click', function(d) {
-                            console.log('Click: ', d);
-                        })
                         el.on('plotly_legendclick', function(d) {
 
-                            console.log(d);
-                            const input = document.getElementById('group.highlight');
+                            // const input = document.getElementById('group.highlight');
 
                             // Create fake keyup-event to trigger shiny
-                            const ev = document.createEvent('Event');
-                            ev.initEvent('keyup');
-                            ev.which = ev.keyCode = 13;
+                            // const ev = document.createEvent('Event');
+                            // ev.initEvent('keyup');
+                            // ev.which = ev.keyCode = 13;
 
-                            input.value = d.curveNumber;
-                            input.dispatchEvent(ev);
+                            // input.value = d.curveNumber;
+                            // input.dispatchEvent(ev);
 
                             // Prevent other handlers from firing
-                            return false;
+                            // return false;
                         })
                     }
                 ")
@@ -89,13 +91,21 @@ function(input, output) {
     # Barplot
     # ======================================================================= #
 
-    output$barplot <- renderPlot(barplot_vh(vals$data, groups.to.plot = input$group.highlight))
+    output$barplot <- renderPlot({
+        if (is.null(input$group.highlight) || input$group.highlight == ''){ return(F) }
+
+        barplot_vh(vals$data, groups.to.plot = input$group.highlight)
+    })
 
     # ======================================================================= #
     # Lineplot CDR3-length
     # ======================================================================= #
 
-    output$lineplot <- renderPlot(cdr3length(vals$data, subset = input$group.highlight))
+    output$lineplot <- renderPlot({
+        if (is.null(input$group.highlight) || input$group.highlight == ''){ return(F) }
+
+        cdr3length(vals$data, subset = input$group.highlight)
+    })
 
     # ======================================================================= #
     # Event handling

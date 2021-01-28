@@ -169,7 +169,7 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
         stop("Invalid group.by column ", group.by)
     }
 
-    if (!is.null(subset)) {
+    if (!is.null(subset) && subset != '') {
         cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
         object <- subset(object, cells = cells)
     }

@@ -1,11 +1,12 @@
-library(shiny)
-library(plotly)
+library(Diversity)
 library(htmlwidgets)
+library(plotly)
+library(shiny)
 
 fluidPage(
     sidebarLayout(
         sidebarPanel(width = 2,
-            textInput('group.highlight', value = 0, label = "Group to highlight")
+            selectInput('group.highlight', label = "Group to highlight", choices = NULL)
         ),
         mainPanel(
             uiOutput("reduction.tabs"),
