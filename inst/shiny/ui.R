@@ -6,7 +6,8 @@ suppressPackageStartupMessages(library(shiny))
 fluidPage(
     sidebarLayout(
         sidebarPanel(width = 2,
-            selectInput('group.highlight', label = "Group to highlight", choices = NULL)
+            selectInput('group.highlight', label = "Group to highlight", choices = NULL),
+            uiOutput("dataset.metrics")
         ),
         mainPanel(
             uiOutput("reduction.tabs"),

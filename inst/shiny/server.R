@@ -88,6 +88,22 @@ function(input, output, session) {
     # Reduction plots UI tabs
     # ======================================================================= #
 
+    output$dataset.metrics <- renderUI({
+        req(vals$data)
+
+        cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$h.v_gene) | !is.na(.data$l.v_gene)) %>% nrow()
+
+        list(
+            h4("Dataset metrics"),
+            div("# cells: ", ncol(vals$data)),
+            div("# cells with VDJ info: ", cells.with.VDJ)
+        )
+    })
+
+    # ======================================================================= #
+    # Reduction plots UI tabs
+    # ======================================================================= #
+
     # Create tabsetPanel with tabPanel for each dimensionality reducion in the dataset
     output$reduction.tabs <- renderUI({
         req(vals$data)
