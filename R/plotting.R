@@ -216,3 +216,116 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
+
+
+
+
+#' Dimplot for IGXV-family
+#'
+#' @param object Seurat object
+#' @param fam Heavy or light chain family. Options are heavy or light, default = NULL
+#' @param chain Heavy or light chain. Options are heavy/h or light/l, default = NULL
+#' Is used in combination with gene.
+#' @param gene c/j/d gene. Options are c, j or d, default = NULL
+#' Is used in combination with chain.
+#' @param reduction Specify which reduction to use, default = "tsne"
+#' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default=T
+#'
+#' @importFrom dplyr %>%
+#'
+#' @export
+
+DimPlot_vh <- function(object, fam=NULL, chain = NULL, gene = NULL, reduction = "tsne", grid=T ) {
+  require("Seurat")
+  
+  if (is.null(fam) ) {
+    if (is.null(chain) | is.null(gene)){ 
+      message("Either fam or either chain and gene should be given a value")
+    }
+    else{
+      if(chain == 'heavy'){ chain <- "h"  }
+      if(chain == 'light'){ chain <- "l"  }
+      columnname <- paste0(chain,".",gene,"_gene")
+      
+      if(isTRUE(grid)){split=columnname} else {split=NULL}
+      
+      families<-object@meta.data[, columnname] %>% na.omit() %>% unique()
+      families<-families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
+      DimPlot(object, group.by = columnname, split.by = split, ncol = 3,order = rev(families))
+      
+    }
+  }
+  else {
+    if(fam == 'heavy' || fam == 'h'){  columnname <- "h.v_fam"  }
+    if(fam == 'light' || fam == 'l'){  columnname <- "l.v_fam"  }
+    
+    if(isTRUE(grid)){split=columnname} else {split=NULL}
+    
+    families<-object@meta.data[, columnname] %>% na.omit() %>% unique()
+    families<-families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
+    DimPlot(object, group.by = columnname, split.by = split, ncol = 4,order = rev(families))
+    
+  }
+}
+
+
+#' Dimplot for IGXV-family
+#'
+#' @param object Seurat object
+#' @param columnname Chain to plot, available options:"l.cdr3","h.cdr3","cdr3" (=both)
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' 
+#' @export
+
+CDR3freq <- function(object, columnname = c("l.cdr3","h.cdr3","cdr3"), group.by = 'seurat_clusters', value="freq") {
+  
+  if(columnname == "l.cdr3"){TITLE="light chain"}
+  if(columnname == "h.cdr3"){TITLE="heavy chain"}
+  
+  if(columnname == "h.cdr3" | columnname == "l.cdr3") {
+    
+    data <- plyr::count(object@meta.data, c(columnname,group.by) ) 
+    
+    p <- ggplot(data, aes_string(fill=columnname, y=value, x=group.by)) + 
+      geom_bar(position="fill", stat="identity") + 
+      ylab("Frequency") + xlab("Cluster") + 
+      ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
+      theme(legend.position = "none",
+            panel.background = element_rect("White"), 
+            axis.line = element_line(color="black", size = 0.4),
+            axis.text.y=element_blank())
+  }
+  
+  else if(columnname == "cdr3"){
+    data1 <- plyr::count(object@meta.data, c("l.cdr3",'seurat_clusters') ) 
+    colnames(data1)[1]<-"cdr3"
+    data2 <- plyr::count(object@meta.data, c("h.cdr3",'seurat_clusters') ) 
+    colnames(data2)[1]<-"cdr3"
+    
+    
+    p1<- ggplot(data1, aes_string(fill=columnname, y=value, x=group.by)) + 
+      geom_bar(position="fill", stat="identity") + 
+      ylab("Frequency light chain") +
+      # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
+      theme(legend.position = "none",
+            panel.background = element_rect("White"), 
+            axis.line.y = element_line(color="black", size = 0.4),
+            axis.text=element_blank(),
+            axis.title.x=element_blank(), 
+            axis.ticks.x = element_blank() )
+    p2<- ggplot(data2, aes_string(fill=columnname, y=value, x=group.by)) + 
+      geom_bar(position="fill", stat="identity") + 
+      ylab("Frequency heavy chain") + xlab("Cluster") + 
+      # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
+      theme(legend.position = "none",
+            panel.background = element_rect("White"), 
+            axis.line = element_line(color="black", size = 0.4),
+            axis.text.y=element_blank())
+    
+    p<-gridExtra::grid.arrange(p1,p2,ncol = 1)
+    
+  }
+  return(p)
+}
+
+
