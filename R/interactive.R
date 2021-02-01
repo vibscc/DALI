@@ -22,9 +22,9 @@ interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
 #' @param reduction Dimensionality reduction
 
 formatDimred <- function(reduction) {
-    for(pattern in c('pca', 'tsne', 'umap')) {
+    for (pattern in c('pca', 'tsne', 'umap')) {
         if (grepl(pattern, reduction, ignore.case = T)) {
-            replacement = switch (pattern,
+            replacement = switch(pattern,
                 'pca' = 'PCA',
                 'tsne' = 'tSNE',
                 'umap' = 'UMAP',

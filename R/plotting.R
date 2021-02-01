@@ -43,13 +43,13 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
     if (by.family) {
         prefix <- gsub("[0-9-]", "", families[1])
         family.numbers <- c()
-        for(family in families) {
+        for (family in families) {
             family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family) %>% as.numeric())
         }
         families <- paste0(prefix, '-', seq(1,max(family.numbers)))
     }
 
-    families <- families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
+    families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
 
     data <- object@meta.data %>%
         filter(case_when(!is.null(groups.to.plot) ~ .data[[group.by]] %in% groups.to.plot,
@@ -96,7 +96,7 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
                 legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
                 legend.position = "none",
                 legend.key.size = unit(0.1, "cm"),
-                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
             )
 
     }
@@ -175,9 +175,9 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
     }
 
     plots <- list()
-    groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort()
+    groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
-    for(group in groups) {
+    for (group in groups) {
         cells <- rownames(object@meta.data)[object@meta.data[[group.by]] == group]
         subset <- subset(object, cells = cells)
 
@@ -235,36 +235,33 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @export
 
-DimPlot_vh <- function(object, fam=NULL, chain = NULL, gene = NULL, reduction = "tsne", grid=T ) {
-  require("Seurat")
-  
-  if (is.null(fam) ) {
-    if (is.null(chain) | is.null(gene)){ 
-      message("Either fam or either chain and gene should be given a value")
-    }
-    else{
-      if(chain == 'heavy'){ chain <- "h"  }
-      if(chain == 'light'){ chain <- "l"  }
+DimPlot_vh <- function(object, fam = NULL, chain = NULL, gene = NULL, reduction = "tsne", grid = T) {
+
+  if (is.null(fam)) {
+    if (is.null(chain) | is.null(gene)) {
+      stop("Either fam or either chain and gene should be given a value")
+    } else{
+      if (chain == 'heavy') {chain <- "h"}
+      if (chain == 'light') {chain <- "l"}
       columnname <- paste0(chain,".",gene,"_gene")
-      
-      if(isTRUE(grid)){split=columnname} else {split=NULL}
-      
-      families<-object@meta.data[, columnname] %>% na.omit() %>% unique()
-      families<-families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
-      DimPlot(object, group.by = columnname, split.by = split, ncol = 3,order = rev(families))
-      
+
+      if (grid) {split <- columnname} else {split <- NULL}
+
+      families <- object@meta.data[, columnname] %>% na.omit() %>% unique()
+      families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+      Seurat::DimPlot(object, group.by = columnname, split.by = split, ncol = 3,order = rev(families))
+
     }
-  }
-  else {
-    if(fam == 'heavy' || fam == 'h'){  columnname <- "h.v_fam"  }
-    if(fam == 'light' || fam == 'l'){  columnname <- "l.v_fam"  }
-    
-    if(isTRUE(grid)){split=columnname} else {split=NULL}
-    
-    families<-object@meta.data[, columnname] %>% na.omit() %>% unique()
-    families<-families %>% gtools::mixedsort(decreasing = sum(grepl('-', .)) > 0)
-    DimPlot(object, group.by = columnname, split.by = split, ncol = 4,order = rev(families))
-    
+  } else {
+    if (fam == 'heavy' || fam == 'h') { columnname <- "h.v_fam" }
+    if (fam == 'light' || fam == 'l') { columnname <- "l.v_fam" }
+
+    if (grid) {split <- columnname} else {split <- NULL}
+
+    families <- object@meta.data[, columnname] %>% na.omit() %>% unique()
+    families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+    Seurat::DimPlot(object, group.by = columnname, split.by = split, ncol = 4,order = rev(families))
+
   }
 }
 
@@ -274,56 +271,61 @@ DimPlot_vh <- function(object, fam=NULL, chain = NULL, gene = NULL, reduction = 
 #' @param object Seurat object
 #' @param columnname Chain to plot, available options:"l.cdr3","h.cdr3","cdr3" (=both)
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
-#' 
+#'
+#' @importFrom ggplot2 aes_string element_blank element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
+#' @importFrom dplyr count
+#'
 #' @export
 
-CDR3freq <- function(object, columnname = c("l.cdr3","h.cdr3","cdr3"), group.by = 'seurat_clusters', value="freq") {
-  
-  if(columnname == "l.cdr3"){TITLE="light chain"}
-  if(columnname == "h.cdr3"){TITLE="heavy chain"}
-  
-  if(columnname == "h.cdr3" | columnname == "l.cdr3") {
-    
-    data <- plyr::count(object@meta.data, c(columnname,group.by) ) 
-    
-    p <- ggplot(data, aes_string(fill=columnname, y=value, x=group.by)) + 
-      geom_bar(position="fill", stat="identity") + 
-      ylab("Frequency") + xlab("Cluster") + 
-      ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
+CDR3freq <- function(object, columnname = c("l.cdr3","h.cdr3","cdr3"), group.by = 'seurat_clusters') {
+
+  columnname <- match.arg(columnname)
+
+  if (columnname == "l.cdr3") {TITLE <- "light chain"}
+  if (columnname == "h.cdr3") {TITLE <- "heavy chain"}
+
+  if (columnname == "h.cdr3" | columnname == "l.cdr3") {
+
+    data <- count(object@meta.data, c(columnname, group.by) )
+
+    p <- ggplot(data, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
+      geom_bar(position = "fill", stat = "identity") +
+      ylab("Frequency") +
+      xlab("Cluster") +
+      ggtitle(paste0("CDR3 ", TITLE ," frequency" )) +
       theme(legend.position = "none",
-            panel.background = element_rect("White"), 
-            axis.line = element_line(color="black", size = 0.4),
-            axis.text.y=element_blank())
-  }
-  
-  else if(columnname == "cdr3"){
-    data1 <- plyr::count(object@meta.data, c("l.cdr3",'seurat_clusters') ) 
-    colnames(data1)[1]<-"cdr3"
-    data2 <- plyr::count(object@meta.data, c("h.cdr3",'seurat_clusters') ) 
-    colnames(data2)[1]<-"cdr3"
-    
-    
-    p1<- ggplot(data1, aes_string(fill=columnname, y=value, x=group.by)) + 
-      geom_bar(position="fill", stat="identity") + 
+            panel.background = element_rect("white"),
+            axis.line = element_line(color = "black", size = 0.4),
+            axis.text.y = element_blank())
+  } else if (columnname == "cdr3") {
+    data1 <- count(object@meta.data, c("l.cdr3", "seurat_clusters") )
+    colnames(data1)[1] <- "cdr3"
+    data2 <- count(object@meta.data, c("h.cdr3", "seurat_clusters") )
+    colnames(data2)[1] <- "cdr3"
+
+
+    p1 <- ggplot(data1, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
+      geom_bar(position = "fill", stat = "identity") +
       ylab("Frequency light chain") +
       # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
       theme(legend.position = "none",
-            panel.background = element_rect("White"), 
-            axis.line.y = element_line(color="black", size = 0.4),
-            axis.text=element_blank(),
-            axis.title.x=element_blank(), 
+            panel.background = element_rect("White"),
+            axis.line.y = element_line(color = "black", size = 0.4),
+            axis.text = element_blank(),
+            axis.title.x = element_blank(),
             axis.ticks.x = element_blank() )
-    p2<- ggplot(data2, aes_string(fill=columnname, y=value, x=group.by)) + 
-      geom_bar(position="fill", stat="identity") + 
-      ylab("Frequency heavy chain") + xlab("Cluster") + 
+    p2 <- ggplot(data2, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
+      geom_bar(position = "fill", stat = "identity") +
+      ylab("Frequency heavy chain") +
+      xlab("Cluster") +
       # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
       theme(legend.position = "none",
-            panel.background = element_rect("White"), 
-            axis.line = element_line(color="black", size = 0.4),
-            axis.text.y=element_blank())
-    
-    p<-gridExtra::grid.arrange(p1,p2,ncol = 1)
-    
+            panel.background = element_rect("White"),
+            axis.line = element_line(color = "black", size = 0.4),
+            axis.text.y = element_blank())
+
+    p <- gridExtra::grid.arrange(p1, p2, ncol = 1)
+
   }
   return(p)
 }

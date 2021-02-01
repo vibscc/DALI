@@ -97,7 +97,7 @@ getDefaultVDJAssay <- function(data.dir) {
 get_v_families <- function(v_genes) {
     v_families <- c()
 
-    for(v_gene in v_genes) {
+    for (v_gene in v_genes) {
         if (!grepl("^IG[KLH]V", v_gene)) {
             v_families <- c(v_families, NA)
             next
