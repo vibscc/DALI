@@ -25,7 +25,7 @@ function(input, output, session) {
 
                 plotname <- paste0('reduction.plot.', r)
                 output[[plotname]] <- renderPlotly({
-                    ggplotly(Diversity::DimPlot_vh(
+                    ggplotly(DimPlot_vh(
                         object,
                         grid = F,
                         reduction = r,
@@ -138,9 +138,30 @@ function(input, output, session) {
     # Lineplot CDR3-length
     # ======================================================================= #
 
-    output$lineplot <- renderPlot({
+    output$cdr3.length <- renderPlot({
         req(input$group.highlight)
 
         cdr3length(vals$data, subset = input$group.highlight)
     })
+
+    # ======================================================================= #
+    # Circosplot
+    # ======================================================================= #
+
+    output$circosplot <- renderPlot({
+        req(vals$data)
+
+        circosplot(vals$data)
+    })
+
+    # ======================================================================= #
+    # Frequency CDR3 AA sequences
+    # ======================================================================= #
+
+    output$cdr3.frequency <- renderPlot({
+        req(vals$data)
+
+        CDR3freq(vals$data, NULL)
+    })
+
 }
