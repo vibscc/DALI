@@ -16,33 +16,41 @@ function(input, output, session) {
     # ======================================================================= #
 
     # Render DimPlots for each reduction
-    # TODO: replace with reduction plot, colored by VDJ data (v_gene, c_gene...)
     renderReductionPlots <- function(object) {
         for (reduction in names(object@reductions)) {
+            # Make all data available in a local scope, since plots are not rendered instantly.
+            # Without the local scope, each plot would be identical to the last plot
             local({
-                plotname <- paste0('reduction.plot.', reduction)
                 r <- reduction
+
+                plotname <- paste0('reduction.plot.', r)
                 output[[plotname]] <- renderPlotly({
-                    ggplotly(Seurat::DimPlot(object, reduction = r)) %>%
-                        onRender("
-                    function(el) {
-                        el.on('plotly_legendclick', function(d) {
+                    ggplotly(Diversity::DimPlot_vh(
+                        object,
+                        grid = F,
+                        reduction = r,
+                        chain = input$scatterplot.chain,
+                        region = input$scatterplot.region,
+                        by.family = input$scatterplot.by.family)
+                    ) %>% onRender("
+                        function(el) {
+                            el.on('plotly_legendclick', function(d) {
 
-                            // const input = document.getElementById('group.highlight');
+                                // const input = document.getElementById('group.highlight');
 
-                            // Create fake keyup-event to trigger shiny
-                            // const ev = document.createEvent('Event');
-                            // ev.initEvent('keyup');
-                            // ev.which = ev.keyCode = 13;
+                                // Create fake keyup-event to trigger shiny
+                                // const ev = document.createEvent('Event');
+                                // ev.initEvent('keyup');
+                                // ev.which = ev.keyCode = 13;
 
-                            // input.value = d.curveNumber;
-                            // input.dispatchEvent(ev);
+                                // input.value = d.curveNumber;
+                                // input.dispatchEvent(ev);
 
-                            // Prevent other handlers from firing
-                            // return false;
-                        })
-                    }
-                ")
+                                // Prevent other handlers from firing
+                                // return false;
+                            })
+                        }
+                    ")
                 })
             })
         }
@@ -113,7 +121,7 @@ function(input, output, session) {
             tabPanel(Diversity:::formatDimred(reduction), plotlyOutput(plotname))
         })
         # TODO: select default tab in a more elegant way. PCA should be avoided as default tab, since this is the least informative
-        tabs[['selected']] <- if('umap' %in% names(vals$data@reductions)) 'UMAP' else if('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
+        tabs[['selected']] <- if ('umap' %in% names(vals$data@reductions)) 'UMAP' else if ('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
         do.call(tabsetPanel, tabs)
     })
 
