@@ -262,65 +262,53 @@ DimPlot_vh <- function(object, chain = c("H", "L"), region = c("V", "D", "J", "C
 #' Dimplot for IGXV-family
 #'
 #' @param object Seurat object
-#' @param columnname Chain to plot, available options:"l.cdr3","h.cdr3","cdr3" (=both)
+#' @param chain Chain to plot, available options: "L", "H", NULL (= both)
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #'
 #' @importFrom ggplot2 aes_string element_blank element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
-#' @importFrom dplyr count
+#' @importFrom dplyr group_by n summarise ungroup %>%
 #'
 #' @export
 
-CDR3freq <- function(object, columnname = c("l.cdr3","h.cdr3","cdr3"), group.by = 'seurat_clusters') {
+CDR3freq <- function(object, chain = c("L", "H"), group.by = NULL) {
 
-  columnname <- match.arg(columnname)
+  if (!is.null(chain)) {
+    chain <- match.arg(chain) %>% tolower()
+  }
 
-  if (columnname == "l.cdr3") {TITLE <- "light chain"}
-  if (columnname == "h.cdr3") {TITLE <- "heavy chain"}
+  if (is.null(group.by)) {
+    group.by <- "seurat_clusters"
+  }
 
-  if (columnname == "h.cdr3" | columnname == "l.cdr3") {
+  chains <- chain
 
-    data <- count(object@meta.data, c(columnname, group.by) )
+  if (is.null(chains)) {
+    chains <- c("h", "l")
+  }
 
-    p <- ggplot(data, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
+  plots <- list()
+  for (chain in chains) {
+    plot.title <- paste0("CDR3 ", toupper(chain), "-chain AA sequence frequency")
+    data.column <- paste0(chain, ".cdr3")
+
+    plot.data <- object@meta.data %>%
+      group_by(.data[[data.column]], .data[[group.by]]) %>%
+      summarise(freq = n()) %>%
+      ungroup()
+
+    plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq, fill = .data[[data.column]])) +
       geom_bar(position = "fill", stat = "identity") +
       ylab("Frequency") +
       xlab("Cluster") +
-      ggtitle(paste0("CDR3 ", TITLE ," frequency" )) +
+      ggtitle(plot.title) +
       theme(legend.position = "none",
             panel.background = element_rect("white"),
             axis.line = element_line(color = "black", size = 0.4),
-            axis.text.y = element_blank())
-  } else if (columnname == "cdr3") {
-    data1 <- count(object@meta.data, c("l.cdr3", "seurat_clusters") )
-    colnames(data1)[1] <- "cdr3"
-    data2 <- count(object@meta.data, c("h.cdr3", "seurat_clusters") )
-    colnames(data2)[1] <- "cdr3"
-
-
-    p1 <- ggplot(data1, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
-      geom_bar(position = "fill", stat = "identity") +
-      ylab("Frequency light chain") +
-      # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
-      theme(legend.position = "none",
-            panel.background = element_rect("White"),
-            axis.line.y = element_line(color = "black", size = 0.4),
-            axis.text = element_blank(),
-            axis.title.x = element_blank(),
-            axis.ticks.x = element_blank() )
-    p2 <- ggplot(data2, aes_string(fill = columnname, y = .data$freq, x = group.by)) +
-      geom_bar(position = "fill", stat = "identity") +
-      ylab("Frequency heavy chain") +
-      xlab("Cluster") +
-      # ggtitle(paste0("CDR3 ",TITLE ," frequency" )) +
-      theme(legend.position = "none",
-            panel.background = element_rect("White"),
-            axis.line = element_line(color = "black", size = 0.4),
-            axis.text.y = element_blank())
-
-    p <- gridExtra::grid.arrange(p1, p2, ncol = 1)
-
+            axis.text.y = element_blank()
+      )
   }
-  return(p)
+
+  gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
 }
 
 

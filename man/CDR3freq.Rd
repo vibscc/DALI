@@ -4,16 +4,12 @@
 \alias{CDR3freq}
 \title{Dimplot for IGXV-family}
 \usage{
-CDR3freq(
-  object,
-  columnname = c("l.cdr3", "h.cdr3", "cdr3"),
-  group.by = "seurat_clusters"
-)
+CDR3freq(object, chain = c("L", "H"), group.by = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{columnname}{Chain to plot, available options:"l.cdr3","h.cdr3","cdr3" (=both)}
+\item{chain}{Chain to plot, available options: "L", "H", NULL (= both)}
 
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 }
