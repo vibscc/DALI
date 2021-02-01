@@ -6,27 +6,25 @@
 \usage{
 DimPlot_vh(
   object,
-  fam = NULL,
-  chain = NULL,
-  gene = NULL,
-  reduction = "tsne",
-  grid = T
+  chain = c("H", "L"),
+  region = c("V", "D", "J", "C"),
+  by.family = T,
+  grid = T,
+  ...
 )
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{fam}{Heavy or light chain family. Options are heavy or light, default = NULL}
+\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight)}
 
-\item{chain}{Heavy or light chain. Options are heavy/h or light/l, default = NULL
-Is used in combination with gene.}
+\item{region}{Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant),}
 
-\item{gene}{c/j/d gene. Options are c, j or d, default = NULL
-Is used in combination with chain.}
+\item{by.family}{Group genes of 1 family together. Only effective with the V-gene. Default = TRUE}
 
-\item{reduction}{Specify which reduction to use, default = "tsne"}
+\item{grid}{If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE}
 
-\item{grid}{If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default=T}
+\item{...}{Extra parameters passed to Seurat::Dimplot}
 }
 \description{
 Dimplot for IGXV-family
