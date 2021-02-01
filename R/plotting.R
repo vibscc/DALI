@@ -223,46 +223,39 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 #' Dimplot for IGXV-family
 #'
 #' @param object Seurat object
-#' @param fam Heavy or light chain family. Options are heavy or light, default = NULL
-#' @param chain Heavy or light chain. Options are heavy/h or light/l, default = NULL
-#' Is used in combination with gene.
-#' @param gene c/j/d gene. Options are c, j or d, default = NULL
-#' Is used in combination with chain.
-#' @param reduction Specify which reduction to use, default = "tsne"
-#' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default=T
+#' @param region Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant),
+#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight)
+#' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
+#' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
+#' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
 #'
 #' @export
 
-DimPlot_vh <- function(object, fam = NULL, chain = NULL, gene = NULL, reduction = "tsne", grid = T) {
+DimPlot_vh <- function(object, chain = c("H", "L"), region = c("V", "D", "J", "C"), by.family = T, grid = T, ...) {
 
-  if (is.null(fam)) {
-    if (is.null(chain) | is.null(gene)) {
-      stop("Either fam or either chain and gene should be given a value")
-    } else{
-      if (chain == 'heavy') {chain <- "h"}
-      if (chain == 'light') {chain <- "l"}
-      columnname <- paste0(chain,".",gene,"_gene")
+  region <- match.arg(region) %>% tolower()
+  chain <- match.arg(chain) %>% tolower()
 
-      if (grid) {split <- columnname} else {split <- NULL}
+  data.column <- paste0(chain, '.', region, '_')
 
-      families <- object@meta.data[, columnname] %>% na.omit() %>% unique()
-      families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
-      Seurat::DimPlot(object, group.by = columnname, split.by = split, ncol = 3,order = rev(families))
-
-    }
+  if (by.family && region == 'v') {
+    data.column <- paste0(data.column, 'fam')
   } else {
-    if (fam == 'heavy' || fam == 'h') { columnname <- "h.v_fam" }
-    if (fam == 'light' || fam == 'l') { columnname <- "l.v_fam" }
-
-    if (grid) {split <- columnname} else {split <- NULL}
-
-    families <- object@meta.data[, columnname] %>% na.omit() %>% unique()
-    families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
-    Seurat::DimPlot(object, group.by = columnname, split.by = split, ncol = 4,order = rev(families))
-
+    data.column <- paste0(data.column, 'gene')
   }
+
+  split <- data.column
+
+  if (!grid) {
+    split <- NULL
+    ncol <- 1
+  }
+
+  families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+  Seurat::DimPlot(object, group.by = data.column, split.by = split, order = rev(families), ...)
 }
 
 
