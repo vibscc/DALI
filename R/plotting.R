@@ -1,15 +1,19 @@
 #' Barplot for IGHV-family per group
 #'
 #' @param object Seurat object
+#' @param ident.1 Identy class(es) to plot
+#' @param ident.2 Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
-#' @param groups.to.plot Which groups of the group by column should be plotted. Default = NULL (all)
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
 #' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight)
 #' @param by.family Group genes of 1 family together. Default = TRUE
+#' @param legend Should the legend be included in the plot. Default = TRUE
+#' @param grid Organise plots in grot. Each plot contains information about 1 group. Default = FALSE
 #'
-#' @importFrom dplyr %>% arrange count case_when rename
-#' @importFrom ggplot2 ggplot geom_col labs aes scale_fill_manual geom_label theme element_rect element_blank element_text unit ylim
+#' @importFrom dplyr arrange case_when count rename  %>%
+#' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
 #' @importFrom grDevices colorRampPalette
+#' @importFrom reshape2 melt
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
 #' @importFrom tibble column_to_rownames
@@ -17,7 +21,7 @@
 #'
 #' @export
 
-barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = c("V", "C"), chain = c("H", "L"), by.family = T) {
+barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = c("H", "L"), by.family = T, legend = T, grid = F) {
     region <- match.arg(region) %>% tolower()
     chain <- match.arg(chain) %>% tolower()
 
@@ -41,19 +45,42 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
 
     # Add missing families
     if (by.family) {
-        prefix <- gsub("[0-9-]", "", families[1])
-        family.numbers <- c()
-        for (family in families) {
-            family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family) %>% as.numeric())
+        families.completed <- c()
+        prefixes <- gsub("[0-9-]", "", families) %>% unique()
+
+        for (prefix in prefixes) {
+            families.with.prefix <- families[grepl(prefix, families)]
+
+            family.numbers <- c()
+            for (family in families.with.prefix) {
+              family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family) %>% as.numeric())
+            }
+
+            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
         }
-        families <- paste0(prefix, '-', seq(1,max(family.numbers)))
+        families <- families.completed
     }
 
     families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
 
-    data <- object@meta.data %>%
-        filter(case_when(!is.null(groups.to.plot) ~ .data[[group.by]] %in% groups.to.plot,
-                         T ~ T)) %>%
+    data.filtered <- object@meta.data
+
+    if (!is.null(ident.1) || !is.null(ident.2)) {
+        data.filtered <- data.filtered %>%
+            filter(.data[[group.by]] %in% c(ident.1, ident.2))
+    }
+
+    if (!is.null(ident.2)) {
+        data.filtered[[group.by]] <- data.filtered[[group.by]] %>% as.character()
+
+        for (ident in list(ident.1, ident.2)) {
+            for (group in ident) {
+                data.filtered[[group.by]] <- gsub(paste0("^", group, "$"), paste0(group.by, " (", paste(ident, collapse = ","),")"), data.filtered[[group.by]])
+            }
+        }
+    }
+
+    data <- data.filtered %>%
         count(.data[[data.column]], .data[[group.by]]) %>%
         na.omit() %>%
         spread(.data[[group.by]], .data$n) %>%
@@ -68,40 +95,39 @@ barplot_vh <- function(object, group.by = NULL, groups.to.plot = NULL, region = 
         data <- rbind(data, missing.data)
     }
 
-    data <- data %>%
-        arrange(factor(.data[[data.column]], levels = families))  %>%
-        column_to_rownames(data.column)
+    plot.data <- data %>%
+        melt(data = ., id.vars = c(data.column), variable.name = "group", value.name = "freq") %>%
+        mutate(freq = as.numeric(.data$freq))
 
-    plots <- list()
+    plot.data[[data.column]] <- factor(plot.data[[data.column]], levels = families)
 
-    for (group in colnames(data)) {
-        plot.data <- data[, group] %>%
-            as.data.frame() %>%
-            rename(freq = .data[["."]]) %>%
-            mutate(freq = as.numeric(.data$freq))
-        plot.data$fam <- factor(rownames(data), levels = families)
+    plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
+        geom_bar(position = "dodge", stat = "identity") +
+        ylim(0, NA) +
+        labs(y = "Cell number", x = "Family", title = .data$group) +
+        geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
+        theme(
+            panel.background = element_rect(fill = "white"), # bg of the panel
+            plot.background = element_rect(fill = "white"), # bg of the plot
+            panel.grid.major = element_blank(), # get rid of major grid
+            panel.grid.minor = element_blank(), # get rid of minor grid
+            legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+            legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+            legend.key.size = unit(0.1, "cm"),
+            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+        )
 
-        plots[[group]] <- ggplot(plot.data, aes(x = .data$fam, y = .data$freq, fill = .data$fam)) +
-            geom_col() +
-            ylim(0, NA) +
-            labs(y = "Cell number", x = "Family", title = group) +
-            scale_fill_manual(values = colorRampPalette(c("darkblue", "lightblue"))(nrow(data))) +
-            geom_label(data = NULL, aes(label = .data$freq), fill = "white", size = 2) +
-            theme(
-                panel.background = element_rect(fill = "white"), # bg of the panel
-                plot.background = element_rect(fill = "white"), # bg of the plot
-                panel.grid.major = element_blank(), # get rid of major grid
-                panel.grid.minor = element_blank(), # get rid of minor grid
-                legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-                legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
-                legend.position = "none",
-                legend.key.size = unit(0.1, "cm"),
-                axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-            )
-
+    if (grid) {
+        plot <- plot + facet_grid(~ .data$group)
     }
 
-    gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
+    if (!legend) {
+        plot <- plot + theme(
+            legend.position = "none"
+        )
+    }
+
+    return(plot)
 }
 
 #' Circosplot for family to gene distribution

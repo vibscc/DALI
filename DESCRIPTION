@@ -19,6 +19,7 @@ Imports:
     gridExtra,
     gtools,
     methods,
+    reshape2,
     rlang,
     Seurat,
     tibble,

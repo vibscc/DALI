@@ -6,25 +6,34 @@
 \usage{
 barplot_vh(
   object,
+  ident.1 = NULL,
+  ident.2 = NULL,
   group.by = NULL,
-  groups.to.plot = NULL,
   region = c("V", "C"),
   chain = c("H", "L"),
-  by.family = T
+  by.family = T,
+  legend = T,
+  grid = F
 )
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{ident.1}{Identy class(es) to plot}
 
-\item{groups.to.plot}{Which groups of the group by column should be plotted. Default = NULL (all)}
+\item{ident.2}{Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data}
+
+\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 
 \item{region}{Region to plot. Available options: 'V'(ariable) or 'C'(onstant)}
 
 \item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight)}
 
 \item{by.family}{Group genes of 1 family together. Default = TRUE}
+
+\item{legend}{Should the legend be included in the plot. Default = TRUE}
+
+\item{grid}{Organise plots in grot. Each plot contains information about 1 group. Default = FALSE}
 }
 \description{
 Barplot for IGHV-family per group
