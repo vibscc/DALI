@@ -7,12 +7,18 @@ function(input, output, session) {
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
 
     app.initialize <- function() {
-        updateSelectInput(session, "group.highlight", choices = levels(isolate(vals$data@meta.data$seurat_clusters)))
+        groups <- levels(isolate(vals$data@meta.data$seurat_clusters))
+        updateSelectInput(session, "group.highlight", choices = groups)
+
+        # updateSelectInput(session, "compare.group.by", choices = colnames(isolate(vals$data@meta.data)), selected = "seurat_clusters")
+        updateSelectizeInput(session, "compare.ident.1", choices = groups)
+        updateSelectizeInput(session, "compare.ident.2", choices = groups)
+
         renderReductionPlots(isolate(vals$data))
     }
 
     # ======================================================================= #
-    # Function defenitions
+    # Function definitions
     # ======================================================================= #
 
     # Render DimPlots for each reduction
@@ -131,7 +137,8 @@ function(input, output, session) {
 
     output$barplot <- renderPlot({
         req(input$group.highlight)
-        barplot_vh(vals$data, groups.to.plot = input$group.highlight)
+
+        barplot_vh(vals$data, ident.1 = input$group.highlight)
     })
 
     # ======================================================================= #
@@ -162,6 +169,28 @@ function(input, output, session) {
         req(vals$data)
 
         CDR3freq(vals$data, NULL)
+    })
+
+    # ======================================================================= #
+    # Update ident choices on group.by change
+    # ======================================================================= #
+
+    observeEvent(input$compare.group.by, {
+        req(vals$data, input$compare.group.by)
+
+        groups <- vals$data@meta.data[, input$compare.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        updateSelectizeInput(session, "compare.ident.1", choices = groups)
+        updateSelectizeInput(session, "compare.ident.2", choices = groups)
+    })
+
+    # ======================================================================= #
+    # Barplot to compare groups
+    # ======================================================================= #
+
+    output$barplot.comparison <- renderPlot({
+        req(vals$data, input$compare.ident.1, input$compare.ident.2)
+
+        barplot_vh(vals$data, group.by = input$compare.group.by, ident.1 = input$compare.ident.1, ident.2 = input$compare.ident.2, grid = input$compare.grid, legend = input$compare.legend)
     })
 
 }
