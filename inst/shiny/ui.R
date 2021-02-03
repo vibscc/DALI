@@ -4,7 +4,7 @@ suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(shiny))
 
 fluidPage(
-    navbarPage("Divesity",
+    navbarPage("Diversity",
         tabPanel("Exploration",
             sidebarLayout(
                 sidebarPanel(width = 2,
