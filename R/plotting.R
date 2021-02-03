@@ -82,8 +82,12 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
 
     data <- data.filtered %>%
         count(.data[[data.column]], .data[[group.by]]) %>%
+        group_by(.data[[group.by]]) %>%
+        mutate(freq = prop.table(.data$n) * 100) %>%
+        mutate(freq = round(.data$freq, 2)) %>%
+        select(.data[[data.column]], .data[[group.by]], .data$freq) %>%
         na.omit() %>%
-        spread(.data[[group.by]], .data$n) %>%
+        spread(.data[[group.by]], .data$freq) %>%
         replace(is.na(.), 0)
 
     missing.families <- setdiff(families, data[[data.column]])
@@ -105,7 +109,7 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
         geom_bar(position = "dodge", stat = "identity") +
         ylim(0, NA) +
         labs(y = "Cell number", x = "Family", title = .data$group) +
-        geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
+        # geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
         theme(
             panel.background = element_rect(fill = "white"), # bg of the panel
             plot.background = element_rect(fill = "white"), # bg of the plot
