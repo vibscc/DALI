@@ -105,7 +105,12 @@ function(input, output, session) {
     output$dataset.metrics <- renderUI({
         req(vals$data)
 
-        cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$h.v_gene) | !is.na(.data$l.v_gene)) %>% nrow()
+        if("h.v_gene" %in% colnames(vals$data@meta.data)) {
+            cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$h.v_gene) | !is.na(.data$l.v_gene) ) %>% nrow()
+        }
+        if("a.v_gene" %in% colnames(vals$data@meta.data)) {
+            cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$a.v_gene) | !is.na(.data$b.v_gene) ) %>% nrow()
+        }
 
         list(
             h4("Dataset metrics"),
@@ -138,7 +143,7 @@ function(input, output, session) {
     output$barplot <- renderPlot({
         req(input$group.highlight)
 
-        barplot_vh(vals$data, ident.1 = input$group.highlight)
+        barplot_vh(vals$data, ident.1 = input$group.highlight, chain=input$scatterplot.chain)
     })
 
     # ======================================================================= #

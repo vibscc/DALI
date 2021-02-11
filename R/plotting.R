@@ -5,7 +5,7 @@
 #' @param ident.2 Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
-#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight)
+#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight) or 'A'(lpha) or 'B'(eta)
 #' @param by.family Group genes of 1 family together. Default = TRUE
 #' @param legend Should the legend be included in the plot. Default = TRUE
 #' @param grid Organise plots in grot. Each plot contains information about 1 group. Default = FALSE
@@ -21,7 +21,7 @@
 #'
 #' @export
 
-barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = c("H", "L"), by.family = T, legend = T, grid = F) {
+barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = c("H","L","A","B"), by.family = T, legend = T, grid = F) {
     region <- match.arg(region) %>% tolower()
     chain <- match.arg(chain) %>% tolower()
 
@@ -46,17 +46,31 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
     # Add missing families
     if (by.family) {
         families.completed <- c()
-        prefixes <- gsub("[0-9-]", "", families) %>% unique()
+        prefixes <- gsub("/","",gsub("[0-9-]", "", families) %>% unique())
 
         for (prefix in prefixes) {
             families.with.prefix <- families[grepl(prefix, families)]
 
-            family.numbers <- c()
-            for (family in families.with.prefix) {
-              family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family) %>% as.numeric())
+            if(data.column=="b.v_fam" | data.column=="l.v_fam" | data.column=="h.v_fam"){
+                family.numbers <- c()
+                for (family in families.with.prefix) {
+                    family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
+                }
+
+                families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
+            }
+            if(data.column=="a.v_fam"){
+                family.numbers <- c()
+                for (family in families.with.prefix) {
+                    family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family))
+                }
+
+                # family.numbers<-strsplit(family.numbers, "/")[[1]]
+
+                families.completed <- c(families.completed, paste0(prefix, '-', family.numbers))
             }
 
-            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
+
         }
         families <- families.completed
     }
@@ -148,6 +162,8 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
 #'
 #' @export
 circosplot <- function(object, group.by = NULL, subset = NULL) {
+    type = object@misc$default.assay.VDJ
+
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
     }
@@ -161,11 +177,14 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
         object <- subset(object, cells = cells)
     }
 
+    if(type=="TCR"){    Names <- c("a.v_fam","b.v_gene")  }
+    if(type=="BCR"){    Names <- c("h.v_fam","l.v_gene")  }
+
     plot.data <- object@meta.data %>%
-                    select(.data$h.v_fam, .data$l.v_gene) %>%
-                    na.omit() %>%
-                    table() %>%
-                    as.matrix()
+        select(.data[[Names[1]]], .data[[Names[2]]]) %>%
+        na.omit() %>%
+        table() %>%
+        as.matrix()
 
     plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
 
@@ -191,6 +210,8 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #' @export
 
 cdr3length <- function(object, group.by = NULL, subset = NULL) {
+    type = object@misc$default.assay.VDJ
+
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
     }
@@ -207,18 +228,21 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
     plots <- list()
     groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
+    if(type=="TCR"){    Names <- c("a.cdr3","b.cdr3")  }
+    if(type=="BCR"){    Names <- c("h.cdr3","l.cdr3")  }
+
     for (group in groups) {
         cells <- rownames(object@meta.data)[object@meta.data[[group.by]] == group]
         subset <- subset(object, cells = cells)
 
         plot.data.h <- subset@meta.data %>%
-            mutate(len = nchar(.data$h.cdr3)) %>%
+            mutate(len = nchar(.data[[Names[1]]])) %>%
             count(.data$len) %>%
             na.omit() %>%
             mutate(freq = .data$n/sum(.data$n) * 100) %>%
             select(.data$len, .data$freq)
         plot.data.l <- subset@meta.data %>%
-            mutate(len = nchar(.data$l.cdr3)) %>%
+            mutate(len = nchar(.data[[Names[2]]])) %>%
             count(.data$len) %>%
             na.omit() %>%
             mutate(freq = .data$n/sum(.data$n) * 100) %>%
@@ -260,10 +284,11 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 #' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
+#' @importFrom Seurat DimPlot
 #'
 #' @export
 
-DimPlot_vh <- function(object, chain = c("H", "L"), region = c("V", "D", "J", "C"), by.family = T, grid = T, ...) {
+DimPlot_vh <- function(object, chain = c("H", "L","A","B"), region = c("V", "D", "J", "C"), by.family = T, grid = T, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -300,7 +325,7 @@ DimPlot_vh <- function(object, chain = c("H", "L"), region = c("V", "D", "J", "C
 #'
 #' @export
 
-CDR3freq <- function(object, chain = c("L", "H"), group.by = NULL) {
+CDR3freq <- function(object, chain = c("L","H","A","B",NULL), group.by = NULL) {
 
   if (!is.null(chain)) {
     chain <- match.arg(chain) %>% tolower()
@@ -313,7 +338,12 @@ CDR3freq <- function(object, chain = c("L", "H"), group.by = NULL) {
   chains <- chain
 
   if (is.null(chains)) {
-    chains <- c("h", "l")
+        if("h.v_gene" %in% colnames(object@meta.data)) {
+            chains <- c("h", "l")
+        }
+        if("a.v_gene" %in% colnames(object@meta.data)) {
+            chains <- c("a", "b")
+        }
   }
 
   plots <- list()

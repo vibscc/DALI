@@ -10,7 +10,7 @@ barplot_vh(
   ident.2 = NULL,
   group.by = NULL,
   region = c("V", "C"),
-  chain = c("H", "L"),
+  chain = c("H", "L", "A", "B"),
   by.family = T,
   legend = T,
   grid = F
@@ -27,7 +27,7 @@ barplot_vh(
 
 \item{region}{Region to plot. Available options: 'V'(ariable) or 'C'(onstant)}
 
-\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight)}
+\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight) or 'A'(lpha) or 'B'(eta)}
 
 \item{by.family}{Group genes of 1 family together. Default = TRUE}
 

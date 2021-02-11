@@ -6,7 +6,7 @@
 \usage{
 DimPlot_vh(
   object,
-  chain = c("H", "L"),
+  chain = c("H", "L", "A", "B"),
   region = c("V", "D", "J", "C"),
   by.family = T,
   grid = T,

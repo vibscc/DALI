@@ -4,10 +4,12 @@
 \alias{get_v_families}
 \title{Extract V-family from a vector of v-genes}
 \usage{
-get_v_families(v_genes)
+get_v_families(v_genes, type)
 }
 \arguments{
 \item{v_genes}{Vector of genes}
+
+\item{type}{TCR/BCR}
 }
 \description{
 Extract V-family from a vector of v-genes

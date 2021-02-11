@@ -9,7 +9,7 @@ fluidPage(
             sidebarLayout(
                 sidebarPanel(width = 2,
                     h4("Scatterplot"),
-                    selectInput('scatterplot.chain', label = "Chain", choices = list("Heavy" = "H", "Light" = "L")),
+                    selectInput('scatterplot.chain', label = "Chain", choices = list("Heavy" = "H", "Light" = "L","Alpha" = "A", "Beta" = "B")),
                     selectInput('scatterplot.region', label = "Region", choices = c("V", "D", "J", "C")),
                     checkboxInput('scatterplot.by.family', label = 'By family', value = T),
                     h4("VH barplot | CDR3 length"),

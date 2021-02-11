@@ -9,6 +9,7 @@
 #' @importFrom tibble column_to_rownames
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
+#' @importFrom stringr str_replace_all
 #'
 #' @export
 
@@ -28,22 +29,33 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F) {
 
     columns <- c("barcode", "v_gene","d_gene","j_gene","c_gene", "cdr3","cdr3_nt")
 
+    if(type=='TCR'){
+        Constant <- c("^TRA","^TRB")
+        Names <- c("a.","b.")
+    } else if (type=='BCR' | is.null(type)) {
+        Constant <- c("^IGH","^IG[KL]")
+        Names <- c("h.","l.")
+    }
+
     heavy <- annotation.contig %>%
-        filter(grepl("^IGH", .data$c_gene)) %>%
+        filter(grepl(Constant[1], .data$c_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene,type)) %>%
         column_to_rownames('barcode') %>%
-        rename_all(~ paste0("h.", .))
+        rename_all(~ paste0(Names[1], .))
 
+    if(type=='TCR'){
+        heavy$a.v_fam<-str_replace_all(heavy$a.v_fam, "TRAV/DV", "TRADV")
+    }
 
     light <- annotation.contig %>%
-        filter(grepl("^IG[KL]", .data$c_gene)) %>%
+        filter(grepl(Constant[2], .data$c_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene,type)) %>%
         column_to_rownames('barcode') %>%
-        rename_all(~ paste0("l.", .))
+        rename_all(~ paste0(Names[2], .))
 
     object <- AddVDJDataForType(type, object, heavy, light, force)
     DefaultAssayVDJ(object) <- type
@@ -93,12 +105,16 @@ getDefaultVDJAssay <- function(data.dir) {
 #' Extract V-family from a vector of v-genes
 #'
 #' @param v_genes Vector of genes
+#' @param type TCR/BCR
 
-get_v_families <- function(v_genes) {
+get_v_families <- function(v_genes,type) {
     v_families <- c()
 
-    for (v_gene in v_genes) {
-        if (!grepl("^IG[KLH]V", v_gene)) {
+    if(type=='TCR') { Constant <- "TR[ABD]" }
+    if (type=='BCR' | is.null(type) ) {  Constant <- "^IG[KLH]V" }
+
+    for(v_gene in v_genes) {
+        if (!grepl(Constant, v_gene)) {
             v_families <- c(v_families, NA)
             next
         }
