@@ -9,53 +9,52 @@
 #' @importFrom tibble column_to_rownames
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
-#' @importFrom stringr str_replace_all
 #'
 #' @export
 
 Read10X_vdj <- function(object, data.dir, type = NULL, force = F) {
 
     location.annotation.contig <- file.path(data.dir, "filtered_contig_annotations.csv")
+    location.metrics <- file.path(data.dir, "metrics_summary.csv")
 
     if (!file.exists(location.annotation.contig)) {
-        stop("Contig annotation file (", location.annotation.contig, ") is missing!")
+        stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
     }
 
-    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive == 'True')
+    if (!file.exists(location.metrics)) {
+        stop("Metrics summary file (", location.metrics, ") is missing!", call. = F)
+    }
+
+    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive %in% c('True', 'true'))
 
     if (is.null(type)) {
-        type <- getDefaultVDJAssay(data.dir)
+        type <- getAssayForData(location.metrics)
+
+        if (is.null(type)) {
+            stop("Unable to determine if the data is TCR or BCR. Please check the input files or specify the type via the `type` parameter", call. = F)
+        }
     }
 
-    columns <- c("barcode", "v_gene","d_gene","j_gene","c_gene", "cdr3","cdr3_nt")
+    columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt")
 
-    if(type=='TCR'){
-        Constant <- c("^TRA","^TRB")
-        Names <- c("a.","b.")
-    } else if (type=='BCR' | is.null(type)) {
-        Constant <- c("^IGH","^IG[KL]")
-        Names <- c("h.","l.")
-    }
+    heavy.name <- if (type == "TCR") "a" else "h"
+    light.name <- if (type == "TCR") "b" else "l"
 
     heavy <- annotation.contig %>%
-        filter(grepl(Constant[1], .data$c_gene)) %>%
+        filter(grepl("^IGH|^TRA", .data$c_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene,type)) %>%
-        column_to_rownames('barcode') %>%
-        rename_all(~ paste0(Names[1], .))
-
-    if(type=='TCR'){
-        heavy$a.v_fam<-str_replace_all(heavy$a.v_fam, "TRAV/DV", "TRADV")
-    }
+        mutate(v_fam = get_v_families(.data$v_gene, type)) %>%
+        column_to_rownames("barcode") %>%
+        rename_all(~ paste0(heavy.name, ".", .))
 
     light <- annotation.contig %>%
-        filter(grepl(Constant[2], .data$c_gene)) %>%
+        filter(grepl("^IG[KL]|^TRB", .data$c_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene,type)) %>%
-        column_to_rownames('barcode') %>%
-        rename_all(~ paste0(Names[2], .))
+        mutate(v_fam = get_v_families(.data$v_gene, type)) %>%
+        column_to_rownames("barcode") %>%
+        rename_all(~ paste0(light.name, ".", .))
 
     object <- AddVDJDataForType(type, object, heavy, light, force)
     DefaultAssayVDJ(object) <- type
@@ -94,27 +93,40 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
     return(object)
 }
 
-#' Determine assay type from cellranger output
+#' Determine assay type from metrics_summary.csv
 #'
-#' @param data.dir Cellranger output directory
+#' @param csv.path Path to metrics_summary.csv
 
-getDefaultVDJAssay <- function(data.dir) {
-    return('BCR')
+getAssayForData <- function(csv.path) {
+    metrics <- read.csv(csv.path, header = T)
+
+    if (sum(grepl("IGK", colnames(metrics))) > 0 && sum(grepl("IGH", colnames(metrics))) > 0) {
+        return("BCR")
+    }
+
+    if (sum(grepl("TRA", colnames(metrics))) > 0 && sum(grepl("TRB", colnames(metrics))) > 0) {
+        return("TCR")
+    }
+
+    return(NULL)
 }
 
 #' Extract V-family from a vector of v-genes
 #'
 #' @param v_genes Vector of genes
 #' @param type TCR/BCR
+#'
+#' @importFrom stringr str_replace_all
 
-get_v_families <- function(v_genes,type) {
+
+get_v_families <- function(v_genes, type) {
     v_families <- c()
 
-    if(type=='TCR') { Constant <- "TR[ABD]" }
-    if (type=='BCR' | is.null(type) ) {  Constant <- "^IG[KLH]V" }
+    if (type == "TCR") { pattern <- "TR[ABD]" }
+    if (type == "BCR" || is.null(type) ) {  pattern <- "^IG[KLH]V" }
 
-    for(v_gene in v_genes) {
-        if (!grepl(Constant, v_gene)) {
+    for (v_gene in v_genes) {
+        if (!grepl(pattern, v_gene)) {
             v_families <- c(v_families, NA)
             next
         }
@@ -123,6 +135,10 @@ get_v_families <- function(v_genes,type) {
         gene <- gsub("[0-9]", "", family.full)
         number <- gsub("[A-Za-z]", "", family.full)
         v_families <- c(v_families, paste0(gene, '-', number))
+    }
+
+    if (type == "TCR") {
+        v_families <- str_replace_all(v_families, "TRAV/DV", "TRADV")
     }
 
     return(v_families)
@@ -172,4 +188,22 @@ isValidSeuratObject <- function(object) {
     }
 
     return(T)
+}
+
+#' Get available chains from object
+#'
+#' @param object Seurat object
+
+availableChains <- function(object) {
+    assay <- DefaultAssayVDJ(object)
+
+    if (grepl("BCR", assay, ignore.case = T)) {
+        return(c("H", "L"))
+    }
+
+    if (grepl("TCR", assay, ignore.case = T)) {
+        return(c("A", "B"))
+    }
+
+    return(c("H", "L", "A", "B"))
 }

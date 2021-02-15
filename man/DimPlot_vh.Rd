@@ -6,8 +6,8 @@
 \usage{
 DimPlot_vh(
   object,
-  chain = c("H", "L", "A", "B"),
   region = c("V", "D", "J", "C"),
+  chain = availableChains(object),
   by.family = T,
   grid = T,
   ...
@@ -16,9 +16,9 @@ DimPlot_vh(
 \arguments{
 \item{object}{Seurat object}
 
-\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight)}
+\item{region}{Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant).}
 
-\item{region}{Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant),}
+\item{chain}{Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR}
 
 \item{by.family}{Group genes of 1 family together. Only effective with the V-gene. Default = TRUE}
 

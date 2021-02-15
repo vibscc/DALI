@@ -5,10 +5,10 @@
 #' @param ident.2 Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
-#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight) or 'A'(lpha) or 'B'(eta)
+#' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param by.family Group genes of 1 family together. Default = TRUE
 #' @param legend Should the legend be included in the plot. Default = TRUE
-#' @param grid Organise plots in grot. Each plot contains information about 1 group. Default = FALSE
+#' @param grid Organize plots in grid. Each plot contains information about 1 group. Default = FALSE
 #'
 #' @importFrom dplyr arrange case_when count rename  %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
@@ -21,7 +21,7 @@
 #'
 #' @export
 
-barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = c("H","L","A","B"), by.family = T, legend = T, grid = F) {
+barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F) {
     region <- match.arg(region) %>% tolower()
     chain <- match.arg(chain) %>% tolower()
 
@@ -277,8 +277,8 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 #' Dimplot for IGXV-family
 #'
 #' @param object Seurat object
-#' @param region Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant),
-#' @param chain Chain to plot. Options: 'H'(eavy) or 'L'(ight)
+#' @param region Region to plot. Available options: 'V'(ariable), 'D', 'J'(unction), 'C'(onstant).
+#' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
 #' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
 #' @param ... Extra parameters passed to Seurat::Dimplot
@@ -288,7 +288,7 @@ cdr3length <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @export
 
-DimPlot_vh <- function(object, chain = c("H", "L","A","B"), region = c("V", "D", "J", "C"), by.family = T, grid = T, ...) {
+DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = availableChains(object), by.family = T, grid = T, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -305,7 +305,6 @@ DimPlot_vh <- function(object, chain = c("H", "L","A","B"), region = c("V", "D",
 
   if (!grid) {
     split <- NULL
-    ncol <- 1
   }
 
   families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
@@ -325,7 +324,7 @@ DimPlot_vh <- function(object, chain = c("H", "L","A","B"), region = c("V", "D",
 #'
 #' @export
 
-CDR3freq <- function(object, chain = c("L","H","A","B",NULL), group.by = NULL) {
+CDR3freq <- function(object, chain = availableChains(object), group.by = NULL) {
 
   if (!is.null(chain)) {
     chain <- match.arg(chain) %>% tolower()
@@ -338,12 +337,7 @@ CDR3freq <- function(object, chain = c("L","H","A","B",NULL), group.by = NULL) {
   chains <- chain
 
   if (is.null(chains)) {
-        if("h.v_gene" %in% colnames(object@meta.data)) {
-            chains <- c("h", "l")
-        }
-        if("a.v_gene" %in% colnames(object@meta.data)) {
-            chains <- c("a", "b")
-        }
+    chains <- availableChains(object) %>% tolower()
   }
 
   plots <- list()

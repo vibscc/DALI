@@ -10,7 +10,7 @@ barplot_vh(
   ident.2 = NULL,
   group.by = NULL,
   region = c("V", "C"),
-  chain = c("H", "L", "A", "B"),
+  chain = availableChains(object),
   by.family = T,
   legend = T,
   grid = F
@@ -27,13 +27,13 @@ barplot_vh(
 
 \item{region}{Region to plot. Available options: 'V'(ariable) or 'C'(onstant)}
 
-\item{chain}{Chain to plot. Options: 'H'(eavy) or 'L'(ight) or 'A'(lpha) or 'B'(eta)}
+\item{chain}{Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR}
 
 \item{by.family}{Group genes of 1 family together. Default = TRUE}
 
 \item{legend}{Should the legend be included in the plot. Default = TRUE}
 
-\item{grid}{Organise plots in grot. Each plot contains information about 1 group. Default = FALSE}
+\item{grid}{Organize plots in grid. Each plot contains information about 1 group. Default = FALSE}
 }
 \description{
 Barplot for IGHV-family per group

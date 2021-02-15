@@ -4,7 +4,7 @@
 \alias{CDR3freq}
 \title{Dimplot for IGXV-family}
 \usage{
-CDR3freq(object, chain = c("L", "H", "A", "B", NULL), group.by = NULL)
+CDR3freq(object, chain = availableChains(object), group.by = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
