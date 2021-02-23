@@ -4,16 +4,28 @@
 \alias{AddVDJDataForType}
 \title{Add VDJ metadata to misc slot in object}
 \usage{
-AddVDJDataForType(type, object, heavy, light, force = F)
+AddVDJDataForType(
+  type,
+  object,
+  heavy.primary,
+  heavy.secondary,
+  light.primary,
+  light.secondary,
+  force = F
+)
 }
 \arguments{
 \item{type}{VDJ assay type}
 
 \item{object}{Seurat object}
 
-\item{heavy}{Data frame with the metadata columns for the heavy chains}
+\item{heavy.primary}{Data frame with the metadata columns for the primary heavy chains}
 
-\item{light}{Data frame with the metadata columns for the light chains}
+\item{heavy.secondary}{Data frame with the metadata columns for the secondary heavy chains}
+
+\item{light.primary}{Data frame with metadata columns for the primary light chains}
+
+\item{light.secondary}{Data frame with the metadata columns for the secondary light chains}
 
 \item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
 }

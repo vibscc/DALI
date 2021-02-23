@@ -4,7 +4,13 @@
 \alias{Read10X_vdj}
 \title{Load 10x VDJ data in a seurat object}
 \usage{
-Read10X_vdj(object, data.dir, type = NULL, force = F)
+Read10X_vdj(
+  object,
+  data.dir,
+  type = NULL,
+  force = F,
+  sort.by = c("umis", "reads")
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -14,6 +20,8 @@ Read10X_vdj(object, data.dir, type = NULL, force = F)
 \item{type}{VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.}
 
 \item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
+
+\item{sort.by}{Column to sort the data to determine if chain is primary or secondary. Options = umis, reads}
 }
 \description{
 Load 10x VDJ data in a seurat object

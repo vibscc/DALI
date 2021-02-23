@@ -4,18 +4,21 @@
 #' @param data.dir Cellranger output directory
 #' @param type VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #'
-#' @importFrom dplyr %>% all_of mutate rename_all select filter
+#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate rename_all select
 #' @importFrom tibble column_to_rownames
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir, type = NULL, force = F) {
+Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('umis', 'reads')) {
 
     location.annotation.contig <- file.path(data.dir, "filtered_contig_annotations.csv")
     location.metrics <- file.path(data.dir, "metrics_summary.csv")
+
+    sort.by <- match.arg(sort.by)
 
     if (!file.exists(location.annotation.contig)) {
         stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
@@ -35,28 +38,54 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F) {
         }
     }
 
-    columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt")
+    columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "dual_IR", "raw_clonotype_id")
 
     heavy.name <- if (type == "TCR") "a" else "h"
     light.name <- if (type == "TCR") "b" else "l"
 
     heavy <- annotation.contig %>%
         filter(grepl("^IGH|^TRA", .data$c_gene)) %>%
-        filter(!duplicated(.data$barcode)) %>%
+        add_count(.data$barcode) %>%
+        mutate(dual_IR = .data$n == 2) %>%
+        mutate(multichain = .data$n > 2) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene, type)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene, type))
+
+    heavy.primary <- heavy %>%
+        arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
+        filter(!duplicated(.data$barcode)) %>%
+        column_to_rownames("barcode") %>%
+        rename_all(~ paste0(heavy.name, ".", .))
+
+    heavy.secondary <- heavy %>%
+        filter(.data$dual_IR) %>%
+        arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
+        filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(heavy.name, ".", .))
 
     light <- annotation.contig %>%
         filter(grepl("^IG[KL]|^TRB", .data$c_gene)) %>%
-        filter(!duplicated(.data$barcode)) %>%
+        add_count(.data$barcode) %>%
+        mutate(dual_IR = .data$n == 2) %>%
+        mutate(multichain = .data$n > 2) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene, type)) %>%
+        mutate(v_fam = get_v_families(.data$v_gene, type))
+
+    light.primary <- light %>%
+        arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
+        filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(light.name, ".", .))
 
-    object <- AddVDJDataForType(type, object, heavy, light, force)
+    light.secondary <- light %>%
+        filter(.data$dual_IR) %>%
+        arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
+        filter(!duplicated(.data$barcode)) %>%
+        column_to_rownames("barcode") %>%
+        rename_all(~ paste0(light.name, ".", .))
+
+    object <- AddVDJDataForType(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force)
     DefaultAssayVDJ(object) <- type
 
     return(object)
@@ -85,10 +114,45 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
         stop("Cannot find assay ", value)
     }
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][['heavy']])
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][['light']])
+    chain <- DefaultChainVDJ(object)
+
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('heavy.', chain)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('light.', chain)]])
 
     slot(object, 'misc')[['default.assay.VDJ']] <- value
+
+    return(object)
+}
+
+#' @method DefaultChainVDJ Seurat
+#'
+#' @importFrom methods slot
+#'
+#' @export
+
+DefaultChainVDJ.Seurat <- function(object, ...) {
+
+    return(slot(object, 'misc')[['default.chain.VDJ']])
+}
+
+#' @method DefaultChainVDJ<- Seurat
+#'
+#' @importFrom methods slot slot<-
+#'
+#' @export
+
+"DefaultChainVDJ<-.Seurat" <- function(object, ..., value) {
+
+    if (!value %in% c('primary', 'secondary')) {
+        stop("Chain must either be primary or secondary")
+    }
+
+    assay <- DefaultAssayVDJ(object)
+
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('heavy.', value)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('light.', value)]])
+
+    slot(object, 'misc')[['default.chain.VDJ']] <- value
 
     return(object)
 }
@@ -148,13 +212,15 @@ get_v_families <- function(v_genes, type) {
 #'
 #' @param type VDJ assay type
 #' @param object Seurat object
-#' @param heavy Data frame with the metadata columns for the heavy chains
-#' @param light Data frame with the metadata columns for the light chains
+#' @param heavy.primary Data frame with the metadata columns for the primary heavy chains
+#' @param heavy.secondary Data frame with the metadata columns for the secondary heavy chains
+#' @param light.primary Data frame with metadata columns for the primary light chains
+#' @param light.secondary Data frame with the metadata columns for the secondary light chains
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 
-AddVDJDataForType <- function(type, object, heavy, light, force = F) {
+AddVDJDataForType <- function(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force = F) {
     if (!force) {
-        overlap <- min(length(intersect(colnames(object), rownames(heavy))) / nrow(heavy), length(intersect(colnames(object), rownames(light))) / nrow(light))
+        overlap <- min(length(intersect(colnames(object), rownames(heavy.primary))) / nrow(heavy.primary), length(intersect(colnames(object), rownames(light.primary))) / nrow(light.primary))
 
         if (overlap < 0.50) {
             stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n",
@@ -166,7 +232,14 @@ AddVDJDataForType <- function(type, object, heavy, light, force = F) {
         slot(object, 'misc')[['VDJ']] <- list()
     }
 
-    slot(object, 'misc')[['VDJ']][[type]] <- list(heavy = heavy, light = light)
+    slot(object, 'misc')[['default.chain.VDJ']] <- 'primary'
+
+    slot(object, 'misc')[['VDJ']][[type]] <- list(
+        heavy.primary = heavy.primary,
+        heavy.secondary = heavy.secondary,
+        light.primary = light.primary,
+        light.secondary = light.secondary
+    )
 
     return(object)
 }
