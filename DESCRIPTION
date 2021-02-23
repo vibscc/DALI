@@ -16,6 +16,7 @@ Imports:
     circlize,
     dplyr,
     ggplot2,
+    ggridges,
     gridExtra,
     gtools,
     methods,

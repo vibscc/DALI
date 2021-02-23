@@ -2,9 +2,14 @@
 % Please edit documentation in R/plotting.R
 \name{cdr3length}
 \alias{cdr3length}
-\title{Lineplot with the CDR3 lenght per group}
+\title{Plot length of CDR3 aa sequences}
 \usage{
-cdr3length(object, group.by = NULL, subset = NULL)
+cdr3length(
+  object,
+  group.by = NULL,
+  subset = NULL,
+  plot.type = c("ridge", "line")
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,7 +17,9 @@ cdr3length(object, group.by = NULL, subset = NULL)
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 
 \item{subset}{Subset data to these groups}
+
+\item{plot.type}{Type of plot. Options = ridge, line}
 }
 \description{
-Lineplot with the CDR3 lenght per group
+Plot length of CDR3 aa sequences
 }
