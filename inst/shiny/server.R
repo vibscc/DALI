@@ -153,7 +153,7 @@ function(input, output, session) {
     output$cdr3.length <- renderPlot({
         req(input$group.highlight)
 
-        SpectratypePlot(vals$data, subset = input$group.highlight)
+        SpectratypePlot(vals$data, subset = input$group.highlight, plot.type = "line")
     })
 
     # ======================================================================= #
