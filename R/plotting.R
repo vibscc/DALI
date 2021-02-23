@@ -202,6 +202,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
 #' @param plot.type Type of plot. Options = ridge, line
+#' @param sequence Which CDR3 sequence should be used? Options: aa or nt
 #'
 #' @importFrom dplyr %>% mutate select full_join count
 #' @importFrom ggplot2 ggplot aes coord_cartesian geom_line labs theme element_rect element_line element_blank unit element_text scale_y_discrete scale_x_continuous
@@ -211,9 +212,10 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @export
 
-cdr3length <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line")) {
+SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence = c("aa", "nt")) {
 
     plot.type <- match.arg(plot.type)
+    sequence <- match.arg(sequence)
 
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
@@ -229,8 +231,9 @@ cdr3length <- function(object, group.by = NULL, subset = NULL, plot.type = c("ri
     }
 
     type <- DefaultAssayVDJ(object)
-    heavy.cdr3.column <- paste0(if (type == "TCR") "a" else "h", ".cdr3")
-    light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", ".cdr3")
+    cdr3.sequence <- if (sequence == "aa") ".cdr3" else ".cdr3_nt"
+    heavy.cdr3.column <- paste0(if (type == "TCR") "a" else "h", cdr3.sequence)
+    light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", cdr3.sequence)
 
     plots <- list()
 

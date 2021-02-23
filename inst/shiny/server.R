@@ -143,7 +143,7 @@ function(input, output, session) {
     output$barplot <- renderPlot({
         req(input$group.highlight)
 
-        barplot_vh(vals$data, ident.1 = input$group.highlight, chain=input$scatterplot.chain)
+        barplot_vh(vals$data, ident.1 = input$group.highlight, chain = input$scatterplot.chain)
     })
 
     # ======================================================================= #
@@ -153,7 +153,7 @@ function(input, output, session) {
     output$cdr3.length <- renderPlot({
         req(input$group.highlight)
 
-        cdr3length(vals$data, subset = input$group.highlight)
+        SpectratypePlot(vals$data, subset = input$group.highlight)
     })
 
     # ======================================================================= #
