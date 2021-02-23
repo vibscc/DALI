@@ -303,17 +303,21 @@ cdr3length <- function(object, group.by = NULL, subset = NULL, plot.type = c("ri
 #' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
 #' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
+#' @param highlight Family or gene to highlight. Default = NULL
 #' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
-#' @importFrom Seurat DimPlot
 #'
 #' @export
 
-DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = availableChains(object), by.family = T, grid = T, ...) {
+DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = availableChains(object), by.family = T, grid = T, highlight = NULL, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
+
+  if (length(highlight) > 1) {
+    stop("Can only select 1 family/gene to highlight", call. = F)
+  }
 
   data.column <- paste0(chain, '.', region, '_')
 
@@ -323,15 +327,24 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
     data.column <- paste0(data.column, 'gene')
   }
 
-  split <- data.column
+  families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
 
-  if (!grid) {
+  if (!is.null(highlight) && !highlight %in% families) {
+    stop("Invalid highlight for selected region/chain combination", call. = F)
+  }
+
+  split <- data.column
+  if (!grid || !is.null(highlight)) {
     split <- NULL
   }
 
-  families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
-  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
-  Seurat::DimPlot(object, group.by = data.column, split.by = split, order = rev(families), ...)
+  cells.highlight = NULL
+  if (!is.null(highlight)) {
+    cells.highlight = rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
+  }
+
+  Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), ...)
 }
 
 

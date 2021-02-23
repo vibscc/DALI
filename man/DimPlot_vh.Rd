@@ -10,6 +10,7 @@ DimPlot_vh(
   chain = availableChains(object),
   by.family = T,
   grid = T,
+  highlight = NULL,
   ...
 )
 }
@@ -23,6 +24,8 @@ DimPlot_vh(
 \item{by.family}{Group genes of 1 family together. Only effective with the V-gene. Default = TRUE}
 
 \item{grid}{If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE}
+
+\item{highlight}{Family or gene to highlight. Default = NULL}
 
 \item{...}{Extra parameters passed to Seurat::Dimplot}
 }
