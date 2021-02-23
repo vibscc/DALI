@@ -439,3 +439,27 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
     geom_point(data = subset(plot.data, clonotype_count > 0), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count)) +
     scale_color_gradient(low = min.color, high = max.color)
 }
+
+#' Featureplot of clonotypes
+#'
+#' @param object Seurat object
+#' @param clonotypes Clonotypes to plot
+#' @param ... Extra parameters to pass to Seurat::Dimplot
+#'
+#' @importFrom dplyr %>% mutate
+#'
+#' @export
+
+FeaturePlot_vdj <- function(object, clonotypes, ...) {
+
+  invalid.clonotypes <- setdiff(clonotypes, unique(object@meta.data$clonotype))
+  if (length(invalid.clonotypes) > 0) {
+    stop("Invalid clonotypes: ", paste(invalid.clonotypes, collapse = ", "), call. = F)
+  }
+
+  object@meta.data <- object@meta.data %>%
+    mutate(to.plot = ifelse(.data$clonotype %in% clonotypes, .data$clonotype, NA))
+
+  Seurat::DimPlot(object, group.by = 'to.plot', reduction = reduction, ...)
+}
+
