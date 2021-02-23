@@ -365,4 +365,55 @@ CDR3freq <- function(object, chain = availableChains(object), group.by = NULL) {
   gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
 }
 
+#' Plot of clonotype expansion
+#'
+#' @param object Seurat object
+#' @param reduction Which dimensionality reduction to use
+#' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
+#' @param min.color Color for cells without clonotype. Default = grey
+#' @param max.color Color for cells with the highest number of clonotypes. Default = red
+#'
+#' @importFrom dplyr %>% add_count all_of select
+#' @importFrom tibble column_to_rownames rownames_to_column
+#' @importFrom ggplot2 aes geom_point scale_color_gradient
+#'
+#' @export
 
+plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', min.color = NULL, max.color = NULL) {
+
+  if (!clonotype.column %in% colnames(object@meta.data)) {
+    stop("Invalid clonotype column ", clonotype.column, call. = F)
+  }
+
+  if (is.null(min.color)) {
+    min.color <- 'grey'
+  }
+
+  if (is.null(max.color)) {
+    max.color <- 'red'
+  }
+
+  if (!reduction %in% names(object@reductions)) {
+    stop("Invalid reduction ", reduction, call. = F)
+  }
+
+  coordinates <- object@reductions[[reduction]]@cell.embeddings[,c(1,2)] %>% as.data.frame()
+  x.name <- colnames(coordinates)[[1]]
+  y.name <- colnames(coordinates)[[2]]
+
+  data <- object@meta.data %>%
+    rownames_to_column("barcode") %>%
+    select(all_of(c("barcode", clonotype.column))) %>%
+    na.omit() %>%
+    add_count(.data$clonotype) %>%
+    column_to_rownames("barcode")
+
+  plot.data <- coordinates
+  plot.data$clonotype_count <- 0
+  plot.data[rownames(data), 'clonotype_count'] <- data$n %>% as.numeric()
+
+  ggplot() +
+    geom_point(data = subset(plot.data, clonotype_count == 0), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count)) +
+    geom_point(data = subset(plot.data, clonotype_count > 0), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count)) +
+    scale_color_gradient(low = min.color, high = max.color)
+}

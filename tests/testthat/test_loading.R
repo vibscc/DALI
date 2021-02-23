@@ -6,8 +6,8 @@ test_that("can load data", {
 
     metadata.columns <- colnames(seuratObj@meta.data)[7:ncol(seuratObj@meta.data)]
 
-    expect_vector(metadata.columns, ptype = character(), size = 22)
-    expect_setequal(metadata.columns, c("h.v_gene", "h.d_gene", "h.j_gene", "h.c_gene", "h.cdr3", "h.cdr3_nt", "h.v_fam", "h.reads", "h.umis", "h.dual_IR", "h.raw_clonotype_id", "l.v_gene", "l.d_gene", "l.j_gene", "l.c_gene", "l.cdr3", "l.cdr3_nt", "l.v_fam", "l.reads", "l.umis", "l.dual_IR", "l.raw_clonotype_id"))
+    expect_vector(metadata.columns, ptype = character(), size = 21)
+    expect_setequal(metadata.columns, c("h.v_gene", "h.d_gene", "h.j_gene", "h.c_gene", "h.cdr3", "h.cdr3_nt", "h.v_fam", "h.reads", "h.umis", "h.dual_IR", "l.v_gene", "l.d_gene", "l.j_gene", "l.c_gene", "l.cdr3", "l.cdr3_nt", "l.v_fam", "l.reads", "l.umis", "l.dual_IR", "clonotype"))
 
     # Fail on invalid cellranger directory
     expect_error(Read10X_vdj(seuratObj, "../testdata"))

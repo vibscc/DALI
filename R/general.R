@@ -64,6 +64,9 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(heavy.name, ".", .))
 
+    colnames(heavy.primary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(heavy.primary))
+    colnames(heavy.secondary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(heavy.secondary))
+
     light <- annotation.contig %>%
         filter(grepl("^IG[KL]|^TRB", .data$c_gene)) %>%
         add_count(.data$barcode) %>%
@@ -84,6 +87,9 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(light.name, ".", .))
+
+    colnames(light.primary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(light.primary))
+    colnames(light.secondary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(light.secondary))
 
     object <- AddVDJDataForType(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force)
     DefaultAssayVDJ(object) <- type
