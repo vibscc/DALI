@@ -5,6 +5,7 @@
 #' @param type VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
+#' @param use.filtered Load filtered contig annotation. Default = TRUE
 #'
 #' @importFrom dplyr %>% add_count all_of arrange desc filter mutate rename_all select
 #' @importFrom tibble column_to_rownames
@@ -13,9 +14,9 @@
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('umis', 'reads')) {
+Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('umis', 'reads'), use.filtered = T) {
 
-    location.annotation.contig <- file.path(data.dir, "filtered_contig_annotations.csv")
+    location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
     location.metrics <- file.path(data.dir, "metrics_summary.csv")
 
     sort.by <- match.arg(sort.by)

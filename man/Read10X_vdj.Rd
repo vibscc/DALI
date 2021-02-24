@@ -9,7 +9,8 @@ Read10X_vdj(
   data.dir,
   type = NULL,
   force = F,
-  sort.by = c("umis", "reads")
+  sort.by = c("umis", "reads"),
+  use.filtered = T
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ Read10X_vdj(
 \item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
 
 \item{sort.by}{Column to sort the data to determine if chain is primary or secondary. Options = umis, reads}
+
+\item{use.filtered}{Load filtered contig annotation. Default = TRUE}
 }
 \description{
 Load 10x VDJ data in a seurat object
