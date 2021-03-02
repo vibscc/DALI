@@ -148,6 +148,58 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
     return(plot)
 }
 
+#' Barplot with clonotype distribution
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param subset Subset data to these groups
+#' @param clonotypes Clonotypes to plot. Default = top 10
+#' @param position Position of the bars in the plots. Options = stack or dodge
+#'
+#' @importFrom dplyr %>% filter group_by n select summarise
+#' @importFrom ggplot2 aes element_text geom_bar ggplot theme
+#' @importFrom rlang .data
+#' @importFrom stats na.omit
+#'
+#' @export
+
+barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge")) {
+
+  if (is.null(group.by)) {
+    group.by <- "seurat_clusters"
+  }
+
+  if (!group.by %in% colnames(object@meta.data)) {
+    stop("Invalid group.by column ", group.by)
+  }
+
+  if (!is.null(subset)) {
+    cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+    object <- subset(object, cells = cells)
+  }
+
+  if (is.null(clonotypes)) {
+    clonotypes <- paste0("clonotype", c(1:10))
+  }
+
+  position <- match.arg(position)
+
+  plot.data <- object@meta.data %>%
+    select(.data[[group.by]], .data$clonotype) %>%
+    filter(.data$clonotype %in% clonotypes) %>%
+    na.omit() %>%
+    group_by(.data[[group.by]], .data$clonotype) %>%
+    summarise(n = n())
+
+  plot.data$clonotype <- factor(plot.data$clonotype, levels = clonotypes)
+
+  ggplot(plot.data, aes(x = .data$clonotype, y = .data$n, fill = .data[[group.by]])) +
+    geom_bar(position = position, stat = "identity") +
+    theme(
+      axis.text.x = element_text(angle = 90)
+    )
+}
+
 #' Circosplot for family to gene distribution
 #'
 #' @param object Seurat object
@@ -474,8 +526,8 @@ FeaturePlot_vdj <- function(object, clonotypes, ...) {
   }
 
   object@meta.data <- object@meta.data %>%
-    mutate(to.plot = ifelse(.data$clonotype %in% clonotypes, .data$clonotype, NA))
+    mutate(clonotypes = ifelse(.data$clonotype %in% clonotypes, .data$clonotype, NA))
 
-  Seurat::DimPlot(object, group.by = 'to.plot', reduction = reduction, ...)
+  Seurat::DimPlot(object, group.by = 'clonotypes', ...)
 }
 
