@@ -13,7 +13,8 @@ barplot_vh(
   chain = availableChains(object),
   by.family = T,
   legend = T,
-  grid = F
+  grid = F,
+  add.missing = T
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ barplot_vh(
 \item{legend}{Should the legend be included in the plot. Default = TRUE}
 
 \item{grid}{Organize plots in grid. Each plot contains information about 1 group. Default = FALSE}
+
+\item{add.missing}{Should missing families be added to the plot. Default = TRUE}
 }
 \description{
 Barplot for IGHV-family per group

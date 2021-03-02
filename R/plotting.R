@@ -9,6 +9,7 @@
 #' @param by.family Group genes of 1 family together. Default = TRUE
 #' @param legend Should the legend be included in the plot. Default = TRUE
 #' @param grid Organize plots in grid. Each plot contains information about 1 group. Default = FALSE
+#' @param add.missing Should missing families be added to the plot. Default = TRUE
 #'
 #' @importFrom dplyr arrange case_when count rename  %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
@@ -21,7 +22,7 @@
 #'
 #' @export
 
-barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F) {
+barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F, add.missing = T) {
     region <- match.arg(region) %>% tolower()
     chain <- match.arg(chain) %>% tolower()
 
@@ -44,33 +45,30 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
     families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
 
     # Add missing families
-    if (by.family) {
+    if (by.family && add.missing) {
         families.completed <- c()
-        prefixes <- gsub("/","",gsub("[0-9-]", "", families) %>% unique())
+        prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families) %>% unique())
 
         for (prefix in prefixes) {
-            families.with.prefix <- families[grepl(prefix, families)]
+          families.with.prefix <- families[grepl(prefix, families)]
 
-            if(data.column=="b.v_fam" | data.column=="l.v_fam" | data.column=="h.v_fam"){
-                family.numbers <- c()
-                for (family in families.with.prefix) {
-                    family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
-                }
+          # Ignore all families that contain a / in the name
+          # These families will just be appended to the final families without attempting to complete the missing families
+          families.ignored <- families.with.prefix[grepl("/", families.with.prefix)]
 
-                families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
-            }
-            if(data.column=="a.v_fam"){
-                family.numbers <- c()
-                for (family in families.with.prefix) {
-                    family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family))
-                }
+          # Only keep families without / in the name
+          families.with.prefix <- setdiff(families.with.prefix, families.ignored)
 
-                # family.numbers<-strsplit(family.numbers, "/")[[1]]
+          family.numbers <- c()
+          for (family in families.with.prefix) {
+              family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
+          }
 
-                families.completed <- c(families.completed, paste0(prefix, '-', family.numbers))
-            }
+          if (length(family.numbers) > 0) {
+            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
+          }
 
-
+          families.completed <- c(families.completed, families.ignored)
         }
         families <- families.completed
     }
@@ -184,6 +182,16 @@ barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotype
   }
 
   position <- match.arg(position)
+
+  clonotypes.missing <- setdiff(clonotypes, unique(object@meta.data$clonotype))
+
+  if (length(clonotypes.missing) == length(clonotypes)) {
+    stop("Could not find any of the provided clonotypes")
+  }
+
+  if (length(clonotypes.missing) > 0) {
+    message(paste0("Could not find following clonotypes: ", paste(clonotypes.missing, collapse = ", ")))
+  }
 
   plot.data <- object@meta.data %>%
     select(.data[[group.by]], .data$clonotype) %>%
