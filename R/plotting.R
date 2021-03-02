@@ -179,7 +179,8 @@ barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotype
   }
 
   if (is.null(clonotypes)) {
-    clonotypes <- paste0("clonotype", c(1:10))
+    clonotypes.ordered <- table(object@meta.data$clonotype) %>% sort(decreasing = T) %>% names()
+    clonotypes <- clonotypes.ordered[1:10]
   }
 
   position <- match.arg(position)
@@ -528,6 +529,6 @@ FeaturePlot_vdj <- function(object, clonotypes, ...) {
   object@meta.data <- object@meta.data %>%
     mutate(clonotypes = ifelse(.data$clonotype %in% clonotypes, .data$clonotype, NA))
 
-  Seurat::DimPlot(object, group.by = 'clonotypes', ...)
+  Seurat::DimPlot(object, group.by = 'clonotypes', na.value = "blue", ...)
 }
 
