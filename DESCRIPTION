@@ -15,6 +15,7 @@ Requires:
 Imports:
     circlize,
     dplyr,
+    ggraph,
     ggplot2,
     ggridges,
     gridExtra,
@@ -25,7 +26,8 @@ Imports:
     Seurat,
     stringr,
     tibble,
-    tidyr
+    tidyr,
+    tidygraph
 Suggests:
     shiny,
     plotly,

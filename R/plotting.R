@@ -540,3 +540,102 @@ FeaturePlot_vdj <- function(object, clonotypes, ...) {
   Seurat::DimPlot(object, group.by = 'clonotypes', na.value = "blue", ...)
 }
 
+#' Display connections between clusters
+#'
+#' @param object Seurat object
+#' @param reduction Dimensionality reduction
+#' @param group.by  Metadata column to group the family data by. Default = seurat_clusters
+#' @param groups.highlight Groups for which to highlight the edges in the graph
+#' @param clonotype.column Metadata column with clonotype information. Default = clonotype
+#'
+#' @importFrom dplyr %>%
+#' @importFrom ggplot2 aes element_blank geom_point theme
+#' @importFrom ggraph geom_edge_link geom_node_point ggraph scale_edge_alpha_manual scale_edge_colour_manual scale_edge_width
+#' @importFrom tidygraph as_tbl_graph
+#'
+#' @export
+
+VDJGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL) {
+
+  if (is.null(group.by)) {
+    group.by <- "seurat_clusters"
+  }
+
+  if (!group.by %in% colnames(object@meta.data)) {
+    stop("Invalid group.by column ", group.by)
+  }
+
+  if (is.null(clonotype.column)) {
+    clonotype.column <- "clonotype"
+  }
+
+  if (!clonotype.column %in% colnames(object@meta.data)) {
+    stop("Invalid clonotype.column ", group.by)
+  }
+
+  data <- object@meta.data[, c(clonotype.column, group.by)] %>% na.omit()
+  data.table <- table(data)
+  groups <- colnames(data.table)
+
+  edges <- data.frame(matrix(ncol = 2, nrow = 0))
+  colnames(edges) <- c("from", "to")
+
+  for (col in c(1:ncol(data.table))) {
+    for (row in rownames(data.table)) {
+      start = col + 1
+      if (start <= ncol(data.table) && row != "" && data.table[row, col] > 0) {
+        for (pointer in c(start:ncol(data.table))) {
+          if (col != pointer && data.table[row, pointer] > 0) {
+            edges[nrow(edges) + 1, ] <- c(groups[col], groups[pointer])
+          }
+        }
+      }
+    }
+  }
+
+  edges <- edges %>% group_by(.data$from, .data$to) %>% count()
+
+  if (!is.null(groups.highlight)) {
+    edges$highlight <- F
+    edges[edges$from %in% groups.highlight, 'highlight'] <- T
+    edges[edges$to %in% groups.highlight, 'highlight'] <- T
+  }
+
+  getCenters <- function(groups, column) {
+    centers <- c()
+    for (group in groups) {
+      cells <- rownames(data)[data[[group.by]] == group]
+      test <- mean(object@reductions[[reduction]]@cell.embeddings[cells, column])
+
+      centers <- c(centers, test)
+    }
+
+    return(centers)
+  }
+
+  graph <- as_tbl_graph(edges, directed = F) %>%
+    mutate(x = getCenters(.data$name, 1), y = getCenters(.data$name, 2))
+
+  dimred <- object@reductions[[reduction]]@cell.embeddings %>% as.data.frame()
+  dimred$group <- object@meta.data[[group.by]]
+
+  plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
+    geom_point(data = dimred, aes(x = .data$UMAP_1, y = .data$UMAP_2, color = .data$group)) +
+    scale_edge_width(range = c(0.5, 4)) +
+    theme(
+      panel.background = element_blank()
+    )
+
+  if (!is.null(groups.highlight)) {
+    plot <- plot +
+      geom_edge_link(aes(width = .data$n, color = .data$highlight, alpha = .data$highlight)) +
+      scale_edge_colour_manual(values = c("grey", "red")) +
+      scale_edge_alpha_manual(values = c(0.3, 1))
+  } else {
+    plot <- plot +
+      geom_edge_link(aes(width = .data$n))
+  }
+
+  plot + geom_node_point()
+}
+
