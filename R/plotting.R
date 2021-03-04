@@ -114,6 +114,10 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
         spread(.data[[group.by]], .data$freq) %>%
         replace(is.na(.), 0)
 
+    if (nrow(data) == 0) {
+      stop("Provided identities don't have any VDJ data. Can't plot without data!")
+    }
+
     missing.families <- setdiff(families, data[[data.column]])
 
     if (length(missing.families) > 0) {
