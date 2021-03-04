@@ -42,12 +42,24 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
         stop("Invalid group.by column ", group.by)
     }
 
+    if (!is.null(ident.1) && !ident.1 %in% object@meta.data[[group.by]]) {
+      stop("Invalid ident.1")
+    }
+
+    if (!is.null(ident.2) && !ident.2 %in% object@meta.data[[group.by]]) {
+      stop("Invalid ident.2")
+    }
+
+    if (is.null(ident.1) && !is.null(ident.2)) {
+      stop("Can't specify ident.2 without ident.1")
+    }
+
     families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
 
     # Add missing families
     if (by.family && add.missing) {
         families.completed <- c()
-        prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families) %>% unique())
+        prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families)) %>% unique()
 
         for (prefix in prefixes) {
           families.with.prefix <- families[grepl(prefix, families)]
