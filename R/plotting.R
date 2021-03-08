@@ -9,8 +9,9 @@
 #' @param by.family Group genes of 1 family together. Default = TRUE
 #' @param legend Should the legend be included in the plot. Default = TRUE
 #' @param grid Organize plots in grid. Each plot contains information about 1 group. Default = FALSE
-#' @param add.missing Should missing families be added to the plot. Default = TRUE
+#' @param add.missing.families Should missing families be added to the plot. Default = TRUE
 #' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
+#' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
 #'
 #' @importFrom dplyr arrange case_when count rename  %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
@@ -23,146 +24,162 @@
 #'
 #' @export
 
-barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F, add.missing = T, percent.total = T) {
-    region <- match.arg(region) %>% tolower()
-    chain <- match.arg(chain) %>% tolower()
+barplot_vh <- function(
+  object,
+  ident.1 = NULL,
+  ident.2 = NULL,
+  group.by = NULL,
+  region = c("V", "C"),
+  chain = availableChains(object),
+  by.family = T,
+  legend = T,
+  grid = F,
+  add.missing.families = T,
+  percent.total = T,
+  show.missing.values = F
+) {
+  region <- match.arg(region) %>% tolower()
+  chain <- match.arg(chain) %>% tolower()
 
-    data.column <- paste0(chain, '.', region, '_')
+  data.column <- paste0(chain, '.', region, '_')
 
-    if (by.family && region == 'v') {
-        data.column <- paste0(data.column, 'fam')
-    } else {
-        data.column <- paste0(data.column, 'gene')
-    }
+  if (by.family && region == 'v') {
+      data.column <- paste0(data.column, 'fam')
+  } else {
+      data.column <- paste0(data.column, 'gene')
+  }
 
-    if (is.null(group.by)) {
-        group.by <- 'seurat_clusters'
-    }
+  if (is.null(group.by)) {
+      group.by <- 'seurat_clusters'
+  }
 
-    if (!group.by %in% colnames(object@meta.data)) {
-        stop("Invalid group.by column ", group.by)
-    }
+  if (!group.by %in% colnames(object@meta.data)) {
+      stop("Invalid group.by column ", group.by)
+  }
 
-    if (!is.null(ident.1) && !ident.1 %in% object@meta.data[[group.by]]) {
-      stop("Invalid ident.1")
-    }
+  if (!is.null(ident.1) && !ident.1 %in% object@meta.data[[group.by]]) {
+    stop("Invalid ident.1")
+  }
 
-    if (!is.null(ident.2) && !ident.2 %in% object@meta.data[[group.by]]) {
-      stop("Invalid ident.2")
-    }
+  if (!is.null(ident.2) && !ident.2 %in% object@meta.data[[group.by]]) {
+    stop("Invalid ident.2")
+  }
 
-    if (is.null(ident.1) && !is.null(ident.2)) {
-      stop("Can't specify ident.2 without ident.1")
-    }
+  if (is.null(ident.1) && !is.null(ident.2)) {
+    stop("Can't specify ident.2 without ident.1")
+  }
 
-    families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
+  families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
 
-    # Add missing families
-    if (by.family && add.missing) {
-        families.completed <- c()
-        prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families)) %>% unique()
+  # Add missing families
+  if (by.family && add.missing.families) {
+      families.completed <- c()
+      prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families)) %>% unique()
 
-        for (prefix in prefixes) {
-          families.with.prefix <- families[grepl(prefix, families)]
+      for (prefix in prefixes) {
+        families.with.prefix <- families[grepl(prefix, families)]
 
-          # Ignore all families that contain a / in the name
-          # These families will just be appended to the final families without attempting to complete the missing families
-          families.ignored <- families.with.prefix[grepl("/", families.with.prefix)]
+        # Ignore all families that contain a / in the name
+        # These families will just be appended to the final families without attempting to complete the missing families
+        families.ignored <- families.with.prefix[grepl("/", families.with.prefix)]
 
-          # Only keep families without / in the name
-          families.with.prefix <- setdiff(families.with.prefix, families.ignored)
+        # Only keep families without / in the name
+        families.with.prefix <- setdiff(families.with.prefix, families.ignored)
 
-          family.numbers <- c()
-          for (family in families.with.prefix) {
-              family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
-          }
-
-          if (length(family.numbers) > 0) {
-            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
-          }
-
-          families.completed <- c(families.completed, families.ignored)
+        family.numbers <- c()
+        for (family in families.with.prefix) {
+            family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
         }
-        families <- families.completed
-    }
 
-    families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
-
-    data.filtered <- object@meta.data
-
-    if (!is.null(ident.1) || !is.null(ident.2)) {
-        data.filtered <- data.filtered %>%
-            filter(.data[[group.by]] %in% c(ident.1, ident.2))
-    }
-
-    if (!is.null(ident.2)) {
-        data.filtered[[group.by]] <- data.filtered[[group.by]] %>% as.character()
-
-        for (ident in list(ident.1, ident.2)) {
-            for (group in ident) {
-                data.filtered[[group.by]] <- gsub(paste0("^", group, "$"), paste0(group.by, " (", paste(ident, collapse = ","),")"), data.filtered[[group.by]])
-            }
+        if (length(family.numbers) > 0) {
+          families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
         }
-    }
 
-    data <- data.filtered %>%
-        count(.data[[data.column]], .data[[group.by]]) %>%
-        filter(case_when(!percent.total ~ !is.na(.data[[data.column]]),
-                         T ~ T)) %>%
-        group_by(.data[[group.by]]) %>%
-        mutate(freq = prop.table(.data$n) * 100) %>%
-        mutate(freq = round(.data$freq, 2)) %>%
-        select(.data[[data.column]], .data[[group.by]], .data$freq) %>%
-        na.omit() %>%
-        spread(.data[[group.by]], .data$freq) %>%
-        replace(is.na(.), 0)
+        families.completed <- c(families.completed, families.ignored)
+      }
+      families <- families.completed
+  }
 
-    if (nrow(data) == 0) {
-      stop("Provided identities don't have any VDJ data. Can't plot without data!")
-    }
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
 
-    missing.families <- setdiff(families, data[[data.column]])
+  data.filtered <- object@meta.data
 
-    if (length(missing.families) > 0) {
-        missing.data <- matrix(0, nrow = length(missing.families), ncol = ncol(data) - 1, dimnames = list(NULL, colnames(data)[-1]))
-        missing.data <- cbind(missing.families, missing.data)
-        colnames(missing.data) <- c(data.column, colnames(data)[-1])
-        data <- rbind(data, missing.data)
-    }
+  if (!is.null(ident.1) || !is.null(ident.2)) {
+      data.filtered <- data.filtered %>%
+          filter(.data[[group.by]] %in% c(ident.1, ident.2))
+  }
 
-    plot.data <- data %>%
-        melt(data = ., id.vars = c(data.column), variable.name = "group", value.name = "freq") %>%
-        mutate(freq = as.numeric(.data$freq))
+  if (!is.null(ident.2)) {
+      data.filtered[[group.by]] <- data.filtered[[group.by]] %>% as.character()
 
-    plot.data[[data.column]] <- factor(plot.data[[data.column]], levels = families)
+      for (ident in list(ident.1, ident.2)) {
+          for (group in ident) {
+              data.filtered[[group.by]] <- gsub(paste0("^", group, "$"), paste0(group.by, " (", paste(ident, collapse = ","),")"), data.filtered[[group.by]])
+          }
+      }
+  }
 
-    plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
-        geom_bar(position = "dodge", stat = "identity") +
-        ylim(0, NA) +
-        labs(y = "Cell number", x = "Family", title = .data$group) +
-        # geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
-        theme(
-            panel.background = element_rect(fill = "white"), # bg of the panel
-            plot.background = element_rect(fill = "white"), # bg of the plot
-            panel.grid.major = element_blank(), # get rid of major grid
-            panel.grid.minor = element_blank(), # get rid of minor grid
-            legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-            legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
-            legend.key.size = unit(0.1, "cm"),
-            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-        )
+  data <- data.filtered %>%
+      count(.data[[data.column]], .data[[group.by]]) %>%
+      filter(case_when((!percent.total && !show.missing.values) ~ !is.na(.data[[data.column]]),
+                       T ~ T)) %>%
+      group_by(.data[[group.by]]) %>%
+      mutate(freq = prop.table(.data$n) * 100) %>%
+      mutate(freq = round(.data$freq, 2)) %>%
+      select(.data[[data.column]], .data[[group.by]], .data$freq) %>%
+      filter(case_when(!show.missing.values ~ !is.na(.data[[data.column]]),
+                        T ~ T)) %>%
+      spread(.data[[group.by]], .data$freq) %>%
+      mutate(family = replace(.data[[data.column]], is.na(.data[[data.column]]), "UNKNOWN")) %>%
+      select(-data.column) %>%
+      replace(is.na(.), 0)
 
-    if (grid) {
-        plot <- plot + facet_grid(~ .data$group)
-    }
+  if (nrow(data) == 0) {
+    stop("Provided identities don't have any VDJ data. Can't plot without data!")
+  }
 
-    if (!legend) {
-        plot <- plot + theme(
-            legend.position = "none"
-        )
-    }
+  missing.families <- setdiff(families, data$family)
 
-    return(plot)
+  if (length(missing.families) > 0) {
+      missing.data <- matrix(0, nrow = length(missing.families), ncol = ncol(data) - 1, dimnames = list(NULL, colnames(data)[-1]))
+      missing.data <- cbind(missing.families, missing.data)
+      colnames(missing.data) <- c("family", colnames(data)[-1])
+      data <- rbind(data, missing.data)
+  }
+
+  plot.data <- data %>%
+      melt(data = ., id.vars = "family", variable.name = "group", value.name = "freq") %>%
+      mutate(freq = as.numeric(.data$freq))
+
+  plot.data[[data.column]] <- factor(plot.data$family, levels = families)
+
+  plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
+      geom_bar(position = "dodge", stat = "identity") +
+      ylim(0, NA) +
+      labs(y = "Cell number", x = "Family", title = .data$group) +
+      # geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
+      theme(
+          panel.background = element_rect(fill = "white"), # bg of the panel
+          plot.background = element_rect(fill = "white"), # bg of the plot
+          panel.grid.major = element_blank(), # get rid of major grid
+          panel.grid.minor = element_blank(), # get rid of minor grid
+          legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+          legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+          legend.key.size = unit(0.1, "cm"),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+      )
+
+  if (grid) {
+      plot <- plot + facet_grid(~ .data$group)
+  }
+
+  if (!legend) {
+      plot <- plot + theme(
+          legend.position = "none"
+      )
+  }
+
+  return(plot)
 }
 
 #' Barplot with clonotype distribution
@@ -657,4 +674,3 @@ VDJGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL
 
   plot + geom_node_point()
 }
-
