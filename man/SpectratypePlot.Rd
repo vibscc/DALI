@@ -2,14 +2,14 @@
 % Please edit documentation in R/plotting.R
 \name{SpectratypePlot}
 \alias{SpectratypePlot}
-\title{Plot length of CDR3 aa sequences}
+\title{Plot length of CDR3 AA/NT sequences}
 \usage{
 SpectratypePlot(
   object,
   group.by = NULL,
   subset = NULL,
   plot.type = c("ridge", "line"),
-  sequence = c("aa", "nt")
+  sequence.type = c("AA", "NT")
 )
 }
 \arguments{
@@ -21,8 +21,8 @@ SpectratypePlot(
 
 \item{plot.type}{Type of plot. Options = ridge, line}
 
-\item{sequence}{Which CDR3 sequence should be used? Options: aa or nt}
+\item{sequence.type}{Which CDR3 sequence should be used? Options: "AA" or "NT"}
 }
 \description{
-Plot length of CDR3 aa sequences
+Plot length of CDR3 AA/NT sequences
 }

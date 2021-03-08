@@ -4,7 +4,13 @@
 \alias{SpectratypePlot.line}
 \title{Plot length of CDR3 aa sequences as a line plot}
 \usage{
-SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column)
+SpectratypePlot.line(
+  object,
+  group.by,
+  heavy.cdr3.column,
+  light.cdr3.column,
+  sequence.type
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -14,6 +20,8 @@ SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column)
 \item{heavy.cdr3.column}{Column name for heavy cdr3 data}
 
 \item{light.cdr3.column}{Column name for light cdr3 data}
+
+\item{sequence.type}{AA or NT}
 }
 \description{
 Plot length of CDR3 aa sequences as a line plot

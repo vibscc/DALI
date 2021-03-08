@@ -274,7 +274,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
         object <- subset(object, cells = cells)
     }
 
-    type = object@misc$default.assay.VDJ
+    type <- object@misc$default.assay.VDJ
 
     family.column <- paste0(if (type == "TCR") "a" else "h", ".v_fam")
     gene.column <- paste0(if (type == "TCR") "b" else "l", ".v_gene")
@@ -295,20 +295,20 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
     }, bg.border = NA)
 }
 
-#' Plot length of CDR3 aa sequences
+#' Plot length of CDR3 AA/NT sequences
 #'
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
 #' @param plot.type Type of plot. Options = ridge, line
-#' @param sequence Which CDR3 sequence should be used? Options: aa or nt
+#' @param sequence.type Which CDR3 sequence should be used? Options: "AA" or "NT"
 #'
 #' @export
 
-SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence = c("aa", "nt")) {
+SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT")) {
 
     plot.type <- match.arg(plot.type)
-    sequence <- match.arg(sequence)
+    sequence.type <- match.arg(sequence.type)
 
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
@@ -324,12 +324,12 @@ SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = 
     }
 
     type <- DefaultAssayVDJ(object)
-    cdr3.sequence <- if (sequence == "aa") ".cdr3" else ".cdr3_nt"
+    cdr3.sequence <- if (sequence.type == "AA") ".cdr3" else ".cdr3_nt"
     heavy.cdr3.column <- paste0(if (type == "TCR") "a" else "h", cdr3.sequence)
     light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", cdr3.sequence)
 
     if (plot.type == "line") {
-      plots <- SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column)
+      plots <- SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type)
     } else if (plot.type == "ridge") {
       plots <- SpectratypePlot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column)
     }
@@ -343,13 +343,14 @@ SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = 
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param heavy.cdr3.column Column name for heavy cdr3 data
 #' @param light.cdr3.column Column name for light cdr3 data
+#' @param sequence.type AA or NT
 #'
 #' @importFrom dplyr %>% mutate select full_join count
 #' @importFrom ggplot2 ggplot aes geom_line labs theme element_rect element_line element_blank unit element_text
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
 
-SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
+SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type) {
   plots <- list()
   groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
@@ -376,7 +377,7 @@ SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3
     plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
       geom_line(aes(y = .data$heavy.chain), color = "black") +
       geom_line(aes(y = .data$light.chain), color = "red") +
-      labs(x = "CDR3 length (AA)", y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
+      labs(x = paste0("CDR3 length (", sequence.type,")"), y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
       theme(
         panel.background = element_rect(fill = "white"), # bg of the panel
         plot.background = element_rect(fill = "white"), # bg of the plot
@@ -481,13 +482,15 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
 #' @param object Seurat object
 #' @param chain Chain to plot, available options: "L", "H", NULL (= both)
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param subset Subset data to these groups
+#' @param sequence.type What sequences to use, available options: "AA" or "NT"
 #'
 #' @importFrom ggplot2 aes_string element_blank element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
 #' @importFrom dplyr group_by n summarise ungroup %>%
 #'
 #' @export
 
-CDR3freq <- function(object, chain = availableChains(object), group.by = NULL) {
+CDR3freq <- function(object, chain = availableChains(object), group.by = NULL, subset = NULL, sequence.type = c("AA", "NT")) {
 
   if (!is.null(chain)) {
     chain <- match.arg(chain) %>% tolower()
@@ -497,6 +500,13 @@ CDR3freq <- function(object, chain = availableChains(object), group.by = NULL) {
     group.by <- "seurat_clusters"
   }
 
+  if (!is.null(subset) && subset != '') {
+    cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+    object <- subset(object, cells = cells)
+  }
+
+  sequence.type <- match.arg(sequence.type)
+
   chains <- chain
 
   if (is.null(chains)) {
@@ -505,8 +515,12 @@ CDR3freq <- function(object, chain = availableChains(object), group.by = NULL) {
 
   plots <- list()
   for (chain in chains) {
-    plot.title <- paste0("CDR3 ", toupper(chain), "-chain AA sequence frequency")
+    plot.title <- paste0("CDR3 ", toupper(chain), "-chain ", sequence.type, " sequence frequency")
     data.column <- paste0(chain, ".cdr3")
+
+    if (sequence.type == "NT") {
+      data.column <- paste0(data.column, "_nt")
+    }
 
     plot.data <- object@meta.data %>%
       group_by(.data[[data.column]], .data[[group.by]]) %>%

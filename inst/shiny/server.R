@@ -7,6 +7,8 @@ function(input, output, session) {
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
 
     app.initialize <- function() {
+        renderReductionPlots(isolate(vals$data))
+
         groups <- levels(isolate(vals$data@meta.data$seurat_clusters))
         updateSelectInput(session, "group.highlight", choices = groups)
 
@@ -14,7 +16,14 @@ function(input, output, session) {
         updateSelectizeInput(session, "compare.ident.1", choices = groups)
         updateSelectizeInput(session, "compare.ident.2", choices = groups)
 
-        renderReductionPlots(isolate(vals$data))
+        assays <- names(isolate(vals$data@misc$VDJ))
+        updateSelectInput(session, "active.assay", choices = assays, selected = DefaultAssayVDJ(isolate(vals$data)))
+
+        metadata.columns <- colnames(isolate(vals$data@meta.data))
+        updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
+
+        clonotypes <- isolate(vals$data@meta.data$clonotype) %>% unique() %>% gtools::mixedsort(.)
+        updateSelectizeInput(session, "featureplot.clonotype", choices = clonotypes, server = T)
     }
 
     # ======================================================================= #
@@ -105,10 +114,10 @@ function(input, output, session) {
     output$dataset.metrics <- renderUI({
         req(vals$data)
 
-        if("h.v_gene" %in% colnames(vals$data@meta.data)) {
+        if ("h.v_gene" %in% colnames(vals$data@meta.data)) {
             cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$h.v_gene) | !is.na(.data$l.v_gene) ) %>% nrow()
         }
-        if("a.v_gene" %in% colnames(vals$data@meta.data)) {
+        if ("a.v_gene" %in% colnames(vals$data@meta.data)) {
             cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$a.v_gene) | !is.na(.data$b.v_gene) ) %>% nrow()
         }
 
@@ -129,10 +138,15 @@ function(input, output, session) {
 
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname <- paste0('reduction.plot.', reduction)
-            tabPanel(Diversity:::formatDimred(reduction), plotlyOutput(plotname))
+            tabPanel(
+                Diversity:::formatDimred(reduction),
+                plotlyOutput(plotname) %>% withSpinner()
+            )
         })
+
         # TODO: select default tab in a more elegant way. PCA should be avoided as default tab, since this is the least informative
         tabs[['selected']] <- if ('umap' %in% names(vals$data@reductions)) 'UMAP' else if ('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
+
         do.call(tabsetPanel, tabs)
     })
 
@@ -141,9 +155,14 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$barplot <- renderPlot({
-        req(input$group.highlight)
+        req(input$group.by, input$group.highlight)
 
-        barplot_vh(vals$data, ident.1 = input$group.highlight, chain = input$scatterplot.chain)
+        barplot_vh(
+            vals$data,
+            group.by = input$group.by,
+            ident.1 = input$group.highlight,
+            chain = input$scatterplot.chain
+        )
     })
 
     # ======================================================================= #
@@ -151,9 +170,15 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$cdr3.length <- renderPlot({
-        req(input$group.highlight)
+        req(input$group.by, input$group.highlight, input$sequence.type)
 
-        SpectratypePlot(vals$data, subset = input$group.highlight, plot.type = "line")
+        SpectratypePlot(
+            vals$data,
+            group.by = input$group.by,
+            subset = input$group.highlight,
+            sequence.type = input$sequence.type,
+            plot.type = "line"
+        )
     })
 
     # ======================================================================= #
@@ -166,6 +191,12 @@ function(input, output, session) {
         circosplot(vals$data)
     })
 
+    output$circosplot.subset <- renderPlot({
+        req(vals$data, input$group.by, input$group.highlight)
+
+        circosplot(vals$data, group.by = input$group.by, subset = input$group.highlight)
+    })
+
     # ======================================================================= #
     # Frequency CDR3 AA sequences
     # ======================================================================= #
@@ -173,12 +204,49 @@ function(input, output, session) {
     output$cdr3.frequency <- renderPlot({
         req(vals$data)
 
-        CDR3freq(vals$data, NULL)
+        CDR3freq(vals$data, chain = NULL)
+    })
+
+    output$cdr3.frequency.subset <- renderPlot({
+        req(vals$data, input$group.by, input$group.highlight, input$sequence.type)
+
+        CDR3freq(
+            vals$data,
+            chain = NULL,
+            group.by = input$group.by,
+            subset = input$group.highlight,
+            sequence.type = input$sequence.type
+        )
+    })
+
+    # ======================================================================= #
+    # Featureplot clonotype
+    # ======================================================================= #
+
+    output$featureplot.clonotype <- renderPlot({
+        req(vals$data, input$featureplot.clonotype)
+
+        FeaturePlot_vdj(vals$data, input$featureplot.clonotype) + theme(
+            legend.position = "none",
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+            plot.title = element_blank()
+        )
     })
 
     # ======================================================================= #
     # Update ident choices on group.by change
     # ======================================================================= #
+
+    observeEvent(input$group.by, {
+        req(vals$data, input$group.by)
+
+        updateSelectizeInput(session, "group.highlight", choices = NULL, selected = NULL)
+        groups <- isolate(vals$data@meta.data[, input$group.by]) %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        updateSelectizeInput(session, "group.highlight", choices = groups)
+    }, priority = 10)
 
     observeEvent(input$compare.group.by, {
         req(vals$data, input$compare.group.by)
@@ -197,5 +265,4 @@ function(input, output, session) {
 
         barplot_vh(vals$data, group.by = input$compare.group.by, ident.1 = input$compare.ident.1, ident.2 = input$compare.ident.2, grid = input$compare.grid, legend = input$compare.legend)
     })
-
 }

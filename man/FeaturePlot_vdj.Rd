@@ -4,12 +4,14 @@
 \alias{FeaturePlot_vdj}
 \title{Featureplot of clonotypes}
 \usage{
-FeaturePlot_vdj(object, clonotypes, ...)
+FeaturePlot_vdj(object, clonotypes, clonotype.column = NULL, ...)
 }
 \arguments{
 \item{object}{Seurat object}
 
 \item{clonotypes}{Clonotypes to plot}
+
+\item{clonotype.column}{Column in meta data with clonotype info. Default = clonotype}
 
 \item{...}{Extra parameters to pass to Seurat::Dimplot}
 }

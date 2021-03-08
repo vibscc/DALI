@@ -4,7 +4,13 @@
 \alias{CDR3freq}
 \title{Dimplot for IGXV-family}
 \usage{
-CDR3freq(object, chain = availableChains(object), group.by = NULL)
+CDR3freq(
+  object,
+  chain = availableChains(object),
+  group.by = NULL,
+  subset = NULL,
+  sequence.type = c("AA", "NT")
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,6 +18,10 @@ CDR3freq(object, chain = availableChains(object), group.by = NULL)
 \item{chain}{Chain to plot, available options: "L", "H", NULL (= both)}
 
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+
+\item{subset}{Subset data to these groups}
+
+\item{sequence.type}{What sequences to use, available options: "AA" or "NT"}
 }
 \description{
 Dimplot for IGXV-family
