@@ -142,8 +142,8 @@ barplot_vh <- function(
 
   if (length(missing.families) > 0) {
       missing.data <- matrix(0, nrow = length(missing.families), ncol = ncol(data) - 1, dimnames = list(NULL, colnames(data)[-1]))
-      missing.data <- cbind(missing.families, missing.data)
-      colnames(missing.data) <- c("family", colnames(data)[-1])
+      missing.data <- cbind(missing.data, missing.families)
+      colnames(missing.data) <- colnames(data)
       data <- rbind(data, missing.data)
   }
 
