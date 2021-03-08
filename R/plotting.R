@@ -258,8 +258,8 @@ barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotype
 #' @importFrom stats na.omit
 #'
 #' @export
+
 circosplot <- function(object, group.by = NULL, subset = NULL) {
-    type = object@misc$default.assay.VDJ
 
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
@@ -274,11 +274,13 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
         object <- subset(object, cells = cells)
     }
 
-    if(type=="TCR"){    Names <- c("a.v_fam","b.v_gene")  }
-    if(type=="BCR"){    Names <- c("h.v_fam","l.v_gene")  }
+    type = object@misc$default.assay.VDJ
+
+    family.column <- paste0(if (type == "TCR") "a" else "h", ".v_fam")
+    gene.column <- paste0(if (type == "TCR") "b" else "l", ".v_gene")
 
     plot.data <- object@meta.data %>%
-        select(.data[[Names[1]]], .data[[Names[2]]]) %>%
+        select(.data[[family.column]], .data[[gene.column]]) %>%
         na.omit() %>%
         table() %>%
         as.matrix()
