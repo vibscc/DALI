@@ -585,21 +585,30 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
 #'
 #' @param object Seurat object
 #' @param clonotypes Clonotypes to plot
+#' @param clonotype.column Column in meta data with clonotype info. Default = clonotype
 #' @param ... Extra parameters to pass to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>% mutate
 #'
 #' @export
 
-FeaturePlot_vdj <- function(object, clonotypes, ...) {
+FeaturePlot_vdj <- function(object, clonotypes, clonotype.column = NULL, ...) {
 
-  invalid.clonotypes <- setdiff(clonotypes, unique(object@meta.data$clonotype))
+  if (is.null(clonotype.column)) {
+    clonotype.column <- "clonotype"
+  }
+
+  if (!clonotype.column %in% colnames(object@meta.data)) {
+    stop("Invalid clonotype column ", clonotype.column, call. = F)
+  }
+
+  invalid.clonotypes <- setdiff(clonotypes, unique(object@meta.data[[clonotype.column]]))
   if (length(invalid.clonotypes) > 0) {
     stop("Invalid clonotypes: ", paste(invalid.clonotypes, collapse = ", "), call. = F)
   }
 
   object@meta.data <- object@meta.data %>%
-    mutate(clonotypes = ifelse(.data$clonotype %in% clonotypes, .data$clonotype, NA))
+    mutate(clonotypes = ifelse(.data[[clonotype.column]] %in% clonotypes, .data[[clonotype.column]], NA))
 
   Seurat::DimPlot(object, group.by = 'clonotypes', na.value = "blue", ...)
 }
