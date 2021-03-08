@@ -10,6 +10,7 @@
 #' @param legend Should the legend be included in the plot. Default = TRUE
 #' @param grid Organize plots in grid. Each plot contains information about 1 group. Default = FALSE
 #' @param add.missing Should missing families be added to the plot. Default = TRUE
+#' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
 #'
 #' @importFrom dplyr arrange case_when count rename  %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
@@ -22,7 +23,7 @@
 #'
 #' @export
 
-barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F, add.missing = T) {
+barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, region = c("V", "C"), chain = availableChains(object), by.family = T, legend = T, grid = F, add.missing = T, percent.total = T) {
     region <- match.arg(region) %>% tolower()
     chain <- match.arg(chain) %>% tolower()
 
@@ -106,6 +107,8 @@ barplot_vh <- function(object, ident.1 = NULL, ident.2 = NULL, group.by = NULL, 
 
     data <- data.filtered %>%
         count(.data[[data.column]], .data[[group.by]]) %>%
+        filter(case_when(!percent.total ~ !is.na(.data[[data.column]]),
+                         T ~ T)) %>%
         group_by(.data[[group.by]]) %>%
         mutate(freq = prop.table(.data$n) * 100) %>%
         mutate(freq = round(.data$freq, 2)) %>%
