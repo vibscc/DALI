@@ -14,7 +14,9 @@ barplot_vh(
   by.family = T,
   legend = T,
   grid = F,
-  add.missing = T
+  add.missing.families = T,
+  percent.total = T,
+  show.missing.values = F
 )
 }
 \arguments{
@@ -36,7 +38,11 @@ barplot_vh(
 
 \item{grid}{Organize plots in grid. Each plot contains information about 1 group. Default = FALSE}
 
-\item{add.missing}{Should missing families be added to the plot. Default = TRUE}
+\item{add.missing.families}{Should missing families be added to the plot. Default = TRUE}
+
+\item{percent.total}{Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)}
+
+\item{show.missing.values}{Should missing values be shown in the plot. Default = FALSE}
 }
 \description{
 Barplot for IGHV-family per group

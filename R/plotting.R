@@ -131,7 +131,7 @@ barplot_vh <- function(
                         T ~ T)) %>%
       spread(.data[[group.by]], .data$freq) %>%
       mutate(family = replace(.data[[data.column]], is.na(.data[[data.column]]), "UNKNOWN")) %>%
-      select(-data.column) %>%
+      select(-all_of(data.column)) %>%
       replace(is.na(.), 0)
 
   if (nrow(data) == 0) {
