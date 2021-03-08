@@ -303,12 +303,6 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #' @param plot.type Type of plot. Options = ridge, line
 #' @param sequence Which CDR3 sequence should be used? Options: aa or nt
 #'
-#' @importFrom dplyr %>% mutate select full_join count
-#' @importFrom ggplot2 ggplot aes coord_cartesian geom_line labs theme element_rect element_line element_blank unit element_text scale_y_discrete scale_x_continuous
-#' @importFrom ggridges geom_density_ridges theme_ridges
-#' @importFrom rlang .data
-#' @importFrom stats na.omit
-#'
 #' @export
 
 SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence = c("aa", "nt")) {
@@ -334,69 +328,101 @@ SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = 
     heavy.cdr3.column <- paste0(if (type == "TCR") "a" else "h", cdr3.sequence)
     light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", cdr3.sequence)
 
-    plots <- list()
-
-    if (plot.type == 'line') {
-      groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
-
-      for (group in groups) {
-          cells <- rownames(object@meta.data)[object@meta.data[[group.by]] == group]
-          subset <- subset(object, cells = cells)
-
-          plot.data.h <- subset@meta.data %>%
-              mutate(len = nchar(.data[[heavy.cdr3.column]])) %>%
-              count(.data$len) %>%
-              na.omit() %>%
-              mutate(freq = .data$n/sum(.data$n) * 100) %>%
-              select(.data$len, .data$freq)
-          plot.data.l <- subset@meta.data %>%
-              mutate(len = nchar(.data[[light.cdr3.column]])) %>%
-              count(.data$len) %>%
-              na.omit() %>%
-              mutate(freq = .data$n/sum(.data$n) * 100) %>%
-              select(.data$len, .data$freq)
-
-          plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
-          colnames(plot.data) <- c("cdr3.length", "heavy.chain", "light.chain")
-
-          plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
-              geom_line(aes(y = .data$heavy.chain), color = "black") +
-              geom_line(aes(y = .data$light.chain), color = "red") +
-              labs(x = "CDR3 length (AA)", y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
-              theme(
-                  panel.background = element_rect(fill = "white"), # bg of the panel
-                  plot.background = element_rect(fill = "white"), # bg of the plot
-                  axis.line = element_line(colour = "black"),
-                  panel.grid.major = element_blank(), # get rid of major grid
-                  panel.grid.minor = element_blank(), # get rid of minor grid
-                  legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-                  legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
-                  legend.key.size = unit(0.1, "cm"),
-                  axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-              )
-      }
-    }
-
-    if (plot.type == 'ridge') {
-      for (column in c(heavy.cdr3.column, light.cdr3.column)) {
-
-        plot.data <- object@meta.data %>%
-          mutate(len = nchar(.data[[column]]))
-
-        plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]])) +
-          geom_density_ridges() +
-          scale_y_discrete(expand = c(0, 0)) +
-          scale_x_continuous(expand = c(0, 0)) +
-          coord_cartesian(clip = "off") +
-          theme_ridges()
-      }
+    if (plot.type == "line") {
+      plots <- SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column)
+    } else if (plot.type == "ridge") {
+      plots <- SpectratypePlot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column)
     }
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
 
+#' Plot length of CDR3 aa sequences as a line plot
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param heavy.cdr3.column Column name for heavy cdr3 data
+#' @param light.cdr3.column Column name for light cdr3 data
+#'
+#' @importFrom dplyr %>% mutate select full_join count
+#' @importFrom ggplot2 ggplot aes geom_line labs theme element_rect element_line element_blank unit element_text
+#' @importFrom rlang .data
+#' @importFrom stats na.omit
 
+SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
+  plots <- list()
+  groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
+  for (group in groups) {
+    cells <- rownames(object@meta.data)[object@meta.data[[group.by]] == group]
+    subset <- subset(object, cells = cells)
+
+    plot.data.h <- subset@meta.data %>%
+      mutate(len = nchar(.data[[heavy.cdr3.column]])) %>%
+      count(.data$len) %>%
+      na.omit() %>%
+      mutate(freq = .data$n/sum(.data$n) * 100) %>%
+      select(.data$len, .data$freq)
+    plot.data.l <- subset@meta.data %>%
+      mutate(len = nchar(.data[[light.cdr3.column]])) %>%
+      count(.data$len) %>%
+      na.omit() %>%
+      mutate(freq = .data$n/sum(.data$n) * 100) %>%
+      select(.data$len, .data$freq)
+
+    plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
+    colnames(plot.data) <- c("cdr3.length", "heavy.chain", "light.chain")
+
+    plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
+      geom_line(aes(y = .data$heavy.chain), color = "black") +
+      geom_line(aes(y = .data$light.chain), color = "red") +
+      labs(x = "CDR3 length (AA)", y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
+      theme(
+        panel.background = element_rect(fill = "white"), # bg of the panel
+        plot.background = element_rect(fill = "white"), # bg of the plot
+        axis.line = element_line(colour = "black"),
+        panel.grid.major = element_blank(), # get rid of major grid
+        panel.grid.minor = element_blank(), # get rid of minor grid
+        legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+        legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+        legend.key.size = unit(0.1, "cm"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+      )
+  }
+
+  return(plots)
+}
+
+#' Plot length of CDR3 aa sequences as a ridgeplot
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param heavy.cdr3.column Column name for heavy cdr3 data
+#' @param light.cdr3.column Column name for light cdr3 data
+#'
+#' @importFrom dplyr %>% mutate
+#' @importFrom ggplot2 ggplot aes coord_cartesian scale_y_discrete scale_x_continuous
+#' @importFrom ggridges geom_density_ridges theme_ridges
+#' @importFrom rlang .data
+
+SpectratypePlot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
+  plots <- list()
+
+  for (column in c(heavy.cdr3.column, light.cdr3.column)) {
+
+    plot.data <- object@meta.data %>%
+      mutate(len = nchar(.data[[column]]))
+
+    plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]])) +
+      geom_density_ridges() +
+      scale_y_discrete(expand = c(0, 0)) +
+      scale_x_continuous(expand = c(0, 0)) +
+      coord_cartesian(clip = "off") +
+      theme_ridges()
+  }
+
+  return(plots)
+}
 
 #' Dimplot for IGXV-family
 #'
