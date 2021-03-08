@@ -37,6 +37,8 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         if (is.null(type)) {
             stop("Unable to determine if the data is TCR or BCR. Please check the input files or specify the type via the `type` parameter", call. = F)
         }
+    } else {
+        type <- match.arg(type, choices = c("BCR", "TCR"))
     }
 
     columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "dual_IR", "raw_clonotype_id")
