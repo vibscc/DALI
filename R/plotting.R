@@ -489,9 +489,9 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
 #' @param bulk Group all cells together and handle as bulk. Default = FALSE
 #' @param show.missing Show missing values in plot. Default = FALSE
 #' @param legend Show legend. Default = FALSE
+#' @param plot.type Type of plot, options = "bar" or "violin"
 #'
-#' @importFrom ggplot2 aes_string element_line element_rect geom_bar geom_col ggplot ggtitle theme xlab ylab
-#' @importFrom dplyr case_when group_by n summarise ungroup %>%
+#' @importFrom dplyr %>%
 #'
 #' @export
 
@@ -505,7 +505,8 @@ ClonotypeFrequency <- function(
   clonotype.column = NULL,
   bulk = F,
   show.missing = F,
-  legend = F
+  legend = F,
+  plot.type = c("bar", "violin")
 ) {
 
   if (!is.null(chain)) {
@@ -519,6 +520,8 @@ ClonotypeFrequency <- function(
   if (is.null(clonotype.column)) {
     clonotype.column <- "clonotype"
   }
+
+  plot.type <- match.arg(plot.type)
 
   if (!use.sequence && !clonotype.column %in% colnames(object@meta.data)) {
     stop("Invalid clonotype column ", clonotype.column, call. = F)
@@ -537,6 +540,41 @@ ClonotypeFrequency <- function(
     chains <- availableChains(object) %>% tolower()
   }
 
+  if (plot.type == "bar") {
+    plots <- ClonotypeFrequency.bar(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, legend)
+  } else if (plot.type == "violin") {
+    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, legend)
+  }
+
+  gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
+}
+
+#' Plot the frequency of clonotypes in (subset of) clusters in a barplot
+#'
+#' @param object Seurat object
+#' @param chains Vector of chain(s) to plot
+#' @param group.by Metadata column to group the family data by
+#' @param use.sequence Use AA/NT sequence instead of clonotype
+#' @param sequence.type What sequences to use, available options: "AA" or "NT"
+#' @param clonotype.column Metadata column with clonotype information
+#' @param show.missing Show missing values in plot
+#' @param bulk Group all cells together and handle as bulk
+#' @param legend Show legend
+#'
+#' @importFrom ggplot2 aes element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
+#' @importFrom dplyr %>% arrange case_when group_by n summarise ungroup
+
+ClonotypeFrequency.bar <- function(
+  object,
+  chains,
+  group.by,
+  use.sequence,
+  sequence.type,
+  clonotype.column,
+  show.missing,
+  bulk,
+  legend
+) {
   plots <- list()
 
   for (chain in chains) {
@@ -578,7 +616,74 @@ ClonotypeFrequency <- function(
       )
   }
 
-  gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
+  return(plots)
+}
+
+#' Plot the frequency of clonotypes in (subset of) clusters in a violinplot
+#'
+#' @param object Seurat object
+#' @param chains Vector of chain(s) to plot
+#' @param group.by Metadata column to group the family data by
+#' @param use.sequence Use AA/NT sequence instead of clonotype
+#' @param sequence.type What sequences to use, available options: "AA" or "NT"
+#' @param clonotype.column Metadata column with clonotype information
+#' @param show.missing Show missing values in plot
+#' @param bulk Group all cells together and handle as bulk
+#' @param legend Show legend
+#'
+#' @importFrom ggplot2 aes element_line geom_jitter geom_violin ggplot ggtitle theme xlab ylab
+#' @importFrom dplyr %>% arrange case_when group_by n summarise ungroup
+
+ClonotypeFrequency.violin <- function(
+  object,
+  chains,
+  group.by,
+  use.sequence,
+  sequence.type,
+  clonotype.column,
+  show.missing,
+  bulk,
+  legend
+) {
+  plots <- list()
+
+  for (chain in chains) {
+
+    data.column <- clonotype.column
+    plot.title <- paste0("Clonotype frequency")
+
+    if (use.sequence) {
+      plot.title <- paste0("CDR3 ", toupper(chain), "-chain ", sequence.type, " sequence frequency")
+      data.column <- paste0(chain, ".cdr3")
+
+      if (sequence.type == "NT") {
+        data.column <- paste0(data.column, "_nt")
+      }
+    }
+
+    plot.data <- object@meta.data %>%
+      group_by(.data[[data.column]], .data[[group.by]]) %>%
+      summarise(n = n()) %>%
+      ungroup() %>%
+      filter(case_when(!show.missing ~ !is.na(.data[[data.column]]),
+                       T ~ T)) %>%
+      group_by(.data[[group.by]]) %>%
+      mutate(freq = prop.table(.data$n) * 100) %>%
+      mutate(freq = round(.data$freq, 2))
+
+
+    plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq)) +
+      geom_violin(scale = "width") +
+      geom_jitter(aes(color = .data[[data.column]])) +
+      ylab("Frequency") +
+      xlab("Cluster") +
+      ggtitle(plot.title) +
+      theme(
+        legend.position = if (legend) "right" else "none"
+      )
+  }
+
+  return(plots)
 }
 
 #' Plot of clonotype expansion

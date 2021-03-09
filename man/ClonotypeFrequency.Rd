@@ -14,7 +14,8 @@ ClonotypeFrequency(
   clonotype.column = NULL,
   bulk = F,
   show.missing = F,
-  legend = F
+  legend = F,
+  plot.type = c("bar", "violin")
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ ClonotypeFrequency(
 \item{show.missing}{Show missing values in plot. Default = FALSE}
 
 \item{legend}{Show legend. Default = FALSE}
+
+\item{plot.type}{Type of plot, options = "bar" or "violin"}
 }
 \description{
 Plot the frequency of clonotypes in (subset of) clusters
