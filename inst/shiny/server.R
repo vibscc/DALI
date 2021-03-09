@@ -204,17 +204,23 @@ function(input, output, session) {
     output$cdr3.frequency <- renderPlot({
         req(vals$data)
 
-        CDR3freq(vals$data, chain = NULL)
+        ClonotypeFrequency(
+            vals$data,
+            chain = NULL,
+            use.sequence = T,
+            sequence.type = "AA"
+        )
     })
 
     output$cdr3.frequency.subset <- renderPlot({
         req(vals$data, input$group.by, input$group.highlight, input$sequence.type)
 
-        CDR3freq(
+        ClonotypeFrequency(
             vals$data,
             chain = NULL,
             group.by = input$group.by,
             subset = input$group.highlight,
+            use.sequence = T,
             sequence.type = input$sequence.type
         )
     })

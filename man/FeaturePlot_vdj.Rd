@@ -11,7 +11,7 @@ FeaturePlot_vdj(object, clonotypes, clonotype.column = NULL, ...)
 
 \item{clonotypes}{Clonotypes to plot}
 
-\item{clonotype.column}{Column in meta data with clonotype info. Default = clonotype}
+\item{clonotype.column}{Metadata column with clonotype information. Default = 'clonotype'}
 
 \item{...}{Extra parameters to pass to Seurat::Dimplot}
 }

@@ -477,20 +477,36 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
 }
 
 
-#' Dimplot for IGXV-family
+#' Plot the frequency of clonotypes in (subset of) clusters
 #'
 #' @param object Seurat object
 #' @param chain Chain to plot, available options: "L", "H", NULL (= both)
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
-#' @param sequence.type What sequences to use, available options: "AA" or "NT"
+#' @param use.sequence Use AA/NT sequence instead of clonotype. Default = FALSE
+#' @param sequence.type What sequences to use, available options: "AA" or "NT". Only functional when use.sequence = T
+#' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
+#' @param bulk Group all cells together and handle as bulk. Default = FALSE
+#' @param show.missing Show missing values in plot. Default = FALSE
+#' @param legend Show legend. Default = FALSE
 #'
-#' @importFrom ggplot2 aes_string element_blank element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
-#' @importFrom dplyr group_by n summarise ungroup %>%
+#' @importFrom ggplot2 aes_string element_line element_rect geom_bar geom_col ggplot ggtitle theme xlab ylab
+#' @importFrom dplyr case_when group_by n summarise ungroup %>%
 #'
 #' @export
 
-CDR3freq <- function(object, chain = availableChains(object), group.by = NULL, subset = NULL, sequence.type = c("AA", "NT")) {
+ClonotypeFrequency <- function(
+  object,
+  chain = availableChains(object),
+  group.by = NULL,
+  subset = NULL,
+  use.sequence = F,
+  sequence.type = c("AA", "NT"),
+  clonotype.column = NULL,
+  bulk = F,
+  show.missing = F,
+  legend = F
+) {
 
   if (!is.null(chain)) {
     chain <- match.arg(chain) %>% tolower()
@@ -498,6 +514,14 @@ CDR3freq <- function(object, chain = availableChains(object), group.by = NULL, s
 
   if (is.null(group.by)) {
     group.by <- "seurat_clusters"
+  }
+
+  if (is.null(clonotype.column)) {
+    clonotype.column <- "clonotype"
+  }
+
+  if (!use.sequence && !clonotype.column %in% colnames(object@meta.data)) {
+    stop("Invalid clonotype column ", clonotype.column, call. = F)
   }
 
   if (!is.null(subset) && subset != '') {
@@ -514,28 +538,43 @@ CDR3freq <- function(object, chain = availableChains(object), group.by = NULL, s
   }
 
   plots <- list()
-  for (chain in chains) {
-    plot.title <- paste0("CDR3 ", toupper(chain), "-chain ", sequence.type, " sequence frequency")
-    data.column <- paste0(chain, ".cdr3")
 
-    if (sequence.type == "NT") {
-      data.column <- paste0(data.column, "_nt")
+  for (chain in chains) {
+    data.column <- clonotype.column
+    plot.title <- paste0("Clonotype frequency")
+
+    if (use.sequence) {
+      plot.title <- paste0("CDR3 ", toupper(chain), "-chain ", sequence.type, " sequence frequency")
+      data.column <- paste0(chain, ".cdr3")
+
+      if (sequence.type == "NT") {
+        data.column <- paste0(data.column, "_nt")
+      }
     }
 
     plot.data <- object@meta.data %>%
       group_by(.data[[data.column]], .data[[group.by]]) %>%
       summarise(freq = n()) %>%
-      ungroup()
+      ungroup() %>%
+      filter(case_when(!show.missing ~ !is.na(.data[[data.column]]),
+                       T ~ T)) %>%
+      arrange(.data$freq)
+
+    plot.data[[data.column]] <- factor(plot.data[[data.column]], levels = unique(plot.data[[data.column]]))
+
+    if (bulk) {
+      plot.data[[group.by]] <- "dataset"
+    }
 
     plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq, fill = .data[[data.column]])) +
       geom_bar(position = "fill", stat = "identity") +
       ylab("Frequency") +
       xlab("Cluster") +
       ggtitle(plot.title) +
-      theme(legend.position = "none",
-            panel.background = element_rect("white"),
-            axis.line = element_line(color = "black", size = 0.4),
-            axis.text.y = element_blank()
+      theme(
+        legend.position = if (legend) "right" else "none",
+        panel.background = element_rect("white"),
+        axis.line = element_line(color = "black", size = 0.4),
       )
   }
 
@@ -599,7 +638,7 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
 #'
 #' @param object Seurat object
 #' @param clonotypes Clonotypes to plot
-#' @param clonotype.column Column in meta data with clonotype info. Default = clonotype
+#' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
 #' @param ... Extra parameters to pass to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>% mutate
