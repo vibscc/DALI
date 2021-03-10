@@ -21,13 +21,15 @@ Imports:
     gridExtra,
     gtools,
     methods,
+    reldist,
     reshape2,
     rlang,
     Seurat,
     stringr,
     tibble,
     tidyr,
-    tidygraph
+    tidygraph,
+    vegan
 Suggests:
     shiny,
     shinycssloaders,
