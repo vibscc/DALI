@@ -21,7 +21,7 @@ ClonotypeFrequency(
 \arguments{
 \item{object}{Seurat object}
 
-\item{chain}{Chain to plot, available options: "L", "H", NULL (= both)}
+\item{chain}{Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR. NULL = both}
 
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 

@@ -480,7 +480,7 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
 #' Plot the frequency of clonotypes in (subset of) clusters
 #'
 #' @param object Seurat object
-#' @param chain Chain to plot, available options: "L", "H", NULL (= both)
+#' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR. NULL = both
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
 #' @param use.sequence Use AA/NT sequence instead of clonotype. Default = FALSE
