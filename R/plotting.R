@@ -693,6 +693,11 @@ ClonotypeFrequency.violin <- function(
 #' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
 #' @param min.color Color for cells without clonotype. Default = grey
 #' @param max.color Color for cells with the highest number of clonotypes. Default = red
+#' @param threshold Cells with clonotype count < threshold are colored with the min.color. Default = 0
+#' @param positive.size Size of the dots with clonotype count > threshold. Default = 1
+#' @param negative.size Size of the dots with clonotype count <= threshold. Default = 1
+#' @param positive.alpha Alpha of the dots with clonotype count > threshold. Default = 1
+#' @param negative.alpha Alpha of the dots with clonotype count < threshold. Default = 1
 #'
 #' @importFrom dplyr %>% add_count all_of select
 #' @importFrom tibble column_to_rownames rownames_to_column
@@ -700,7 +705,7 @@ ClonotypeFrequency.violin <- function(
 #'
 #' @export
 
-plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', min.color = NULL, max.color = NULL) {
+plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', min.color = NULL, max.color = NULL, threshold = 0, positive.size = 1, negative.size = 1, positive.alpha = 1, negative.alpha = 1) {
 
   if (!clonotype.column %in% colnames(object@meta.data)) {
     stop("Invalid clonotype column ", clonotype.column, call. = F)
@@ -734,8 +739,8 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
   plot.data[rownames(data), 'clonotype_count'] <- data$n %>% as.numeric()
 
   ggplot() +
-    geom_point(data = subset(plot.data, clonotype_count == 0), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count)) +
-    geom_point(data = subset(plot.data, clonotype_count > 0), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count)) +
+    geom_point(data = subset(plot.data, clonotype_count <= threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = negative.size, alpha = negative.alpha, color = min.color) +
+    geom_point(data = subset(plot.data, clonotype_count > threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = positive.size, alpha = positive.alpha) +
     scale_color_gradient(low = min.color, high = max.color)
 }
 

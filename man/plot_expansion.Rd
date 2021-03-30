@@ -9,7 +9,12 @@ plot_expansion(
   reduction,
   clonotype.column = "clonotype",
   min.color = NULL,
-  max.color = NULL
+  max.color = NULL,
+  threshold = 0,
+  positive.size = 1,
+  negative.size = 1,
+  positive.alpha = 1,
+  negative.alpha = 1
 )
 }
 \arguments{
@@ -22,6 +27,16 @@ plot_expansion(
 \item{min.color}{Color for cells without clonotype. Default = grey}
 
 \item{max.color}{Color for cells with the highest number of clonotypes. Default = red}
+
+\item{threshold}{Cells with clonotype count < threshold are colored with the min.color. Default = 0}
+
+\item{positive.size}{Size of the dots with clonotype count > threshold. Default = 1}
+
+\item{negative.size}{Size of the dots with clonotype count <= threshold. Default = 1}
+
+\item{positive.alpha}{Alpha of the dots with clonotype count > threshold. Default = 1}
+
+\item{negative.alpha}{Alpha of the dots with clonotype count < threshold. Default = 1}
 }
 \description{
 Plot of clonotype expansion
