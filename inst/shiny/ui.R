@@ -20,7 +20,7 @@ fluidPage(
                             ),
                             fluidRow(
                                 column(3,
-                                    selectInput('chain.usgage.chain', label = "Chain", choices = list("Heavy" = "H", "Light" = "L","Alpha" = "A", "Beta" = "B")),
+                                    selectInput('chain.usage.chain', label = "Chain", choices = NULL),
                                     selectInput('chain.usage.region', label = "Region", choices = c("V", "D", "J", "C"))
                                 ),
                                 column(9, plotOutput('chain.usage.barplot') %>% withSpinner())

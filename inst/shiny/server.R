@@ -26,6 +26,8 @@ function(input, output, session) {
 
         clonotypes <- isolate(vals$data@meta.data$clonotype) %>% unique() %>% gtools::mixedsort(.)
         updateSelectizeInput(session, "featureplot.clonotype", choices = clonotypes, server = T)
+
+        updateSelectInput(session, "chain.usage.chain", choices = availableChainsList(isolate(vals$data)))
     }
 
     # ======================================================================= #
@@ -255,7 +257,7 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$chain.usage.barplot <- renderPlot({
-        req(vals$data, input$chain.usgage.chain, input$chain.usage.region)
+        req(vals$data, input$chain.usage.chain, input$chain.usage.region)
 
         barplot_vh(
             vals$data,
@@ -313,8 +315,10 @@ function(input, output, session) {
     })
 
     # ======================================================================= #
-    # Update ident choices on group.by change
+    # Observers
     # ======================================================================= #
+
+    # Update ident choices on group.by change
 
     observeEvent(input$group.by, {
         req(vals$data, input$group.by)
@@ -330,6 +334,14 @@ function(input, output, session) {
         groups <- vals$data@meta.data[, input$compare.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
         updateSelectizeInput(session, "compare.ident.1", choices = groups, selected = groups[[1]])
         updateSelectizeInput(session, "compare.ident.2", choices = groups, selected = groups[[2]])
+    })
+
+    # Update available regions on chain change
+
+    observeEvent(input$chain.usage.chain, {
+        req(vals$data, input$chain.usage.chain)
+
+        updateSelectInput(session, "chain.usage.region", choices = availableRegions(input$chain.usage.chain))
     })
 
     # ======================================================================= #
