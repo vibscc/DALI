@@ -12,7 +12,11 @@ interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
     }
 
     # Load object in global environment so shiny app can use it
-    .GlobalEnv$.data.object.VDJ <- Seurat::DietSeurat(object, counts = F, data = T, scale.data = F, assays = NULL, dimreducs = names(object@reductions), graphs = NULL)
+    if (!is.null(object)) {
+        .GlobalEnv$.data.object.VDJ <- Seurat::DietSeurat(object, counts = F, data = T, scale.data = F, assays = NULL, dimreducs = names(object@reductions), graphs = NULL)
+    } else {
+        .GlobalEnv$.data.object.VDJ <- NULL
+    }
     on.exit(rm('.data.object.VDJ', envir = .GlobalEnv))
 
     options(shiny.maxRequestSize = max.upload.size*1024^2)
