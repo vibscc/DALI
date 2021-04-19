@@ -590,13 +590,7 @@ ClonotypeFrequency.bar <- function(
       }
     }
 
-    plot.data <- object@meta.data %>%
-      group_by(.data[[data.column]], .data[[group.by]]) %>%
-      summarise(freq = n()) %>%
-      ungroup() %>%
-      filter(case_when(!show.missing ~ !is.na(.data[[data.column]]),
-                       T ~ T)) %>%
-      arrange(.data$freq)
+    plot.data <- calculateFrequency(object, data.column, group.by, show.missing) %>% arrange(.data$freq)
 
     plot.data[[data.column]] <- factor(plot.data[[data.column]], levels = unique(plot.data[[data.column]]))
 
@@ -661,12 +655,7 @@ ClonotypeFrequency.violin <- function(
       }
     }
 
-    plot.data <- object@meta.data %>%
-      group_by(.data[[data.column]], .data[[group.by]]) %>%
-      summarise(n = n()) %>%
-      ungroup() %>%
-      filter(case_when(!show.missing ~ !is.na(.data[[data.column]]),
-                       T ~ T)) %>%
+    plot.data <- calculateFrequency(object, data.column, group.by, show.missing) %>%
       group_by(.data[[group.by]]) %>%
       mutate(freq = prop.table(.data$n) * 100) %>%
       mutate(freq = round(.data$freq, 2))
