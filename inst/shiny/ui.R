@@ -31,9 +31,16 @@ fluidPage(
                                 column(12, uiOutput('reduction.tabs.expansion') %>% withSpinner())
                             ),
                             fluidRow(
-                                # column(4, offset = 4),
-                                column(4, offset = 8,
-                                    selectizeInput('featureplot.clonotype', label = "Clonotype", choices = NULL),
+                                column(8,
+                                    selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
+                                    selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                                    fluidRow(
+                                        column(3, plotOutput('cdr3.frequency')),
+                                        column(9, tableOutput('top.clonotypes'))
+                                    )
+                                ),
+                                column(4,
+                                    selectizeInput('featureplot.clonotype', label = "Clonotype location", choices = NULL),
                                     plotOutput('featureplot.clonotype') %>% withSpinner()
                                 )
                             )

@@ -24,9 +24,6 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
-        clonotypes <- isolate(vals$data@meta.data$clonotype) %>% unique() %>% gtools::mixedsort(.)
-        updateSelectizeInput(session, "featureplot.clonotype", choices = clonotypes, server = T)
-
         updateSelectInput(session, "chain.usage.chain", choices = availableChainsList(isolate(vals$data)))
     }
 
@@ -287,14 +284,40 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$cdr3.frequency <- renderPlot({
-        req(vals$data)
+        req(vals$data, input$clonotype.group.by, input$clonotype.group)
 
         ClonotypeFrequency(
             vals$data,
             chain = NULL,
-            use.sequence = T,
-            sequence.type = "AA"
+            use.sequence = F,
+            group.by = input$clonotype.group.by,
+            subset = input$clonotype.group
         )
+    })
+
+    output$top.clonotypes <- renderTable({
+        req(vals$data, input$clonotype.group.by, input$clonotype.group)
+
+        top.clonotypes <- calculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
+            filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
+            arrange(desc(freq)) %>%
+            select(c(clonotype, freq)) %>%
+            head(n = 25)
+
+        vals$top.clonotypes <- top.clonotypes
+
+        h_seqs <- c()
+        l_seqs <- c()
+        for (clonotype in top.clonotypes$clonotype) {
+            h_seqs <- c(h_seqs, clonotypeToSequence(vals$data, clonotype, "H"))
+            l_seqs <- c(l_seqs, clonotypeToSequence(vals$data, clonotype, "L"))
+        }
+
+        top.clonotypes$h_seq <- h_seqs
+        top.clonotypes$l_seq <- l_seqs
+
+        colnames(top.clonotypes) <- c('Clonotype', 'Cells', 'Heavy CDR3 AA seq', 'Light CDR3 AA seq')
+        top.clonotypes
     })
 
     # ======================================================================= #
@@ -336,12 +359,25 @@ function(input, output, session) {
         updateSelectizeInput(session, "compare.ident.2", choices = groups, selected = groups[[2]])
     })
 
+    observeEvent(input$clonotype.group.by, {
+        req(vals$data, input$clonotype.group.by)
+
+        groups <- vals$data@meta.data[, input$compare.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]])
+    })
+
     # Update available regions on chain change
 
     observeEvent(input$chain.usage.chain, {
         req(vals$data, input$chain.usage.chain)
 
         updateSelectInput(session, "chain.usage.region", choices = availableRegions(input$chain.usage.chain))
+    })
+
+    # Top clonotypes change
+
+    observeEvent(vals$top.clonotypes, {
+        updateSelectInput(session, "featureplot.clonotype", choices = vals$top.clonotypes)
     })
 
     # ======================================================================= #
