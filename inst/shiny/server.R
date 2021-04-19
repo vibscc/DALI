@@ -63,6 +63,8 @@ function(input, output, session) {
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
                         axis.text = element_blank()
+                    ) + ggtitle(
+                        "Chain usage"
                     )
                 })
             })
@@ -95,14 +97,17 @@ function(input, output, session) {
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
                         axis.text = element_blank()
-                    )
+                    ) + ggtitle("Expansion plot")
                 })
 
                 output[[paste0('graph.', r)]] <- renderPlot({
                     VDJGraph(
                         object,
                         reduction = r
-                    ) + theme(legend.position = "none")
+                    ) + theme(
+                        legend.position = "none"
+                    ) + ggtitle("Clonal connection plot")
+
                 })
             })
         }
@@ -261,7 +266,7 @@ function(input, output, session) {
             chain = input$chain.usage.chain,
             region = input$chain.usage.region
             # group.by = input$chain.usage.group.by
-        )
+        ) + ggtitle("Chain usage")
     })
 
     # ======================================================================= #
