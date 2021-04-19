@@ -741,7 +741,8 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
   ggplot() +
     geom_point(data = subset(plot.data, clonotype_count <= threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = negative.size, alpha = negative.alpha, color = min.color) +
     geom_point(data = subset(plot.data, clonotype_count > threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = positive.size, alpha = positive.alpha) +
-    scale_color_gradient(low = min.color, high = max.color)
+    scale_color_gradient(low = min.color, high = max.color) +
+    theme_classic()
 }
 
 #' Featureplot of clonotypes
