@@ -24,7 +24,7 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
-        updateSelectInput(session, "chain.usage.chain", choices = availableChainsList(isolate(vals$data)))
+        updateSelectInput(session, "chain.usage.chain", choices = Diversity:::availableChainsList(isolate(vals$data)))
     }
 
     # ======================================================================= #
@@ -376,7 +376,7 @@ function(input, output, session) {
     observeEvent(input$chain.usage.chain, {
         req(vals$data, input$chain.usage.chain)
 
-        updateSelectInput(session, "chain.usage.region", choices = availableRegions(input$chain.usage.chain))
+        updateSelectInput(session, "chain.usage.region", choices = Diversity:::availableRegions(input$chain.usage.chain))
     })
 
     # Top clonotypes change
