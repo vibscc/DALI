@@ -47,6 +47,7 @@ barplot_vh <- function(
       data.column <- paste0(data.column, 'fam')
   } else {
       data.column <- paste0(data.column, 'gene')
+      by.family <- F
   }
 
   if (is.null(group.by)) {
