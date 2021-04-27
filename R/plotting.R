@@ -157,7 +157,7 @@ barplot_vh <- function(
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
       ylim(0, NA) +
-      labs(y = "Cell number", x = "Family", title = .data$group) +
+      labs(y = "Percentage cells", x = "Family", title = .data$group) +
       # geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
       theme(
           panel.background = element_rect(fill = "white"), # bg of the panel
