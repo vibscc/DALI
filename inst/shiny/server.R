@@ -303,7 +303,7 @@ function(input, output, session) {
     output$top.clonotypes <- renderTable({
         req(vals$data, input$clonotype.group.by, input$clonotype.group)
 
-        top.clonotypes <- calculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
+        top.clonotypes <- Diversity:::calculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
             filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
             arrange(desc(freq)) %>%
             select(c(clonotype, freq)) %>%
