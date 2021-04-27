@@ -91,7 +91,10 @@ function(input, output, session) {
                 output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
                     plot_expansion(
                         object,
-                        reduction = r
+                        reduction = r,
+                        threshold = 2,
+                        negative.alpha = 0.7
+
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
