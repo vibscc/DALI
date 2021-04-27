@@ -415,12 +415,15 @@ SpectratypePlot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr
     plot.data <- object@meta.data %>%
       mutate(len = nchar(.data[[column]]))
 
+    title <- paste0(if (column == heavy.cdr3.column) "Heavy" else "Light", " chain")
+
     plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]])) +
       geom_density_ridges() +
       scale_y_discrete(expand = c(0, 0)) +
       scale_x_continuous(expand = c(0, 0)) +
       coord_cartesian(clip = "off") +
-      theme_ridges()
+      theme_ridges() +
+      ggtitle(title)
   }
 
   return(plots)
