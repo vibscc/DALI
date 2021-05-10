@@ -8,8 +8,9 @@ plot_expansion(
   object,
   reduction,
   clonotype.column = "clonotype",
-  min.color = NULL,
-  max.color = NULL,
+  color.low = "lightgrey",
+  color.mid = "red",
+  color.high = "darkred",
   threshold = 0,
   positive.size = 1,
   negative.size = 1,
@@ -24,9 +25,11 @@ plot_expansion(
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = 'clonotype'}
 
-\item{min.color}{Color for cells without clonotype. Default = grey}
+\item{color.low}{Color for cells without clonotype. Default = lightgrey}
 
-\item{max.color}{Color for cells with the highest number of clonotypes. Default = red}
+\item{color.mid}{Color for cells with the medium number of clonotypes. Default = red}
+
+\item{color.high}{Color for cells with the highest number of clonotypes. Default = darkred}
 
 \item{threshold}{Cells with clonotype count < threshold are colored with the min.color. Default = 0}
 

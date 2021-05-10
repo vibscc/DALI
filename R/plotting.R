@@ -684,9 +684,10 @@ ClonotypeFrequency.violin <- function(
 #' @param object Seurat object
 #' @param reduction Which dimensionality reduction to use
 #' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
-#' @param min.color Color for cells without clonotype. Default = grey
-#' @param max.color Color for cells with the highest number of clonotypes. Default = red
-#' @param threshold Cells with clonotype count < threshold are colored with the min.color. Default = 0
+#' @param color.low Color for cells without clonotype. Default = lightgrey
+#' @param color.mid Color for cells with the medium number of clonotypes. Default = red
+#' @param color.high Color for cells with the highest number of clonotypes. Default = darkred
+#' @param threshold Cells with clonotype count < threshold are colored with the min.color. Default = 1
 #' @param positive.size Size of the dots with clonotype count > threshold. Default = 1
 #' @param negative.size Size of the dots with clonotype count <= threshold. Default = 1
 #' @param positive.alpha Alpha of the dots with clonotype count > threshold. Default = 1
@@ -694,22 +695,26 @@ ClonotypeFrequency.violin <- function(
 #'
 #' @importFrom dplyr %>% add_count all_of select
 #' @importFrom tibble column_to_rownames rownames_to_column
-#' @importFrom ggplot2 aes geom_point scale_color_gradient
+#' @importFrom ggplot2 aes geom_point scale_color_gradient2 scale_color_gradientn theme_classic
 #'
 #' @export
 
-plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', min.color = NULL, max.color = NULL, threshold = 0, positive.size = 1, negative.size = 1, positive.alpha = 1, negative.alpha = 1) {
+plot_expansion <- function(
+  object,
+  reduction,
+  clonotype.column = 'clonotype',
+  color.low = 'lightgrey',
+  color.mid = 'red',
+  color.high = 'darkred',
+  threshold = 1,
+  positive.size = 1,
+  negative.size = 1,
+  positive.alpha = 1,
+  negative.alpha = 1
+) {
 
   if (!clonotype.column %in% colnames(object@meta.data)) {
     stop("Invalid clonotype column ", clonotype.column, call. = F)
-  }
-
-  if (is.null(min.color)) {
-    min.color <- 'grey'
-  }
-
-  if (is.null(max.color)) {
-    max.color <- 'red'
   }
 
   if (!reduction %in% names(object@reductions)) {
@@ -731,11 +736,39 @@ plot_expansion <- function(object, reduction, clonotype.column = 'clonotype', mi
   plot.data$clonotype_count <- 0
   plot.data[rownames(data), 'clonotype_count'] <- data$n %>% as.numeric()
 
-  ggplot() +
-    geom_point(data = subset(plot.data, clonotype_count <= threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = negative.size, alpha = negative.alpha, color = min.color) +
-    geom_point(data = subset(plot.data, clonotype_count > threshold), aes(x = .data[[x.name]], y = .data[[y.name]], color = .data$clonotype_count), size = positive.size, alpha = positive.alpha) +
-    scale_color_gradient(low = min.color, high = max.color) +
+  max_value <- max(plot.data$clonotype_count)
+
+  midpoint <- (max_value + threshold) / 2
+
+  plot <- ggplot() +
+    geom_point(
+      data = subset(plot.data, clonotype_count <= threshold),
+      aes(
+        x = .data[[x.name]], y = .data[[y.name]],
+        color = .data$clonotype_count
+      ),
+      size = negative.size,
+      alpha = negative.alpha
+    ) +
+    geom_point(
+      data = subset(plot.data, clonotype_count > threshold),
+      aes(
+        x = .data[[x.name]],
+        y = .data[[y.name]],
+        color = .data$clonotype_count
+      ),
+      size = positive.size,
+      alpha = positive.alpha
+    ) +
     theme_classic()
+
+  if (threshold > 0) {
+    plot <- plot + scale_color_gradientn(colours = c(color.low, color.low, color.mid, color.high), values = c(0, threshold / max_value, midpoint / max_value, 1))
+  } else {
+    plot <- plot + scale_color_gradient2(low = color.low, mid = color.mid, high = color.high, midpoint = midpoint)
+  }
+
+  plot
 }
 
 #' Featureplot of clonotypes
