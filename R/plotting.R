@@ -415,7 +415,21 @@ CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.colum
     plot.data <- object@meta.data %>%
       mutate(len = nchar(.data[[column]]))
 
-    title <- paste0(if (column == heavy.cdr3.column) "Heavy" else "Light", " chain")
+    if (column == heavy.cdr3.column) {
+      if (DefaultAssayVDJ(object) == 'TCR') {
+        title <- "TCR-a"
+      } else {
+        title <- "Heavy"
+      }
+    } else {
+      if (DefaultAssayVDJ(object) == 'TCR') {
+        title <- "TCR-b"
+      } else {
+        title <- "Light"
+      }
+    }
+
+    title <- paste0(title, " chain")
 
     plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]])) +
       geom_density_ridges() +
@@ -886,8 +900,8 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   dimred <- object@reductions[[reduction]]@cell.embeddings %>% as.data.frame()
   dimred$group <- object@meta.data[[group.by]]
 
-  label.x.axis <- colnames(dimred)[1]
-  label.y.axis <- colnames(dimred)[2]
+  label.x.axis <- colnames(dimred)[[1]]
+  label.y.axis <- colnames(dimred)[[2]]
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
