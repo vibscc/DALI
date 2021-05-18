@@ -10,7 +10,10 @@ ClonotypeDiversity(
   use.sequence = F,
   sequence.type = c("AA", "NT"),
   chain = AvailableChains(object),
-  clonotype.column = NULL
+  clonotype.column = NULL,
+  group.by = NULL,
+  by.group = TRUE,
+  subset = NULL
 )
 }
 \arguments{
@@ -25,6 +28,12 @@ ClonotypeDiversity(
 \item{chain}{Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR}
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = 'clonotype'}
+
+\item{group.by}{Metadata column to group the family data by. Default = 'seurat_clusters'}
+
+\item{by.group}{Calculate diversity for each group seperately}
+
+\item{subset}{Subset data to these groups}
 }
 \description{
 Calculate diversity in VDJ data
