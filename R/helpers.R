@@ -5,7 +5,7 @@
 #' @param group.by Metadata column with group info
 #' @param show.missing Should missing values be included or not
 
-calculateFrequency <- function(object, data.column, group.by, show.missing) {
+CalculateFrequency <- function(object, data.column, group.by, show.missing) {
     out <- object@meta.data %>%
         group_by(.data[[data.column]], .data[[group.by]]) %>%
         summarise(freq = n()) %>%
@@ -23,7 +23,7 @@ calculateFrequency <- function(object, data.column, group.by, show.missing) {
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
 #' @param sequence.type One of AA or NT. Default = AA
 
-clonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype', sequence.type = 'AA') {
+ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype', sequence.type = 'AA') {
     sequence.column <- paste0(tolower(chain), ".cdr3", if (tolower(sequence.type) == 'nt') '_nt' else '')
 
     if (!sequence.column %in% colnames(object@meta.data)) {

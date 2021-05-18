@@ -32,7 +32,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
     annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive %in% c('True', 'true'))
 
     if (is.null(type)) {
-        type <- getAssayForData(location.metrics)
+        type <- GetAssayForData(location.metrics)
 
         if (is.null(type)) {
             stop("Unable to determine if the data is TCR or BCR. Please check the input files or specify the type via the `type` parameter", call. = F)
@@ -52,7 +52,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene, type))
+        mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
     heavy.primary <- heavy %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
@@ -76,7 +76,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
         select(all_of(columns)) %>%
-        mutate(v_fam = get_v_families(.data$v_gene, type))
+        mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
     light.primary <- light %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
@@ -170,7 +170,7 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 #'
 #' @param csv.path Path to metrics_summary.csv
 
-getAssayForData <- function(csv.path) {
+GetAssayForData <- function(csv.path) {
     metrics <- read.csv(csv.path, header = T)
 
     if (sum(grepl("IGK", colnames(metrics))) > 0 && sum(grepl("IGH", colnames(metrics))) > 0) {
@@ -192,7 +192,7 @@ getAssayForData <- function(csv.path) {
 #' @importFrom stringr str_replace_all
 
 
-get_v_families <- function(v_genes, type) {
+GetVFamilies <- function(v_genes, type) {
     v_families <- c()
 
     if (type == "TCR") { pattern <- "TR[ABD]" }
@@ -260,7 +260,7 @@ AddVDJDataForType <- function(type, object, heavy.primary, heavy.secondary, ligh
 #' @importFrom methods is slot
 #' @export
 
-isValidSeuratObject <- function(object) {
+IsValidSeuratObject <- function(object) {
     if (!is(object, "Seurat")) {
         return(F)
     }
@@ -276,7 +276,7 @@ isValidSeuratObject <- function(object) {
 #'
 #' @param object Seurat object
 
-availableChains <- function(object) {
+AvailableChains <- function(object) {
     assay <- DefaultAssayVDJ(object)
 
     if (grepl("BCR", assay, ignore.case = T)) {

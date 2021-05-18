@@ -24,13 +24,13 @@
 #'
 #' @export
 
-barplot_vh <- function(
+BarplotChainRegion <- function(
   object,
   ident.1 = NULL,
   ident.2 = NULL,
   group.by = NULL,
   region = c("V", "C"),
-  chain = availableChains(object),
+  chain = AvailableChains(object),
   by.family = T,
   legend = T,
   grid = F,
@@ -198,7 +198,7 @@ barplot_vh <- function(
 #'
 #' @export
 
-barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge")) {
+BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge")) {
 
   if (is.null(group.by)) {
     group.by <- "seurat_clusters"
@@ -260,7 +260,7 @@ barplot_clonotypes <- function(object, group.by = NULL, subset = NULL, clonotype
 #'
 #' @export
 
-circosplot <- function(object, group.by = NULL, subset = NULL) {
+CircosPlot <- function(object, group.by = NULL, subset = NULL) {
 
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"
@@ -306,7 +306,7 @@ circosplot <- function(object, group.by = NULL, subset = NULL) {
 #'
 #' @export
 
-SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT")) {
+CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT")) {
 
     plot.type <- match.arg(plot.type)
     sequence.type <- match.arg(sequence.type)
@@ -330,9 +330,9 @@ SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = 
     light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", cdr3.sequence)
 
     if (plot.type == "line") {
-      plots <- SpectratypePlot.line(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type)
+      plots <- CDR3Plot.line(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type)
     } else if (plot.type == "ridge") {
-      plots <- SpectratypePlot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column)
+      plots <- CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column)
     }
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
@@ -351,7 +351,7 @@ SpectratypePlot <- function(object, group.by = NULL, subset = NULL, plot.type = 
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
 
-SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type) {
+CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type) {
   plots <- list()
   groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
@@ -407,7 +407,7 @@ SpectratypePlot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3
 #' @importFrom ggridges geom_density_ridges theme_ridges
 #' @importFrom rlang .data
 
-SpectratypePlot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
+CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
   plots <- list()
 
   for (column in c(heavy.cdr3.column, light.cdr3.column)) {
@@ -443,7 +443,7 @@ SpectratypePlot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr
 #'
 #' @export
 
-DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = availableChains(object), by.family = T, grid = T, highlight = NULL, ...) {
+DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = AvailableChains(object), by.family = T, grid = T, highlight = NULL, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -501,7 +501,7 @@ DimPlot_vh <- function(object, region = c("V", "D", "J", "C"), chain = available
 
 ClonotypeFrequency <- function(
   object,
-  chain = availableChains(object),
+  chain = AvailableChains(object),
   group.by = NULL,
   subset = NULL,
   use.sequence = F,
@@ -541,7 +541,7 @@ ClonotypeFrequency <- function(
   chains <- chain
 
   if (is.null(chains)) {
-    chains <- availableChains(object) %>% tolower()
+    chains <- AvailableChains(object) %>% tolower()
   }
 
   if (plot.type == "bar") {
@@ -594,7 +594,7 @@ ClonotypeFrequency.bar <- function(
       }
     }
 
-    plot.data <- calculateFrequency(object, data.column, group.by, show.missing) %>% arrange(.data$freq)
+    plot.data <- CalculateFrequency(object, data.column, group.by, show.missing) %>% arrange(.data$freq)
 
     plot.data[[data.column]] <- factor(plot.data[[data.column]], levels = unique(plot.data[[data.column]]))
 
@@ -659,7 +659,7 @@ ClonotypeFrequency.violin <- function(
       }
     }
 
-    plot.data <- calculateFrequency(object, data.column, group.by, show.missing) %>%
+    plot.data <- CalculateFrequency(object, data.column, group.by, show.missing) %>%
       group_by(.data[[group.by]]) %>%
       mutate(freq = prop.table(.data$n) * 100) %>%
       mutate(freq = round(.data$freq, 2))
@@ -699,7 +699,7 @@ ClonotypeFrequency.violin <- function(
 #'
 #' @export
 
-plot_expansion <- function(
+ExpansionPlot <- function(
   object,
   reduction,
   clonotype.column = 'clonotype',
@@ -782,7 +782,7 @@ plot_expansion <- function(
 #'
 #' @export
 
-FeaturePlot_vdj <- function(object, clonotypes, clonotype.column = NULL, ...) {
+FeaturePlotChainRegion <- function(object, clonotypes, clonotype.column = NULL, ...) {
 
   if (is.null(clonotype.column)) {
     clonotype.column <- "clonotype"
@@ -818,7 +818,7 @@ FeaturePlot_vdj <- function(object, clonotypes, clonotype.column = NULL, ...) {
 #'
 #' @export
 
-VDJGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL) {
+CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL) {
 
   if (is.null(group.by)) {
     group.by <- "seurat_clusters"

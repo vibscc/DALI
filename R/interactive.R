@@ -5,7 +5,7 @@
 #'
 #' @export
 
-interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
+Interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
     app.directory <- system.file("shiny", package = "Diversity")
     if (app.directory == "") {
         stop("Could not shiny application directory. Try re-installing `Diversity`.", call. = FALSE)
@@ -27,7 +27,7 @@ interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
 #'
 #' @param reduction Dimensionality reduction
 
-formatDimred <- function(reduction) {
+FormatDimred <- function(reduction) {
     for (pattern in c('pca', 'tsne', 'umap')) {
         if (grepl(pattern, reduction, ignore.case = T)) {
             replacement = switch(pattern,
@@ -48,10 +48,10 @@ formatDimred <- function(reduction) {
 #'
 #' @param object Seurat object
 
-availableChainsList <- function(object) {
+AvailableChainsList <- function(object) {
     chains <- list()
 
-    for (chain in availableChains(object)) {
+    for (chain in AvailableChains(object)) {
         key <- switch(chain,
             "H" = "Heavy",
             "L" = "Light",
@@ -68,7 +68,7 @@ availableChainsList <- function(object) {
 #'
 #' @param chain One of H, L, A or B
 
-availableRegions <- function(chain) {
+AvailableRegions <- function(chain) {
     heavy <- c("H", "A")
     light <- c("L", "B")
 

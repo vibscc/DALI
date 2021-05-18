@@ -9,7 +9,7 @@ ClonotypeDiversity(
   algorithm = c("gini", "shannon"),
   use.sequence = F,
   sequence.type = c("AA", "NT"),
-  chain = availableChains(object),
+  chain = AvailableChains(object),
   clonotype.column = NULL
 )
 }

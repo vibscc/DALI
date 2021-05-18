@@ -24,7 +24,7 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
-        updateSelectInput(session, "chain.usage.chain", choices = Diversity:::availableChainsList(isolate(vals$data)))
+        updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
     }
 
     # ======================================================================= #
@@ -52,7 +52,7 @@ function(input, output, session) {
                 })
 
                 output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                    DimPlot_vh(
+                    DimplotChainRegion(
                         object,
                         grid = F,
                         reduction = r,
@@ -89,7 +89,7 @@ function(input, output, session) {
                 })
 
                 output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
-                    plot_expansion(
+                    ExpansionPlot(
                         object,
                         reduction = r,
                         threshold = 2,
@@ -104,7 +104,7 @@ function(input, output, session) {
                 })
 
                 output[[paste0('graph.', r)]] <- renderPlot({
-                    VDJGraph(
+                    CloneConnGraph(
                         object,
                         reduction = r
                     ) + theme(
@@ -154,7 +154,7 @@ function(input, output, session) {
         )
     }
 
-    if (is.null(isolate(vals$data)) || !isValidSeuratObject(isolate(vals$data))) {
+    if (is.null(isolate(vals$data)) || !IsValidSeuratObject(isolate(vals$data))) {
         showModal(dataUploadModal())
     } else {
         app.initialize()
@@ -163,7 +163,7 @@ function(input, output, session) {
     observeEvent(input$load, {
         data <- readRDS(input$file$datapath)
 
-        if (isValidSeuratObject(data)) {
+        if (IsValidSeuratObject(data)) {
             vals$data <- readRDS(input$file$datapath)
             app.initialize()
             removeModal()
@@ -206,7 +206,7 @@ function(input, output, session) {
             plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
 
             tabPanel(
-                Diversity:::formatDimred(reduction),
+                Diversity:::FormatDimred(reduction),
                 fluidRow(
                     column(6, plotOutput(plotname.dimred) %>% withSpinner()),
                     column(6, plotOutput(plotname.dimred.vdj) %>% withSpinner())
@@ -228,7 +228,7 @@ function(input, output, session) {
             plotname.graph <- paste0('graph.', reduction)
 
             tabPanel(
-                Diversity:::formatDimred(reduction),
+                Diversity:::FormatDimred(reduction),
                 fluidRow(
                     column(4, plotOutput(plotname.dimred) %>% withSpinner()),
                     column(4, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
@@ -248,7 +248,7 @@ function(input, output, session) {
             plotname <- paste0('dimred.', reduction)
 
             tabPanel(
-                Diversity:::formatDimred(reduction),
+                Diversity:::FormatDimred(reduction),
                 plotOutput(plotname) %>% withSpinner()
             )
         })
@@ -264,7 +264,7 @@ function(input, output, session) {
     output$chain.usage.barplot <- renderPlot({
         req(vals$data, input$chain.usage.chain, input$chain.usage.region)
 
-        barplot_vh(
+        BarplotChainRegion(
             vals$data,
             chain = input$chain.usage.chain,
             region = input$chain.usage.region
@@ -279,7 +279,7 @@ function(input, output, session) {
     output$spectratypeplot <- renderPlot({
         req(vals$data, input$compare.group.by)
 
-        SpectratypePlot(
+        CDR3Plot(
             vals$data,
             group.by = input$compare.group.by,
             sequence.type = "AA",
@@ -306,7 +306,7 @@ function(input, output, session) {
     output$top.clonotypes <- renderTable({
         req(vals$data, input$clonotype.group.by, input$clonotype.group)
 
-        top.clonotypes <- Diversity:::calculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
+        top.clonotypes <- Diversity:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
             filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
             arrange(desc(freq)) %>%
             select(c(clonotype, freq)) %>%
@@ -317,8 +317,8 @@ function(input, output, session) {
         h_seqs <- c()
         l_seqs <- c()
         for (clonotype in top.clonotypes$clonotype) {
-            h_seqs <- c(h_seqs, clonotypeToSequence(vals$data, clonotype, "H"))
-            l_seqs <- c(l_seqs, clonotypeToSequence(vals$data, clonotype, "L"))
+            h_seqs <- c(h_seqs, ClonotypeToSequence(vals$data, clonotype, "H"))
+            l_seqs <- c(l_seqs, ClonotypeToSequence(vals$data, clonotype, "L"))
         }
 
         top.clonotypes$h_seq <- h_seqs
@@ -335,7 +335,7 @@ function(input, output, session) {
     output$featureplot.clonotype <- renderPlot({
         req(vals$data, input$featureplot.clonotype)
 
-        FeaturePlot_vdj(vals$data, input$featureplot.clonotype) + theme(
+        FeaturePlotChainRegion(vals$data, input$featureplot.clonotype) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -379,7 +379,7 @@ function(input, output, session) {
     observeEvent(input$chain.usage.chain, {
         req(vals$data, input$chain.usage.chain)
 
-        updateSelectInput(session, "chain.usage.region", choices = Diversity:::availableRegions(input$chain.usage.chain))
+        updateSelectInput(session, "chain.usage.region", choices = Diversity:::AvailableRegions(input$chain.usage.chain))
     })
 
     # Top clonotypes change
@@ -395,7 +395,7 @@ function(input, output, session) {
     output$barplot.comparison <- renderPlot({
         req(vals$data, input$compare.ident.1, input$compare.ident.2)
 
-        barplot_vh(
+        BarplotChainRegion(
             vals$data,
             group.by = input$compare.group.by,
             ident.1 = input$compare.ident.1,
