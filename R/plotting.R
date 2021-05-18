@@ -702,8 +702,8 @@ ClonotypeFrequency.violin <- function(
 #' @param color.mid Color for cells with the medium number of clonotypes. Default = red
 #' @param color.high Color for cells with the highest number of clonotypes. Default = darkred
 #' @param threshold Cells with clonotype count < threshold are colored with the min.color. Default = 1
-#' @param positive.size Size of the dots with clonotype count > threshold. Default = 1
-#' @param negative.size Size of the dots with clonotype count <= threshold. Default = 1
+#' @param positive.size Size of the dots with clonotype count > threshold. Default = 0.5
+#' @param negative.size Size of the dots with clonotype count <= threshold. Default = 0.5
 #' @param positive.alpha Alpha of the dots with clonotype count > threshold. Default = 1
 #' @param negative.alpha Alpha of the dots with clonotype count < threshold. Default = 1
 #'
@@ -721,8 +721,8 @@ ExpansionPlot <- function(
   color.mid = 'red',
   color.high = 'darkred',
   threshold = 1,
-  positive.size = 1,
-  negative.size = 1,
+  positive.size = 0.5,
+  negative.size = 0.5,
   positive.alpha = 1,
   negative.alpha = 1
 ) {

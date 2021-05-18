@@ -12,8 +12,8 @@ ExpansionPlot(
   color.mid = "red",
   color.high = "darkred",
   threshold = 1,
-  positive.size = 1,
-  negative.size = 1,
+  positive.size = 0.5,
+  negative.size = 0.5,
   positive.alpha = 1,
   negative.alpha = 1
 )
@@ -33,9 +33,9 @@ ExpansionPlot(
 
 \item{threshold}{Cells with clonotype count < threshold are colored with the min.color. Default = 1}
 
-\item{positive.size}{Size of the dots with clonotype count > threshold. Default = 1}
+\item{positive.size}{Size of the dots with clonotype count > threshold. Default = 0.5}
 
-\item{negative.size}{Size of the dots with clonotype count <= threshold. Default = 1}
+\item{negative.size}{Size of the dots with clonotype count <= threshold. Default = 0.5}
 
 \item{positive.alpha}{Alpha of the dots with clonotype count > threshold. Default = 1}
 
