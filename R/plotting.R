@@ -788,15 +788,31 @@ ExpansionPlot <- function(
 #' Featureplot of clonotypes
 #'
 #' @param object Seurat object
+#' @param reduction Which dimensionality reduction to use
 #' @param clonotypes Clonotypes to plot
 #' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
-#' @param ... Extra parameters to pass to Seurat::Dimplot
+#' @param size Size of the dots with highlighted clonotype. Default = 0.5
+#' @param missing.size Size of the dots without clonotype. Default = 0.5
+#' @param alpha Alpha of the dots with highlighted clonotype. Default = 1
+#' @param missing.alpha Alpha of the dots without clonotype. Default = 1
+#' @param missing.color Color of dots without clonotype. Default = lightgrey
 #'
 #' @importFrom dplyr %>% mutate
+#' @importFrom ggplot2 aes geom_point ggplot scale_color_discrete theme_classic
 #'
 #' @export
 
-FeaturePlotChainRegion <- function(object, clonotypes, clonotype.column = NULL, ...) {
+FeaturePlotChainRegion <- function(
+  object,
+  reduction,
+  clonotypes,
+  clonotype.column = NULL,
+  size = 0.5,
+  missing.size = 0.5,
+  alpha = 1,
+  missing.alpha = 1,
+  missing.color = "lightgrey"
+  ) {
 
   if (is.null(clonotype.column)) {
     clonotype.column <- "clonotype"
@@ -806,15 +822,47 @@ FeaturePlotChainRegion <- function(object, clonotypes, clonotype.column = NULL, 
     stop("Invalid clonotype column ", clonotype.column, call. = F)
   }
 
+  if (!reduction %in% names(object@reductions)) {
+    stop("Invalid reduction ", reduction, call. = F)
+  }
+
   invalid.clonotypes <- setdiff(clonotypes, unique(object@meta.data[[clonotype.column]]))
   if (length(invalid.clonotypes) > 0) {
     stop("Invalid clonotypes: ", paste(invalid.clonotypes, collapse = ", "), call. = F)
   }
 
+  coordinates <- object@reductions[[reduction]]@cell.embeddings[,c(1,2)] %>% as.data.frame()
+  x.name <- colnames(coordinates)[[1]]
+  y.name <- colnames(coordinates)[[2]]
+
   object@meta.data <- object@meta.data %>%
     mutate(clonotypes = ifelse(.data[[clonotype.column]] %in% clonotypes, .data[[clonotype.column]], NA))
 
-  Seurat::DimPlot(object, group.by = 'clonotypes', na.value = "blue", ...)
+  plot.data <- coordinates
+  plot.data$clonotypes <- object@meta.data[rownames(plot.data), 'clonotypes']
+
+  ggplot() +
+    geom_point(
+      data = subset(plot.data, is.na(clonotypes)),
+      aes(
+        x = .data[[x.name]], y = .data[[y.name]],
+        color = .data$clonotypes
+      ),
+      size = missing.size,
+      alpha = missing.alpha
+    ) +
+    geom_point(
+      data = subset(plot.data, !is.na(clonotypes)),
+      aes(
+        x = .data[[x.name]],
+        y = .data[[y.name]],
+        color = .data$clonotypes
+      ),
+      size = size,
+      alpha = alpha
+    ) +
+    theme_classic() +
+    scale_color_discrete(na.value = missing.color)
 }
 
 #' Display connections between clusters

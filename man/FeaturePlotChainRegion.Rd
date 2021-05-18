@@ -4,16 +4,36 @@
 \alias{FeaturePlotChainRegion}
 \title{Featureplot of clonotypes}
 \usage{
-FeaturePlotChainRegion(object, clonotypes, clonotype.column = NULL, ...)
+FeaturePlotChainRegion(
+  object,
+  reduction,
+  clonotypes,
+  clonotype.column = NULL,
+  size = 0.5,
+  missing.size = 0.5,
+  alpha = 1,
+  missing.alpha = 1,
+  missing.color = "lightgrey"
+)
 }
 \arguments{
 \item{object}{Seurat object}
+
+\item{reduction}{Which dimensionality reduction to use}
 
 \item{clonotypes}{Clonotypes to plot}
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = 'clonotype'}
 
-\item{...}{Extra parameters to pass to Seurat::Dimplot}
+\item{size}{Size of the dots with highlighted clonotype. Default = 0.5}
+
+\item{missing.size}{Size of the dots without clonotype. Default = 0.5}
+
+\item{alpha}{Alpha of the dots with highlighted clonotype. Default = 1}
+
+\item{missing.alpha}{Alpha of the dots without clonotype. Default = 1}
+
+\item{missing.color}{Color of dots without clonotype. Default = lightgrey}
 }
 \description{
 Featureplot of clonotypes
