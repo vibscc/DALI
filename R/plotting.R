@@ -824,6 +824,10 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
     group.by <- "seurat_clusters"
   }
 
+  if (!reduction %in% names(object@reductions)) {
+    stop("Invalid redution ", reduction, call. = F)
+  }
+
   if (!group.by %in% colnames(object@meta.data)) {
     stop("Invalid group.by column ", group.by)
   }
@@ -882,8 +886,11 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   dimred <- object@reductions[[reduction]]@cell.embeddings %>% as.data.frame()
   dimred$group <- object@meta.data[[group.by]]
 
+  label.x.axis <- colnames(dimred)[1]
+  label.y.axis <- colnames(dimred)[2]
+
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
-    geom_point(data = dimred, aes(x = .data$UMAP_1, y = .data$UMAP_2, color = .data$group)) +
+    geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
     scale_edge_width(range = c(0.5, 4)) +
     theme(
       panel.background = element_blank()
