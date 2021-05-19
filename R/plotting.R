@@ -251,6 +251,7 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param subset Subset data to these groups
+#' @param seed Random seed to use. Using the same seed ensures that colors in the plot will be identical. Default = NULL
 #'
 #' @importFrom circlize chordDiagram circos.track circos.text CELL_META
 #' @importFrom dplyr %>% select
@@ -260,7 +261,11 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 #'
 #' @export
 
-CircosPlot <- function(object, group.by = NULL, subset = NULL) {
+CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
+
+    if (!is.null(seed)) {
+      set.seed(seed)
+    }
 
     if (is.null(group.by)) {
         group.by <- "seurat_clusters"

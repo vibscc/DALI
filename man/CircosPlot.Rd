@@ -4,7 +4,7 @@
 \alias{CircosPlot}
 \title{Circosplot for family to gene distribution}
 \usage{
-CircosPlot(object, group.by = NULL, subset = NULL)
+CircosPlot(object, group.by = NULL, subset = NULL, seed = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,6 +12,8 @@ CircosPlot(object, group.by = NULL, subset = NULL)
 \item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
 
 \item{subset}{Subset data to these groups}
+
+\item{seed}{Random seed to use. Using the same seed ensures that colors in the plot will be identical. Default = NULL}
 }
 \description{
 Circosplot for family to gene distribution
