@@ -21,7 +21,8 @@ fluidPage(
                             fluidRow(
                                 column(3,
                                     selectInput('chain.usage.chain', label = "Chain", choices = NULL),
-                                    selectInput('chain.usage.region', label = "Region", choices = c("V", "D", "J", "C"))
+                                    selectInput('chain.usage.region', label = "Region", choices = c("V", "D", "J", "C")),
+                                    checkboxInput('chain.usage.add.missing.families', label = "Show missing families", value = F)
                                 ),
                                 column(9, plotOutput('chain.usage.barplot') %>% withSpinner())
                             )

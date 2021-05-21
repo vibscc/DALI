@@ -270,7 +270,8 @@ function(input, output, session) {
         BarplotChainRegion(
             vals$data,
             chain = input$chain.usage.chain,
-            region = input$chain.usage.region
+            region = input$chain.usage.region,
+            add.missing.families = input$chain.usage.add.missing.families,
             # group.by = input$chain.usage.group.by
         ) + ggtitle("Chain usage")
     })
