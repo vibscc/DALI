@@ -43,7 +43,8 @@ function(input, output, session) {
                 output[[paste0('reduction.plot.', r)]] <- renderPlot({
                     Seurat::DimPlot(
                         object,
-                        reduction = r
+                        reduction = r,
+                        group.by = "seurat_clusters"
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -80,7 +81,8 @@ function(input, output, session) {
                 output[[paste0('expansion.reduction.plot.', r)]] <- renderPlot({
                     Seurat::DimPlot(
                         object,
-                        reduction = r
+                        reduction = r,
+                        group.by = "seurat_clusters"
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
