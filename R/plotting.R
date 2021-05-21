@@ -511,8 +511,8 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = A
 #' @param clonotype.column Metadata column with clonotype information. Default = 'clonotype'
 #' @param bulk Group all cells together and handle as bulk. Default = FALSE
 #' @param show.missing Show missing values in plot. Default = FALSE
-#' @param legend Show legend. Default = FALSE
 #' @param plot.type Type of plot, options = "bar" or "violin"
+#' @param threshold Highlight clonotypes with more or equal cells than threshold. Only works with barplot. Default = 1
 #'
 #' @importFrom dplyr %>%
 #'
@@ -528,8 +528,8 @@ ClonotypeFrequency <- function(
   clonotype.column = NULL,
   bulk = F,
   show.missing = F,
-  legend = F,
-  plot.type = c("bar", "violin")
+  plot.type = c("bar", "violin"),
+  threshold = 1
 ) {
 
   if (!is.null(chain)) {
@@ -564,9 +564,9 @@ ClonotypeFrequency <- function(
   }
 
   if (plot.type == "bar") {
-    plots <- ClonotypeFrequency.bar(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, legend)
+    plots <- ClonotypeFrequency.bar(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, threshold)
   } else if (plot.type == "violin") {
-    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, legend)
+    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk)
   }
 
   gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
@@ -582,9 +582,8 @@ ClonotypeFrequency <- function(
 #' @param clonotype.column Metadata column with clonotype information
 #' @param show.missing Show missing values in plot
 #' @param bulk Group all cells together and handle as bulk
-#' @param legend Show legend
 #'
-#' @importFrom ggplot2 aes element_line element_rect geom_bar ggplot ggtitle theme xlab ylab
+#' @importFrom ggplot2 aes element_line element_rect geom_bar ggplot ggtitle scale_color_manual theme xlab ylab
 #' @importFrom dplyr %>% arrange case_when group_by n summarise ungroup
 
 ClonotypeFrequency.bar <- function(
@@ -596,7 +595,7 @@ ClonotypeFrequency.bar <- function(
   clonotype.column,
   show.missing,
   bulk,
-  legend
+  threshold
 ) {
   plots <- list()
 
@@ -621,16 +620,22 @@ ClonotypeFrequency.bar <- function(
       plot.data[[group.by]] <- "dataset"
     }
 
-    plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq, fill = .data[[data.column]])) +
-      geom_bar(position = "fill", stat = "identity") +
-      ylab("Frequency") +
-      xlab("Cluster") +
+    y.lab <- paste0("Frequency (", if (show.missing) "all cells" else "cells with VDJ data", ")")
+    plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq, color = (!is.na(.data$clonotype) & .data$freq >= threshold))) +
+    # plots[[data.column]] <- ggplot(plot.data, aes(x = .data[[group.by]], y = .data$freq, color = .data$freq > threshold)) +
+      geom_bar(position = "fill", stat = "identity", alpha = 0.1) +
+      ylab(y.lab) +
+      xlab("Group") +
       ggtitle(plot.title) +
       theme(
-        legend.position = if (legend) "right" else "none",
+        legend.position = "none",
         panel.background = element_rect("white"),
         axis.line = element_line(color = "black", size = 0.4),
-      )
+      ) +
+      scale_color_manual(values = c(
+        "TRUE" = "red",
+        "FALSE" = "lightgrey"
+      ))
   }
 
   return(plots)
@@ -646,7 +651,6 @@ ClonotypeFrequency.bar <- function(
 #' @param clonotype.column Metadata column with clonotype information
 #' @param show.missing Show missing values in plot
 #' @param bulk Group all cells together and handle as bulk
-#' @param legend Show legend
 #'
 #' @importFrom ggplot2 aes element_line geom_jitter geom_violin ggplot ggtitle theme xlab ylab
 #' @importFrom dplyr %>% arrange case_when group_by n summarise ungroup
@@ -659,8 +663,7 @@ ClonotypeFrequency.violin <- function(
   sequence.type,
   clonotype.column,
   show.missing,
-  bulk,
-  legend
+  bulk
 ) {
   plots <- list()
 

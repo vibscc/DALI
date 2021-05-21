@@ -13,7 +13,7 @@ ClonotypeFrequency.bar(
   clonotype.column,
   show.missing,
   bulk,
-  legend
+  threshold
 )
 }
 \arguments{
@@ -32,8 +32,6 @@ ClonotypeFrequency.bar(
 \item{show.missing}{Show missing values in plot}
 
 \item{bulk}{Group all cells together and handle as bulk}
-
-\item{legend}{Show legend}
 }
 \description{
 Plot the frequency of clonotypes in (subset of) clusters in a barplot

@@ -12,8 +12,7 @@ ClonotypeFrequency.violin(
   sequence.type,
   clonotype.column,
   show.missing,
-  bulk,
-  legend
+  bulk
 )
 }
 \arguments{
@@ -32,8 +31,6 @@ ClonotypeFrequency.violin(
 \item{show.missing}{Show missing values in plot}
 
 \item{bulk}{Group all cells together and handle as bulk}
-
-\item{legend}{Show legend}
 }
 \description{
 Plot the frequency of clonotypes in (subset of) clusters in a violinplot
