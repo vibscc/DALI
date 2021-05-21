@@ -41,6 +41,7 @@ fluidPage(
                                 ),
                                 column(4,
                                     selectizeInput('featureplot.clonotype', label = "Clonotype location", choices = NULL),
+                                    selectizeInput('featureplot.reduction', label = "Reduction", choices = NULL),
                                     plotOutput('featureplot.clonotype') %>% withSpinner()
                                 )
                             )

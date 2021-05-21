@@ -25,6 +25,7 @@ function(input, output, session) {
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
         updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
+        updateSelectizeInput(session, "featureplot.reduction", choices = names(isolate(vals$data@reductions)))
     }
 
     # ======================================================================= #
@@ -333,9 +334,9 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$featureplot.clonotype <- renderPlot({
-        req(vals$data, input$featureplot.clonotype)
+        req(vals$data, input$featureplot.clonotype, input$featureplot.reduction)
 
-        FeaturePlotChainRegion(vals$data, input$featureplot.clonotype) + theme(
+        FeaturePlotChainRegion(vals$data, input$featureplot.reduction, input$featureplot.clonotype) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -385,7 +386,7 @@ function(input, output, session) {
     # Top clonotypes change
 
     observeEvent(vals$top.clonotypes, {
-        updateSelectInput(session, "featureplot.clonotype", choices = vals$top.clonotypes)
+        updateSelectInput(session, "featureplot.clonotype", choices = vals$top.clonotypes$clonotype)
     })
 
     # ======================================================================= #
