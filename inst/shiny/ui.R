@@ -33,8 +33,16 @@ fluidPage(
                             ),
                             fluidRow(
                                 column(8,
-                                    selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
-                                    selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                                    fluidRow(
+                                        column(4,
+                                               selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
+                                               selectizeInput("clonotype.group", label = "Group", choices = NULL)
+                                        ),
+                                        column(4,
+                                               sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
+                                               checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
+                                        )
+                                    ),
                                     fluidRow(
                                         column(3, plotOutput('cdr3.frequency')),
                                         column(9, tableOutput('top.clonotypes'))

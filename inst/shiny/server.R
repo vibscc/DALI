@@ -296,25 +296,30 @@ function(input, output, session) {
     # ======================================================================= #
 
     output$cdr3.frequency <- renderPlot({
-        req(vals$data, input$clonotype.group.by, input$clonotype.group)
+        req(vals$data, input$clonotype.group.by, input$clonotype.group, input$cdr3.frequency.threshold)
 
         ClonotypeFrequency(
             vals$data,
             chain = NULL,
             use.sequence = F,
             group.by = input$clonotype.group.by,
-            subset = input$clonotype.group
+            subset = input$clonotype.group,
+            threshold = input$cdr3.frequency.threshold,
+            show.missing = input$cdr3.frequency.show.missing
         )
     })
 
     output$top.clonotypes <- renderTable({
         req(vals$data, input$clonotype.group.by, input$clonotype.group)
 
+        n.cells <- sum(vals$data@meta.data[input$clonotype.group.by] == input$clonotype.group)
+
         top.clonotypes <- Diversity:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
             filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
             arrange(desc(freq)) %>%
             select(c(clonotype, freq)) %>%
-            head(n = 25)
+            head(n = 25) %>%
+            mutate(perc = round((freq/n.cells) * 100, digits = 1))
 
         vals$top.clonotypes <- top.clonotypes
 
@@ -328,7 +333,7 @@ function(input, output, session) {
         top.clonotypes$h_seq <- h_seqs
         top.clonotypes$l_seq <- l_seqs
 
-        colnames(top.clonotypes) <- c('Clonotype', 'Cells', 'Heavy CDR3 AA seq', 'Light CDR3 AA seq')
+        colnames(top.clonotypes) <- c("Clonotype", "Cells", "Pct.group", "H CDR3 AA seq", "L CDR3 AA seq")
         top.clonotypes
     })
 
