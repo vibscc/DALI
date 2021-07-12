@@ -31,6 +31,7 @@ Imports:
     tidygraph,
     vegan
 Suggests:
+    sass,
     shiny,
     shinycssloaders,
     plotly,
