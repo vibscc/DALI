@@ -1,0 +1,10 @@
+.nav-pills > li.active > a, .nav-pills > li > a:hover {
+    background-color: $primary !important;
+}
+
+.nav-pills > li > a {
+    border-radius: 90px;
+    font-weight: bold;
+    background-color: $secondary;
+    color: $light;
+}

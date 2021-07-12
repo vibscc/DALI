@@ -190,9 +190,8 @@ function(input, output, session) {
         }
 
         list(
-            h4("Dataset metrics"),
-            div("# cells: ", ncol(vals$data)),
-            div("# cells with VDJ info: ", cells.with.VDJ)
+            div("# cells: ", strong(ncol(vals$data))),
+            div("# cells with VDJ info: ", strong(cells.with.VDJ))
         )
     })
 

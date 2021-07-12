@@ -1,0 +1,38 @@
+.header {
+    height: $header-height;
+    z-index: 999;
+    background-color: $dark;
+    color: $light;
+    margin-bottom: 1rem;
+    padding-top: 5px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: sticky;
+    top: 0;
+}
+
+.header-logo {
+    height: $header-height - 10px;
+    width: auto;
+}
+
+.container-fluid::before, .row::before {
+    content: none;
+}
+
+.container-fluid::after, .row::after {
+    content: none;
+}
+
+.metrics {
+    text-align: right;
+    padding-right: 45px;
+    margin-top: 2px;
+    display: inline-block;
+    width: 100%;
+}
+
+body {
+    overflow-y: auto !important;
+}
