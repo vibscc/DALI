@@ -326,8 +326,8 @@ function(input, output, session) {
         h_seqs <- c()
         l_seqs <- c()
         for (clonotype in top.clonotypes$clonotype) {
-            h_seqs <- c(h_seqs, ClonotypeToSequence(vals$data, clonotype, "H"))
-            l_seqs <- c(l_seqs, ClonotypeToSequence(vals$data, clonotype, "L"))
+            h_seqs <- c(h_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "H"))
+            l_seqs <- c(l_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "L"))
         }
 
         top.clonotypes$h_seq <- h_seqs
