@@ -7,4 +7,14 @@
     font-weight: bold;
     background-color: $secondary;
     color: $light;
+    padding: 6px 10px;
+}
+
+.nav {
+    margin-bottom: 5px;
+}
+
+.nav-tabs > li > a {
+    border-radius: 15px 15px 0 0;
+    color: #555;
 }

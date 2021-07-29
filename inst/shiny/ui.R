@@ -13,7 +13,7 @@ fillPage(
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-3",
             tags$div(class = "form-group row col-sm-12",
-                tags$label("Assay", class = "col-sm-3 text-right"),
+                tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
                 tags$div(class = "col-sm-9",
                     tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90")
                 ),
@@ -44,18 +44,16 @@ fillPage(
                 fluidRow(
                     column(8,
                         fluidRow(
-                            column(4,
-                                   selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
-                                   selectizeInput("clonotype.group", label = "Group", choices = NULL)
-                            ),
-                            column(4,
-                                   sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
-                                   checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
+                            column(2,
+                               selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
+                               selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                               sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
+                               checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
                             )
                         ),
                         fluidRow(
                             column(3, plotOutput('cdr3.frequency')),
-                            column(9, tableOutput('top.clonotypes'))
+                            column(5, tableOutput('top.clonotypes'))
                         )
                     ),
                     column(4,

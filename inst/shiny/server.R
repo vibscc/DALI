@@ -1,3 +1,7 @@
+library(promises)
+library(future)
+plan(multisession)
+
 function(input, output, session) {
 
     # ======================================================================= #
@@ -25,7 +29,8 @@ function(input, output, session) {
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
         updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
-        updateSelectizeInput(session, "featureplot.reduction", choices = names(isolate(vals$data@reductions)))
+        selected <- if ('umap' %in% names(isolate(vals$data@reductions))) 'umap' else if ('tsne' %in% names(isolate(vals$data@reductions))) 'tsne' else NULL
+        updateSelectizeInput(session, "featureplot.reduction", choices = names(isolate(vals$data@reductions)), selected = selected)
     }
 
     # ======================================================================= #
@@ -50,7 +55,7 @@ function(input, output, session) {
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
                         axis.text = element_blank()
-                    )
+                    ) + ggtitle("Clustering")
                 })
 
                 output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
@@ -65,9 +70,7 @@ function(input, output, session) {
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
                         axis.text = element_blank()
-                    ) + ggtitle(
-                        "Chain usage"
-                    )
+                    ) + ggtitle("Chain usage")
                 })
             })
         }
@@ -88,7 +91,7 @@ function(input, output, session) {
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
                         axis.text = element_blank()
-                    )
+                    ) + ggtitle("Clustering")
                 })
 
                 output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
@@ -97,24 +100,24 @@ function(input, output, session) {
                         reduction = r,
                         threshold = 2,
                         negative.alpha = 0.7
-
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
-                        axis.text = element_blank()
+                        axis.text = element_blank(),
+                        plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
                     ) + ggtitle("Expansion plot")
                 })
 
-                output[[paste0('graph.', r)]] <- renderPlot({
-                    CloneConnGraph(
-                        object,
-                        reduction = r
-                    ) + theme(
-                        legend.position = "none"
-                    ) + ggtitle("Clonal connection plot")
-
-                })
+                # output[[paste0('graph.', r)]] <- renderPlot({
+                #     CloneConnGraph(
+                #         object = object,
+                #         reduction = r
+                #     ) + theme(
+                #         legend.position = "none"
+                #     ) + ggtitle("Clonal connection plot")
+                #
+                # })
             })
         }
     }
@@ -232,9 +235,9 @@ function(input, output, session) {
             tabPanel(
                 Diversity:::FormatDimred(reduction),
                 fluidRow(
-                    column(4, plotOutput(plotname.dimred) %>% withSpinner()),
-                    column(4, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
-                    column(4, plotOutput(plotname.graph) %>% withSpinner())
+                    column(6, plotOutput(plotname.dimred) %>% withSpinner()),
+                    column(6, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
+                    # column(4, plotOutput(plotname.graph) %>% withSpinner())
                 )
             )
         })
