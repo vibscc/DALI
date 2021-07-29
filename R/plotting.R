@@ -961,19 +961,19 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
-    scale_edge_width(range = c(0.5, 4)) +
+    scale_edge_alpha(range = c(0.2, 1)) +
+    scale_edge_width(range = c(0.5, 2)) +
     theme(
       panel.background = element_blank()
     )
 
   if (!is.null(groups.highlight)) {
     plot <- plot +
-      geom_edge_link(aes(width = .data$n, color = .data$highlight, alpha = .data$highlight)) +
-      scale_edge_colour_manual(values = c("grey", "red")) +
-      scale_edge_alpha_manual(values = c(0.3, 1))
+      geom_edge_arc(aes(color = .data$highlight, alpha = .data$n, width = .data$n), strength = 0.2) +
+      scale_edge_color_manual(values = c("grey", "red"))
   } else {
     plot <- plot +
-      geom_edge_link(aes(width = .data$n))
+      geom_edge_arc(aes(alpha = .data$n, width = .data$n), strength = 0.2)
   }
 
   plot + geom_node_point()
