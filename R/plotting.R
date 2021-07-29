@@ -881,7 +881,7 @@ FeaturePlotChainRegion <- function(
 #' @param groups.highlight Groups for which to highlight the edges in the graph
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
 #'
-#' @importFrom dplyr %>%
+#' @importFrom dplyr %>% bind_rows distinct filter group_by group_map n
 #' @importFrom ggplot2 aes element_blank geom_point theme
 #' @importFrom ggraph geom_edge_link geom_node_point ggraph scale_edge_alpha_manual scale_edge_colour_manual scale_edge_width
 #' @importFrom tidygraph as_tbl_graph
@@ -910,25 +910,19 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
     stop("Invalid clonotype.column ", group.by)
   }
 
-  data <- object@meta.data[, c(clonotype.column, group.by)] %>% na.omit()
-  data.table <- table(data)
-  groups <- colnames(data.table)
+  object@meta.data[, group.by] <- as.character(object@meta.data[, group.by])
 
-  edges <- data.frame(matrix(ncol = 2, nrow = 0))
+  edges <- object@meta.data[, c(clonotype.column, group.by)] %>%
+    na.omit() %>%
+    group_by(clonotype) %>%
+    distinct() %>%
+    filter(n() > 1) %>%
+    group_map(~ gtools::combinations(nrow(.x), 2, as.numeric(.x[[1]])) %>% as.data.frame()) %>%
+    bind_rows()
+
   colnames(edges) <- c("from", "to")
-
-  for (col in c(1:ncol(data.table))) {
-    for (row in rownames(data.table)) {
-      start = col + 1
-      if (start <= ncol(data.table) && row != "" && data.table[row, col] > 0) {
-        for (pointer in c(start:ncol(data.table))) {
-          if (col != pointer && data.table[row, pointer] > 0) {
-            edges[nrow(edges) + 1, ] <- c(groups[col], groups[pointer])
-          }
-        }
-      }
-    }
-  }
+  edges$from <- as.character(edges$from)
+  edges$to <- as.character(edges$to)
 
   edges <- edges %>% group_by(.data$from, .data$to) %>% count()
 
@@ -941,12 +935,11 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   getCenters <- function(groups, column) {
     centers <- c()
     for (group in groups) {
-      cells <- rownames(data)[data[[group.by]] == group]
+      cells <- rownames(object@meta.data)[object@meta.data[, group.by] == group]
       test <- mean(object@reductions[[reduction]]@cell.embeddings[cells, column])
 
       centers <- c(centers, test)
     }
-
     return(centers)
   }
 
@@ -961,7 +954,7 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
-    scale_edge_alpha(range = c(0.2, 1)) +
+    scale_edge_alpha(range = c(0.1, 1)) +
     scale_edge_width(range = c(0.5, 2)) +
     theme(
       panel.background = element_blank()
