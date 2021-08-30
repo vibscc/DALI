@@ -90,7 +90,7 @@ CalculateDiversity <- function(frequencies, algorithm) {
     if (algorithm == "gini") {
         return(CalculateDiversity.gini(frequencies$freq))
     } else if (algorithm == "shannon") {
-        return(CalculateDiversity.shannon(frequenciesfreq))
+        return(CalculateDiversity.shannon(frequencies$freq))
     } else {
         stop("Invalid algorithm ", algorithm)
     }
