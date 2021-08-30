@@ -883,7 +883,7 @@ FeaturePlotChainRegion <- function(
 #'
 #' @importFrom dplyr %>% bind_rows distinct filter group_by group_map n
 #' @importFrom ggplot2 aes element_blank geom_point theme
-#' @importFrom ggraph geom_edge_link geom_node_point ggraph scale_edge_alpha_manual scale_edge_colour_manual scale_edge_width
+#' @importFrom ggraph geom_edge_arc geom_node_point ggraph scale_edge_alpha scale_edge_color_manual scale_edge_width
 #' @importFrom tidygraph as_tbl_graph
 #'
 #' @export
