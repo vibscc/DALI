@@ -25,13 +25,13 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
     }
 
-    if (!file.exists(location.metrics)) {
-        stop("Metrics summary file (", location.metrics, ") is missing!", call. = F)
-    }
-
     annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive %in% c('True', 'true'))
 
     if (is.null(type)) {
+        if (!file.exists(location.metrics)) {
+            stop("Metrics summary file (", location.metrics, ") is missing!", call. = F)
+        }
+
         type <- GetAssayForData(location.metrics)
 
         if (is.null(type)) {
