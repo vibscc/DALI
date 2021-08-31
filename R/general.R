@@ -78,7 +78,7 @@ Read10X_AIRR <- function(object, file, type, force = F) {
 #' Load VDJ data from an AIRR rearrangement file
 #'
 #' @param object Seurat object
-#' @param file AIRR rearrangement tsv
+#' @param files AIRR rearrangement tsv. Can be multiple
 #' @param type VDJ assay type for loaded data
 #' @param fields Fields to keep from the AIRR file
 #' @param columns Column names to map the field names to
@@ -86,13 +86,18 @@ Read10X_AIRR <- function(object, file, type, force = F) {
 #' @param productive.field Field containing productive information. Default = productive
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #'
+#' @importFrom dplyr bind_rows
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
 #' @export
 
-Read_AIRR <- function(object, file, type, fields, columns, only.productive = T, productive.field = "productive", force = F) {
-    data <- read.csv(file, sep = "\t")
+Read_AIRR <- function(object, files, type, fields, columns, only.productive = T, productive.field = "productive", force = F) {
+    data <- data.frame(matrix(ncol = 0, nrow = 0))
+    for (f in files) {
+        d <- read.csv(f, sep = "\t")
+        data <- bind_rows(data, d)
+    }
 
     if (only.productive) {
         data <- data %>% filter(grepl('true', .data[[productive.field]], ignore.case = T))

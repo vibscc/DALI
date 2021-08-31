@@ -6,7 +6,7 @@
 \usage{
 Read_AIRR(
   object,
-  file,
+  files,
   type,
   fields,
   columns,
@@ -18,7 +18,7 @@ Read_AIRR(
 \arguments{
 \item{object}{Seurat object}
 
-\item{file}{AIRR rearrangement tsv}
+\item{files}{AIRR rearrangement tsv. Can be multiple}
 
 \item{type}{VDJ assay type for loaded data}
 
