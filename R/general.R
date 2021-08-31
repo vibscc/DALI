@@ -107,7 +107,7 @@ Read_AIRR <- function(object, files, type, fields, columns, only.productive = T,
 
     for (required.field in required) {
         if (!required.field %in% columns) {
-            stop("Missing requred field ", required, call. = F)
+            stop("Missing required field ", required, call. = F)
         }
     }
 
