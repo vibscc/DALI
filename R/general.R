@@ -7,8 +7,7 @@
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
 #'
-#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate rename_all select
-#' @importFrom tibble column_to_rownames
+#' @importFrom dplyr %>% filter
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
@@ -25,7 +24,7 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
     }
 
-    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(.data$productive %in% c('True', 'true'))
+    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(grepl('true', .data$productive, ignore.case = T))
 
     if (is.null(type)) {
         if (!file.exists(location.metrics)) {
@@ -41,17 +40,122 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         type <- match.arg(type, choices = c("BCR", "TCR"))
     }
 
-    columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "dual_IR", "raw_clonotype_id")
+    fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
+    fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
+
+    for (field in fields.extra) {
+        if (field %in% colnames(annotation.contig)) {
+            fields <- c(fields, field)
+        }
+    }
+    columns <- gsub("raw_clonotype_id", "clonotype", fields)
+
+    return(ReadData(object, type = type, data = annotation.contig, fields = fields, columns = columns, force = force, sort.by = sort.by))
+}
+
+#' Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv
+#'
+#' @param object Seurat object
+#' @param file 10X AIRR rearrangement tsv
+#' @param type VDJ assay type for loaded data
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#'
+#' @importFrom dplyr %>% filter
+#' @importFrom rlang .data
+#' @importFrom utils read.csv
+#'
+#' @export
+
+Read10X_AIRR <- function(object, file, type, force = F) {
+    data <- read.csv(file, sep = "\t") %>% filter(grepl('true', .data$productive, ignore.case = T))
+
+    fields <- c("cell_id", "v_call", "d_call", "j_call", "c_call", "junction_aa", "junction", "consensus_count", "clone_id")
+    columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "umis", "clonotype")
+
+    return(ReadData(object, type, data, fields, columns, force, sort.by = 'umis'))
+}
+
+#' Load VDJ data from an AIRR rearrangement file
+#'
+#' @param object Seurat object
+#' @param file AIRR rearrangement tsv
+#' @param type VDJ assay type for loaded data
+#' @param fields Fields to keep from the AIRR file
+#' @param columns Column names to map the field names to
+#' @param only.productive Keep only productive rearrangements. Default = TRUE
+#' @param productive.field Field containing productive information. Default = productive
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#'
+#' @importFrom rlang .data
+#' @importFrom utils read.csv
+#'
+#' @export
+
+Read_AIRR <- function(object, file, type, fields, columns, only.productive = T, productive.field = "productive", force = F) {
+    data <- read.csv(file, sep = "\t")
+
+    if (only.productive) {
+        data <- data %>% filter(grepl('true', .data[[productive.field]], ignore.case = T))
+    }
+
+    required <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "umis", "clonotype")
+
+    for (required.field in required) {
+        if (!required.field %in% columns) {
+            stop("Missing requred field ", required, call. = F)
+        }
+    }
+
+    return(ReadData(object, type, data, fields, columns, force = force, sort.by = "umis"))
+}
+
+#' Load data in the Seurat object
+#'
+#' @param object Seurat object
+#' @param type VDJ assay type for loaded data
+#' @param data data frame containg all data
+#' @param fields Fields to select from the data
+#' @param columns Rename fields to these names. If not specified, just use the field names
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
+#'
+#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate rename_all select
+#' @importFrom tibble column_to_rownames
+#' @importFrom rlang .data
+
+ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort.by = c('umis', 'reads')) {
+
+    if (!type %in% c("BCR", "TCR")) {
+        stop("Invalid type '", type, "', must be one of TCR or BCR")
+    }
+
+    sort.by <- match.arg(sort.by)
+
+    if (is.null(columns)) {
+        columns <- fields
+    } else if (length(fields) != length(columns)) {
+        stop("Fields and columns should be equal length. Got ", length(fields), " and ", length(columns), " instead", call. = F)
+    }
+
+    for (field in fields) {
+        if (!field %in% colnames(data)) {
+            stop("Missing field ", field, " in data", call. = F)
+        }
+    }
+
+    fields <- c(fields, "dual_IR")
+    columns <- c(columns, "dual_IR")
 
     heavy.name <- if (type == "TCR") "a" else "h"
     light.name <- if (type == "TCR") "b" else "l"
 
-    heavy <- annotation.contig %>%
-        filter(grepl("^IGH|^TRA", .data$c_gene)) %>%
-        add_count(.data$barcode) %>%
+    heavy <- data %>%
+        filter(grepl("^IGH|^TRA", .data[[FieldForColumn('c_gene', fields, columns)]])) %>%
+        add_count(.data[[FieldForColumn('barcode', fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
-        select(all_of(columns)) %>%
+        select(all_of(fields)) %>%
+        `colnames<-`(columns) %>%
         mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
     heavy.primary <- heavy %>%
@@ -67,15 +171,16 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(heavy.name, ".", .))
 
-    colnames(heavy.primary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(heavy.primary))
-    colnames(heavy.secondary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(heavy.secondary))
+    colnames(heavy.primary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.primary))
+    colnames(heavy.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.secondary))
 
-    light <- annotation.contig %>%
-        filter(grepl("^IG[KL]|^TRB", .data$c_gene)) %>%
-        add_count(.data$barcode) %>%
+    light <- data %>%
+        filter(grepl("^IG[KL]|^TRB", .data[[FieldForColumn('c_gene', fields, columns)]])) %>%
+        add_count(.data[[FieldForColumn('barcode', fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
-        select(all_of(columns)) %>%
+        select(all_of(fields)) %>%
+        `colnames<-`(columns) %>%
         mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
     light.primary <- light %>%
@@ -91,8 +196,16 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         column_to_rownames("barcode") %>%
         rename_all(~ paste0(light.name, ".", .))
 
-    colnames(light.primary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(light.primary))
-    colnames(light.secondary) <- gsub(".\\.raw_clonotype_id", "clonotype", colnames(light.secondary))
+    colnames(light.primary) <- gsub(".\\.clonotype", "clonotype", colnames(light.primary))
+    colnames(light.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(light.secondary))
+
+    if (nrow(heavy.primary) == 0) {
+        stop("Could not find heavy primary chains in the data!", call. = F)
+    }
+
+    if (nrow(light.primary) == 0) {
+        stop("Could not find light primary chains in the data!", call. = F)
+    }
 
     object <- AddVDJDataForType(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force)
     DefaultAssayVDJ(object) <- type

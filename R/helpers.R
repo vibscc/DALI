@@ -37,3 +37,15 @@ ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype
 
     return(paste(sequences, collapse = " | "))
 }
+
+#' Get field name for given column name
+#'
+#' @param column Column for which you want the field
+#' @param fields List of available fields
+#' @param columns List of available columns
+
+FieldForColumn <- function(column, fields, columns) {
+    index = which(columns == column[[1]])
+
+    return(fields[[index]])
+}
