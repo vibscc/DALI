@@ -16,7 +16,8 @@ BarplotChainRegion(
   grid = F,
   add.missing.families = T,
   percent.total = T,
-  show.missing.values = F
+  show.missing.values = F,
+  cols = NULL
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ BarplotChainRegion(
 \item{percent.total}{Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)}
 
 \item{show.missing.values}{Should missing values be shown in the plot. Default = FALSE}
+
+\item{cols}{Colors to use}
 }
 \description{
 Barplot for IGHV-family per group

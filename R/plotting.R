@@ -12,10 +12,10 @@
 #' @param add.missing.families Should missing families be added to the plot. Default = TRUE
 #' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
 #' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
+#' @param cols Colors to use
 #'
 #' @importFrom dplyr arrange case_when count rename  %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
-#' @importFrom grDevices colorRampPalette
 #' @importFrom reshape2 melt
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
@@ -36,7 +36,8 @@ BarplotChainRegion <- function(
   grid = F,
   add.missing.families = T,
   percent.total = T,
-  show.missing.values = F
+  show.missing.values = F,
+  cols = NULL
 ) {
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -154,21 +155,25 @@ BarplotChainRegion <- function(
 
   plot.data[[data.column]] <- factor(plot.data$family, levels = families)
 
+  if (is.null(cols)) {
+    cols <- GetCategoricalColorPalette(plot.data$group)
+  }
+
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
       ylim(0, NA) +
       labs(y = "Percentage cells", x = "Family", title = .data$group) +
-      # geom_text(data = NULL, aes(label = .data$freq), size = 2, position = position_dodge(width = 1), vjust = -0.5) +
       theme(
-          panel.background = element_rect(fill = "white"), # bg of the panel
-          plot.background = element_rect(fill = "white"), # bg of the plot
-          panel.grid.major = element_blank(), # get rid of major grid
-          panel.grid.minor = element_blank(), # get rid of minor grid
-          legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-          legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+          panel.background = element_rect(fill = "white"),
+          plot.background = element_rect(fill = "white"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          legend.background = element_rect(fill = "transparent"),
+          legend.box.background = element_rect(fill = "transparent"),
           legend.key.size = unit(0.1, "cm"),
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-      )
+      ) +
+      scale_fill_manual(values = cols)
 
   if (grid) {
       plot <- plot + facet_grid(~ .data$group)
@@ -190,6 +195,7 @@ BarplotChainRegion <- function(
 #' @param subset Subset data to these groups
 #' @param clonotypes Clonotypes to plot. Default = top 10
 #' @param position Position of the bars in the plots. Options = stack or dodge
+#' @param cols Colors to use
 #'
 #' @importFrom dplyr %>% filter group_by n select summarise
 #' @importFrom ggplot2 aes element_text geom_bar ggplot theme
@@ -198,7 +204,7 @@ BarplotChainRegion <- function(
 #'
 #' @export
 
-BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge")) {
+BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge"), cols = NULL) {
 
   if (is.null(group.by)) {
     group.by <- "seurat_clusters"
@@ -239,11 +245,16 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 
   plot.data$clonotype <- factor(plot.data$clonotype, levels = clonotypes)
 
+  if (is.null(cols)) {
+    cols <- GetCategoricalColorPalette(plot.data[[group.by]])
+  }
+
   ggplot(plot.data, aes(x = .data$clonotype, y = .data$n, fill = .data[[group.by]])) +
     geom_bar(position = position, stat = "identity") +
     theme(
       axis.text.x = element_text(angle = 90)
-    )
+    ) +
+    scale_fill_manual(values = cols)
 }
 
 #' Circosplot for family to gene distribution
@@ -308,10 +319,11 @@ CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 #' @param subset Subset data to these groups
 #' @param plot.type Type of plot. Options = ridge, line
 #' @param sequence.type Which CDR3 sequence should be used? Options: "AA" or "NT"
+#' @param cols Colors to use. Only has an effect on the ridgeplots
 #'
 #' @export
 
-CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT")) {
+CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT"), cols = NULL) {
 
     plot.type <- match.arg(plot.type)
     sequence.type <- match.arg(sequence.type)
@@ -337,7 +349,7 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
     if (plot.type == "line") {
       plots <- CDR3Plot.line(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type)
     } else if (plot.type == "ridge") {
-      plots <- CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column)
+      plots <- CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column, cols)
     }
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
@@ -406,13 +418,14 @@ CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column
 #' @param group.by Metadata column to group the family data by. Default = seurat_clusters
 #' @param heavy.cdr3.column Column name for heavy cdr3 data
 #' @param light.cdr3.column Column name for light cdr3 data
+#' @param cols Colors to use
 #'
 #' @importFrom dplyr %>% mutate
 #' @importFrom ggplot2 ggplot aes coord_cartesian scale_y_discrete scale_x_continuous
 #' @importFrom ggridges geom_density_ridges theme_ridges
 #' @importFrom rlang .data
 
-CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column) {
+CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, cols) {
   plots <- list()
 
   for (column in c(heavy.cdr3.column, light.cdr3.column)) {
@@ -436,12 +449,17 @@ CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.colum
 
     title <- paste0(title, " chain")
 
-    plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]])) +
+    if (is.null(cols)) {
+      cols <- GetCategoricalColorPalette(plot.data[[group.by]])
+    }
+
+    plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]], fill = .data[[group.by]])) +
       geom_density_ridges() +
       scale_y_discrete(expand = c(0, 0)) +
       scale_x_continuous(expand = c(0, 0)) +
+      scale_fill_manual(values = cols) +
       coord_cartesian(clip = "off") +
-      theme_ridges() +
+      theme_ridges(grid = F, center_axis_labels = T) +
       ggtitle(title)
   }
 
@@ -462,7 +480,7 @@ CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.colum
 #'
 #' @export
 
-DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = AvailableChains(object), by.family = T, grid = T, highlight = NULL, ...) {
+DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = AvailableChains(object), by.family = T, grid = T, highlight = NULL, cols = NULL, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -479,8 +497,12 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = A
     data.column <- paste0(data.column, 'gene')
   }
 
+  if (is.na(object@meta.data[, data.column]) %>% sum() == nrow(object@meta.data)) {
+    stop("No data for the combination ", toupper(region), "-region + ", toupper(chain), "-chain", call. = F)
+  }
+
   families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
-  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+  families <- families[families %>% gsub(pattern = "-", replacement = "_") %>% gtools::mixedorder(x = .)]
 
   if (!is.null(highlight) && !highlight %in% families) {
     stop("Invalid highlight for selected region/chain combination", call. = F)
@@ -496,7 +518,15 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = A
     cells.highlight = rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
   }
 
-  Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), ...)
+  if (is.null(cols)) {
+    cols <- GetCategoricalColorPalette(object@meta.data[[data.column]])
+  }
+
+  Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), cols = cols, ...) +
+    theme(
+      panel.grid.major = element_line(color = "grey"),
+      axis.line = element_blank()
+    )
 }
 
 
@@ -566,7 +596,7 @@ ClonotypeFrequency <- function(
   if (plot.type == "bar") {
     plots <- ClonotypeFrequency.bar(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, threshold)
   } else if (plot.type == "violin") {
-    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk)
+    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, cols)
   }
 
   gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
@@ -582,6 +612,7 @@ ClonotypeFrequency <- function(
 #' @param clonotype.column Metadata column with clonotype information
 #' @param show.missing Show missing values in plot
 #' @param bulk Group all cells together and handle as bulk
+#' @param threshold Highlight clonotypes with more or equal cells than threshold
 #'
 #' @importFrom ggplot2 aes element_line element_rect geom_bar ggplot ggtitle scale_color_manual theme xlab ylab
 #' @importFrom dplyr %>% arrange case_when group_by n summarise ungroup
@@ -595,6 +626,7 @@ ClonotypeFrequency.bar <- function(
   clonotype.column,
   show.missing,
   bulk,
+  cols,
   threshold
 ) {
   plots <- list()
@@ -880,15 +912,17 @@ FeaturePlotChainRegion <- function(
 #' @param group.by  Metadata column to group the family data by. Default = seurat_clusters
 #' @param groups.highlight Groups for which to highlight the edges in the graph
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
+#' @param cols Colors to use
 #'
 #' @importFrom dplyr %>% bind_rows distinct filter group_by group_map n
-#' @importFrom ggplot2 aes element_blank geom_point theme
+#' @importFrom ggplot2 aes element_blank geom_point scale_color_manual theme
 #' @importFrom ggraph geom_edge_arc geom_node_point ggraph scale_edge_alpha scale_edge_color_manual scale_edge_width
+#' @importFrom rlang .data
 #' @importFrom tidygraph as_tbl_graph
 #'
 #' @export
 
-CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL) {
+CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL, cols = NULL) {
 
   if (is.null(group.by)) {
     group.by <- "seurat_clusters"
@@ -947,13 +981,18 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
     mutate(x = getCenters(.data$name, 1), y = getCenters(.data$name, 2))
 
   dimred <- object@reductions[[reduction]]@cell.embeddings %>% as.data.frame()
-  dimred$group <- object@meta.data[[group.by]]
+  dimred$group <- factor(object@meta.data[[group.by]], levels = gtools::mixedsort(unique(object@meta.data[[group.by]])))
 
   label.x.axis <- colnames(dimred)[[1]]
   label.y.axis <- colnames(dimred)[[2]]
 
+  if (is.null(cols)) {
+    cols <- GetCategoricalColorPalette(dimred$group)
+  }
+
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
+    scale_color_manual(values = cols) +
     scale_edge_alpha(range = c(0.1, 1)) +
     scale_edge_width(range = c(0.5, 2)) +
     theme(

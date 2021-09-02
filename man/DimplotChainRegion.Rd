@@ -11,6 +11,7 @@ DimplotChainRegion(
   by.family = T,
   grid = T,
   highlight = NULL,
+  cols = NULL,
   ...
 )
 }

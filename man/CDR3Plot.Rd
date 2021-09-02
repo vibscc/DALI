@@ -9,7 +9,8 @@ CDR3Plot(
   group.by = NULL,
   subset = NULL,
   plot.type = c("ridge", "line"),
-  sequence.type = c("AA", "NT")
+  sequence.type = c("AA", "NT"),
+  cols = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ CDR3Plot(
 \item{plot.type}{Type of plot. Options = ridge, line}
 
 \item{sequence.type}{Which CDR3 sequence should be used? Options: "AA" or "NT"}
+
+\item{cols}{Colors to use. Only has an effect on the ridgeplots}
 }
 \description{
 Plot length of CDR3 AA/NT sequences

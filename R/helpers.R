@@ -49,3 +49,34 @@ FieldForColumn <- function(column, fields, columns) {
 
     return(fields[[index]])
 }
+
+#' Generate ggplot default colors
+#'
+#' @param n Number of colors needed
+#' @param hue Minimum and maximum hue
+#'
+#' @importFrom grDevices hcl
+
+ggplotColors <- function(n, h = c(15, 375)) {
+    if ((diff(h) %% 360) < 1) {
+        h[2] <- h[2] - 360/n
+    }
+    hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+#' Get a colorpalette for given categorical data
+#'
+#' @param data Categorical data
+#'
+#' @importFrom dplyr %>%
+#' @importFrom Polychrome sky.colors
+
+GetCategoricalColorPalette <- function(data) {
+    n.categories <- unique(data) %>% length()
+
+    if (n.categories <= 24) {
+        return(sky.colors(max(c(3, n.categories))) %>% unname())
+    }
+
+    return(ggplotColors(n = n.categories))
+}

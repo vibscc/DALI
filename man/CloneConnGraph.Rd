@@ -9,7 +9,8 @@ CloneConnGraph(
   reduction,
   group.by = NULL,
   groups.highlight = NULL,
-  clonotype.column = NULL
+  clonotype.column = NULL,
+  cols = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ CloneConnGraph(
 \item{groups.highlight}{Groups for which to highlight the edges in the graph}
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
+
+\item{cols}{Colors to use}
 }
 \description{
 Display connections between clusters

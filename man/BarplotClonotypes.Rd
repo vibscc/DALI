@@ -9,7 +9,8 @@ BarplotClonotypes(
   group.by = NULL,
   subset = NULL,
   clonotypes = NULL,
-  position = c("stack", "dodge")
+  position = c("stack", "dodge"),
+  cols = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ BarplotClonotypes(
 \item{clonotypes}{Clonotypes to plot. Default = top 10}
 
 \item{position}{Position of the bars in the plots. Options = stack or dodge}
+
+\item{cols}{Colors to use}
 }
 \description{
 Barplot with clonotype distribution
