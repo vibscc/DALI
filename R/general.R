@@ -124,7 +124,7 @@ Read_AIRR <- function(object, files, type, fields, columns, only.productive = T,
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #'
-#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate rename_all select
+#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate mutate_all na_if rename_all select
 #' @importFrom tibble column_to_rownames
 #' @importFrom rlang .data
 
@@ -154,9 +154,11 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     heavy.name <- if (type == "TCR") "a" else "h"
     light.name <- if (type == "TCR") "b" else "l"
 
+    data <- data %>% mutate_all(~ na_if(.x, ""))
+
     heavy <- data %>%
-        filter(grepl("^IGH|^TRA", .data[[FieldForColumn('c_gene', fields, columns)]])) %>%
-        add_count(.data[[FieldForColumn('barcode', fields, columns)]]) %>%
+        filter(grepl("^IGH|^TRA", .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+        add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
         select(all_of(fields)) %>%
@@ -180,8 +182,8 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     colnames(heavy.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.secondary))
 
     light <- data %>%
-        filter(grepl("^IG[KL]|^TRB", .data[[FieldForColumn('c_gene', fields, columns)]])) %>%
-        add_count(.data[[FieldForColumn('barcode', fields, columns)]]) %>%
+        filter(grepl("^IG[KL]|^TRB", .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+        add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
         select(all_of(fields)) %>%
