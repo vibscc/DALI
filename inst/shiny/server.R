@@ -1,5 +1,6 @@
 library(promises)
 library(future)
+library(shinyFiles)
 plan(multisession)
 
 function(input, output, session) {
@@ -7,8 +8,14 @@ function(input, output, session) {
     # ======================================================================= #
     # Initialize app
     # ======================================================================= #
-
+    volumes <- c("Home (~)" = fs::path_home(), "/" = "/")
+    shinyFileChoose(input, "seurat_rds", session = session, roots = volumes)
+    shinyDirChoose(input, "vdj_dir", session = session, roots = volumes)
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
+    upload <- reactiveValues(
+        seurat.rds = NULL,
+        vdj.dir = NULL
+    )
 
     app.initialize <- function() {
         renderReductionPlotsChainUsage(isolate(vals$data))
@@ -49,7 +56,8 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "seurat_clusters"
+                        group.by = "seurat_clusters",
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -146,16 +154,40 @@ function(input, output, session) {
     # Load data if necessary
     # ======================================================================= #
 
-    dataUploadModal <- function(failed = F) {
+    dataUploadModal <- function(error = NULL) {
         modalDialog(
-            fileInput("file", "Choose an rds file to load", accept = ".rds"),
-            if (failed) {
-                div("Invalid file! Make sure the object already contains VDJ data. This can be done with the `Read10X_vdj` function of `Diversity`")
+            div(
+                strong("Select a Seurat Rds file:"),
+                shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
+                textOutput("seurat.rds.path.text", inline = T),
+            ),
+            div(
+                strong("(Optional) Cellranger output folder", title = "This is only required when the selected Seurat object does NOT contain VDJ data yet (loaded by Diversity::Read10X_vdj() or other Diversity method)"),
+                shinyDirButton("vdj_dir", "Browse...", "Select cellranger output folder containing VDJ data", multiple = F),
+                textOutput("vdj.dir.text", inline = T)
+            ),
+            div(
+                uiOutput("vdj.type.select")
+            ),
+            if (!is.null(error)) {
+                div(
+                    h4("Error:", class = "text-danger"),
+                    p(error)
+                )
             },
-
+            title = "Load data",
             footer = tagList(
                 actionButton("load", "Load")
             ),
+            easyClose = F,
+            size = "l"
+        )
+    }
+
+    loadingModal <- function() {
+        modalDialog(
+            "Data is loading. This can take a while for larger datasets!",
+            footer = NULL,
             easyClose = F
         )
     }
@@ -166,16 +198,72 @@ function(input, output, session) {
         app.initialize()
     }
 
+    observeEvent(input$seurat_rds, {
+        upload$seurat.rds <- shinyFiles::parseFilePaths(volumes, input$seurat_rds)
+    })
+
+    observeEvent(input$vdj_dir, {
+        upload$vdj.dir <- shinyFiles::parseDirPath(volumes, input$vdj_dir)
+    })
+
     observeEvent(input$load, {
-        data <- readRDS(input$file$datapath)
+        if (length(upload$seurat.rds) == 0 || is.null(upload$seurat.rds)) {
+            showModal(dataUploadModal(error = "Missing Seurat Rds file!"))
+            return()
+        }
+
+        if (!file.exists(upload$seurat.rds$datapath)) {
+            showModal(dataUploadModal(error = paste0("Could not find file '", upload$seurat.rds$datapath, "'")))
+        }
+
+        removeModal()
+        showModal(loadingModal())
+
+        data <- readRDS(upload$seurat.rds$datapath)
+
+        if (length(upload$vdj.dir) > 0) {
+            data <- tryCatch({
+                Read10X_vdj(data, upload$vdj.dir, type = input$vdj_type)
+            }, error = function(e) {
+                showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + the correct VDJ type is selected")))
+                return(NA)
+            })
+            if (is.na(data)) {
+                return()
+            }
+        }
+
 
         if (IsValidSeuratObject(data)) {
-            vals$data <- readRDS(input$file$datapath)
-            app.initialize()
+            vals$data <- data
             removeModal()
+            app.initialize()
+            return()
         } else {
-            showModal(dataUploadModal(failed = T))
+            showModal(
+                dataUploadModal(
+                    error = "Selected Seurat-object does not contain VDJ (correct) information. Please select a cellranger output folder for the given Seurat object AND make sure the VDJ type is set correctly."
+                )
+            )
         }
+    })
+
+    output$seurat.rds.path.text <- renderText({
+        req(upload$seurat.rds)
+
+        gsub("/+", "/", upload$seurat.rds$datapath)
+    })
+
+    output$vdj.dir.text <- renderText({
+        req(upload$vdj.dir)
+
+        gsub("/+", "/", upload$vdj.dir)
+    })
+
+    output$vdj.type.select <- renderUI({
+        req(upload$vdj.dir)
+
+        selectInput("vdj_type", label = "VDJ data type", choices = c("TCR", "BCR"))
     })
 
     # ======================================================================= #
