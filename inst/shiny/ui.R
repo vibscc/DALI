@@ -45,7 +45,7 @@ fillPage(
                     column(8,
                         fluidRow(
                             column(2,
-                               selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters")),
+                               selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters", "orig.ident")),
                                selectizeInput("clonotype.group", label = "Group", choices = NULL),
                                sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
                                checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
@@ -78,6 +78,9 @@ fillPage(
                         plotOutput('spectratypeplot') %>% withSpinner()
                     )
                 )
+            ),
+            tabPanel("Clonotypes",
+                DT::DTOutput("clonotypes.table")
             )
         )
     )

@@ -1,6 +1,7 @@
 library(promises)
 library(future)
 library(shinyFiles)
+library(dplyr)
 plan(multisession)
 
 function(input, output, session) {
@@ -77,7 +78,8 @@ function(input, output, session) {
                         axis.line = element_blank(),
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
-                        axis.text = element_blank()
+                        axis.text = element_blank(),
+                        panel.grid.major = element_blank()
                     ) + ggtitle("Chain usage")
                 })
             })
@@ -93,7 +95,8 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "seurat_clusters"
+                        group.by = "seurat_clusters",
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -114,7 +117,7 @@ function(input, output, session) {
                         axis.ticks = element_blank(),
                         axis.text = element_blank(),
                         plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
-                    ) + ggtitle("Expansion plot")
+                    ) + ggtitle("Clonal expansion")
                 })
 
                 # output[[paste0('graph.', r)]] <- renderPlot({
@@ -187,6 +190,7 @@ function(input, output, session) {
     loadingModal <- function() {
         modalDialog(
             "Data is loading. This can take a while for larger datasets!",
+            title = "Loading...",
             footer = NULL,
             easyClose = F
         )
@@ -423,7 +427,7 @@ function(input, output, session) {
         top.clonotypes$h_seq <- h_seqs
         top.clonotypes$l_seq <- l_seqs
 
-        colnames(top.clonotypes) <- c("Clonotype", "Cells", "Pct.group", "H CDR3 AA seq", "L CDR3 AA seq")
+        colnames(top.clonotypes) <- c("Clonotype", "Cells", "pct.group", "H CDR3 AA seq", "L CDR3 AA seq")
         top.clonotypes
     })
 
@@ -469,7 +473,7 @@ function(input, output, session) {
     observeEvent(input$clonotype.group.by, {
         req(vals$data, input$clonotype.group.by)
 
-        groups <- vals$data@meta.data[, input$compare.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        groups <- vals$data@meta.data[, input$clonotype.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
         updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]])
     })
 
@@ -502,4 +506,58 @@ function(input, output, session) {
             legend = F
         )
     })
+
+    # ======================================================================= #
+    # Clonotypes table
+    # ======================================================================= #
+
+    output$clonotypes.table <- DT::renderDT({
+        req(vals$data)
+
+        data <- vals$data@meta.data
+
+        cols.for.nt.sequence <- c("fwr1_nt", "cdr1_nt", "fwr2_nt", "cdr2_nt", "fwr3_nt", "cdr3_nt", "fwr4_nt")
+        cols.for.aa.sequence <- c("fwr1", "cdr1", "fwr2", "cdr2", "fwr3", "cdr3", "fwr4")
+
+        heavy.prefix <- if (DefaultAssayVDJ(vals$data) == "TCR") "a" else "h"
+        light.prefix <- if (DefaultAssayVDJ(vals$data) == "TCR") "b" else "l"
+
+        h.seq.nt.cols <- paste0(heavy.prefix, ".", cols.for.nt.sequence)
+        h.seq.aa.cols <- paste0(heavy.prefix, ".", cols.for.aa.sequence)
+        l.seq.nt.cols <- paste0(light.prefix, ".", cols.for.nt.sequence)
+        l.seq.aa.cols <- paste0(light.prefix, ".", cols.for.aa.sequence)
+
+        vars <- list("h.seq.nt" = h.seq.nt.cols, "h.seq.aa" = h.seq.aa.cols, "l.seq.nt" = l.seq.nt.cols, "l.seq.aa" = l.seq.aa.cols)
+        i <- 1
+        for (cols in vars) {
+            for (col in cols) {
+                colname <- names(vars)[i]
+                style.classname <- (strsplit((strsplit(col, "\\.") %>% unlist())[2], "_") %>% unlist())[1]
+
+                if (!colname %in% colnames(data)) {
+                    data[, colname] <- ""
+                }
+                if (!col %in% colnames(data)) {
+                    data[, col] <- "-"
+                }
+
+                data[is.na(data[,col]), col] <- "-"
+
+                data[,colname] <- paste0(data[,colname], paste0("<span class='", style.classname, "' title='", style.classname, "'>", data[,col], "</span>"))
+            }
+            i <- i + 1
+        }
+
+        data <- data %>%
+            dplyr::group_by(clonotype) %>%
+            summarize(
+                h.seq.nt = h.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                h.seq.aa = h.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+                l.seq.nt = l.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                l.seq.aa = l.seq.aa %>% unique() %>% paste(collapse = "<br>")
+            ) %>% mutate(clonotype = gsub("clonotype", "", clonotype) %>% as.numeric())
+
+        DT::datatable(data, escape = F, rownames = F, options = list(scrollX = T)) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
+    })
+
 }
