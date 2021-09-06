@@ -355,8 +355,7 @@ AddVDJDataForType <- function(type, object, heavy.primary, heavy.secondary, ligh
         overlap <- min(length(intersect(colnames(object), rownames(heavy.primary))) / nrow(heavy.primary), length(intersect(colnames(object), rownames(light.primary))) / nrow(light.primary))
 
         if (overlap < 0.50) {
-            stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n",
-                 "To ignore this check, add the parameter `force = T`", call. = F)
+            stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n", call. = F)
         }
     }
 
