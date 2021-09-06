@@ -154,10 +154,13 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     heavy.name <- if (type == "TCR") "a" else "h"
     light.name <- if (type == "TCR") "b" else "l"
 
+    heavy.regex <- if (type == "TCR") "^TRA" else "^IGH"
+    light.regex <- if (type == "TCR") "^TRB" else "^IG[KL]"
+
     data <- data %>% mutate_all(~ na_if(.x, ""))
 
     heavy <- data %>%
-        filter(grepl("^IGH|^TRA", .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+        filter(grepl(heavy.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
         add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
@@ -182,7 +185,7 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     colnames(heavy.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.secondary))
 
     light <- data %>%
-        filter(grepl("^IG[KL]|^TRB", .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+        filter(grepl(light.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
         add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
@@ -385,7 +388,30 @@ IsValidSeuratObject <- function(object) {
         return(F)
     }
 
-    if (is.null(slot(object, 'misc')[['VDJ']])) {
+    if (is.null(slot(object, "misc")[["VDJ"]])) {
+        return(F)
+    }
+
+    assays <- c("TCR", "BCR")
+    tables <- c("heavy.primary", "heavy.secondary", "light.primary", "light.secondary")
+
+    missing <- 0
+    for (assay in assays) {
+        assay.slot <- slot(object, "misc")[["VDJ"]][[assay]]
+
+        if (is.null(assay.slot)) {
+            missing <- missing + 1
+            next
+        }
+
+        for (table in tables) {
+            if (nrow(assay.slot[[table]]) == 0) {
+                return(F)
+            }
+        }
+    }
+
+    if (missing == length(assays)) {
         return(F)
     }
 
