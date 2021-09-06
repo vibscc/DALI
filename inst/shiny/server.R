@@ -228,7 +228,7 @@ function(input, output, session) {
                 showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + the correct VDJ type is selected")))
                 return(NA)
             })
-            if (is.na(data)) {
+            if (!isS4(data) & is.na(data)) {
                 return()
             }
         }
