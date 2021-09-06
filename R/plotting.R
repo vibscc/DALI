@@ -626,7 +626,6 @@ ClonotypeFrequency.bar <- function(
   clonotype.column,
   show.missing,
   bulk,
-  cols,
   threshold
 ) {
   plots <- list()
