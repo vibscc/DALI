@@ -13,7 +13,6 @@ ClonotypeFrequency.bar(
   clonotype.column,
   show.missing,
   bulk,
-  cols,
   threshold
 )
 }

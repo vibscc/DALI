@@ -9,7 +9,8 @@ ClonotypeToSequence(
   ct,
   chain,
   clonotype.column = "clonotype",
-  sequence.type = "AA"
+  sequence.type = "AA",
+  collapse = "\\n"
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ ClonotypeToSequence(
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
 
 \item{sequence.type}{One of AA or NT. Default = AA}
+
+\item{collapse}{Character to use to paste multiple sequence together}
 }
 \description{
 Convert clonotype to sequences
