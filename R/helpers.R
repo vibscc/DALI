@@ -22,8 +22,9 @@ CalculateFrequency <- function(object, data.column, group.by, show.missing) {
 #' @param chain Which chain to get sequence for
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
 #' @param sequence.type One of AA or NT. Default = AA
+#' @param collapse Character to use to paste multiple sequence together
 
-ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype', sequence.type = 'AA') {
+ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype', sequence.type = 'AA', collapse = "\n") {
     sequence.column <- paste0(tolower(chain), ".cdr3", if (tolower(sequence.type) == 'nt') '_nt' else '')
 
     if (!sequence.column %in% colnames(object@meta.data)) {
@@ -35,7 +36,7 @@ ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype
 
     sequences <- data.filtered[, sequence.column] %>% unique() %>% na.omit()
 
-    return(paste(sequences, collapse = " | "))
+    return(paste(sequences, collapse = collapse))
 }
 
 #' Get field name for given column name
