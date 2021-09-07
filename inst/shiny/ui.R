@@ -18,7 +18,7 @@ fillPage(
                     tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90")
                 ),
             ),
-            htmlOutput('dataset.metrics', container = tags$div, class = "metrics")
+            htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
         )
     ),
     fluidPage(
@@ -26,20 +26,20 @@ fillPage(
             type = "pills",
             tabPanel("General view",
                 fluidRow(
-                    column(12, uiOutput('reduction.tabs.chain.usage') %>% withSpinner())
+                    column(12, uiOutput("reduction.tabs.chain.usage") %>% withSpinner())
                 ),
                 fluidRow(
                     column(3,
-                        selectInput('chain.usage.chain', label = "Chain", choices = NULL),
-                        selectInput('chain.usage.region', label = "Region", choices = c("V", "D", "J", "C")),
-                        checkboxInput('chain.usage.add.missing.families', label = "Show missing families", value = F)
+                        selectInput("chain.usage.chain", label = "Chain", choices = NULL),
+                        selectInput("chain.usage.region", label = "Region", choices = c("V", "D", "J", "C")),
+                        checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F)
                     ),
-                    column(9, plotOutput('chain.usage.barplot') %>% withSpinner())
+                    column(9, plotOutput("chain.usage.barplot") %>% withSpinner())
                 )
             ),
             tabPanel("Clone view",
                 fluidRow(
-                    column(12, uiOutput('reduction.tabs.expansion') %>% withSpinner())
+                    column(12, uiOutput("reduction.tabs.expansion") %>% withSpinner())
                 ),
                 fluidRow(
                     column(8,
@@ -52,35 +52,71 @@ fillPage(
                             )
                         ),
                         fluidRow(
-                            column(3, plotOutput('cdr3.frequency')),
-                            column(5, tableOutput('top.clonotypes'))
+                            column(3, plotOutput("cdr3.frequency")),
+                            column(5, tableOutput("top.clonotypes"))
                         )
                     ),
                     column(4,
-                        selectizeInput('featureplot.clonotype', label = "Clonotype location", choices = NULL),
-                        selectizeInput('featureplot.reduction', label = "Reduction", choices = NULL),
-                        plotOutput('featureplot.clonotype') %>% withSpinner()
+                        selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
+                        selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),
+                        plotOutput("featureplot.clonotype") %>% withSpinner()
                     )
                 )
             ),
             tabPanel("Population comparison",
                 fluidRow(
-                    column(4, uiOutput('reduction.tabs.comparison') %>% withSpinner()),
+                    column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
                     column(8,
                         fluidRow(
-                            column(8, plotOutput('barplot.comparison') %>% withSpinner()),
+                            column(8, plotOutput("barplot.comparison") %>% withSpinner()),
                             column(4,
                                 selectInput("compare.group.by", label = "Group data by", choices = list("seurat_clusters")),
                                 selectizeInput("compare.ident.1", label = "Ident 1 (red)", choices = NULL, multiple = T),
                                 selectizeInput("compare.ident.2", label = "Ident 2 (blue)", choices = NULL, multiple = T)
                             )
                         ),
-                        plotOutput('spectratypeplot') %>% withSpinner()
+                        plotOutput("spectratypeplot") %>% withSpinner()
                     )
                 )
             ),
             tabPanel("Clonotypes",
                 DT::DTOutput("clonotypes.table")
+            ),
+            tabPanel("Transcriptomics",
+                fluidRow(
+                    column(6,
+                        fluidRow(
+                            column(4, selectInput("transcriptomics.assay", label = "Assay", choices = NULL)),
+                            column(4, selectizeInput("transcriptomics.feature", label = "Feature", choices = NULL)),
+                            column(4, selectInput("transcriptomics.reduction", label = "Reduction", choices = NULL)),
+                        ),
+                        plotOutput("transcriptomics.featureplot")
+                    ),
+                    column(6,
+                        selectizeInput("transcriptomics.clonotype", label = "Clonotype", choices = NULL),
+                        plotOutput("transcriptomics.clonotype.featureplot")
+                    )
+                )
+            ),
+            tabPanel("DEG",
+                fluidRow(
+                    column(6,
+                        h3("Specify group 1"),
+                        fluidRow(
+                            column(4, selectizeInput("deg.column", label = "Metadata column", choices = NULL)),
+                            column(8, selectizeInput("deg.group1", label = "Values", multiple = T, choices = NULL))
+                        ),
+                        actionButton("deg.calculate", "Calculate DEG")
+                    ),
+                    column(6,
+                       h3("Specify group 2"),
+                       fluidRow(
+                           column(4, radioButtons("deg.group2.choice", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
+                           column(4, selectizeInput("deg.group2", label = "Values", multiple = T, choices = NULL))
+                       )
+                    )
+                ),
+                DT::DTOutput("deg.output")
             )
         )
     )

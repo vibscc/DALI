@@ -24,6 +24,8 @@ function(input, output, session) {
         renderReductionPlotsComparison(isolate(vals$data))
 
         groups <- levels(isolate(vals$data@meta.data$seurat_clusters))
+        reductions <- names(isolate(vals$data@reductions))
+
         updateSelectInput(session, "group.highlight", choices = groups)
 
         # updateSelectInput(session, "compare.group.by", choices = colnames(isolate(vals$data@meta.data)), selected = "seurat_clusters")
@@ -37,8 +39,28 @@ function(input, output, session) {
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
 
         updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
-        selected <- if ('umap' %in% names(isolate(vals$data@reductions))) 'umap' else if ('tsne' %in% names(isolate(vals$data@reductions))) 'tsne' else NULL
-        updateSelectizeInput(session, "featureplot.reduction", choices = names(isolate(vals$data@reductions)), selected = selected)
+        selected <- if ('umap' %in% reductions) 'umap' else if ('tsne' %in% reductions) 'tsne' else NULL
+        updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
+
+        updateSelectInput(session, "transcriptomics.assay", choices = names(isolate(vals$data@assays)))
+        updateSelectInput(session, "transcriptomics.reduction", choices = reductions, selected = selected)
+
+        clonotypes <- unique(isolate(vals$data@meta.data$clonotype)) %>% gtools::mixedsort()
+        updateSelectizeInput(session, "transcriptomics.clonotype", choices = clonotypes, server = T)
+
+        categorical.metadata <- c()
+        rows <- nrow(isolate(vals$data@meta.data))
+        for (column in colnames(isolate(vals$data@meta.data))) {
+            unique.count <- isolate(vals$data@meta.data[[column]]) %>% unique() %>% length()
+
+            if (unique.count < 0.75 * rows) {
+                categorical.metadata <- c(categorical.metadata, column)
+            }
+        }
+        categorical.metadata <- gtools::mixedsort(categorical.metadata)
+
+        selected <- if ('seurat_clusters' %in% colnames(isolate(vals$data@meta.data))) 'seurat_clusters' else NULL
+        updateSelectizeInput(session, "deg.column", choices = categorical.metadata, selected = selected, server = T)
     }
 
     # ======================================================================= #
@@ -230,9 +252,9 @@ function(input, output, session) {
                 Read10X_vdj(data, upload$vdj.dir, type = input$vdj_type)
             }, error = function(e) {
                 showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + the correct VDJ type is selected")))
-                return(NA)
+                return(NULL)
             })
-            if (!isS4(data) & is.na(data)) {
+            if (!isS4(data) & is.null(data)) {
                 return()
             }
         }
@@ -438,7 +460,7 @@ function(input, output, session) {
     output$featureplot.clonotype <- renderPlot({
         req(vals$data, input$featureplot.clonotype, input$featureplot.reduction)
 
-        FeaturePlotChainRegion(vals$data, input$featureplot.reduction, input$featureplot.clonotype) + theme(
+        FeaturePlotClonotype(vals$data, input$featureplot.reduction, input$featureplot.clonotype) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -560,4 +582,80 @@ function(input, output, session) {
         DT::datatable(data, escape = F, rownames = F, options = list(scrollX = T)) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
     })
 
+    # ======================================================================= #
+    # Transcriptomics
+    # ======================================================================= #
+
+    observeEvent(input$transcriptomics.assay, {
+        req(vals$data)
+
+        Seurat::DefaultAssay(vals$data) <- input$transcriptomics.assay
+
+        features <- rownames(vals$data) %>% sort()
+        updateSelectizeInput(session, "transcriptomics.feature", choices = features, selected = features[1], server = T)
+    })
+
+    output$transcriptomics.featureplot <- renderPlot({
+        req(vals$data, input$transcriptomics.feature, input$transcriptomics.reduction, input$transcriptomics.assay)
+
+        Seurat::FeaturePlot(vals$data, input$transcriptomics.feature, reduction = input$transcriptomics.reduction) + theme(
+            legend.position = "none",
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+        ) + ggtitle(paste0("Featureplot (", input$transcriptomics.feature ,")"))
+    })
+
+    output$transcriptomics.clonotype.featureplot <- renderPlot({
+        req(vals$data, input$transcriptomics.clonotype, input$transcriptomics.reduction)
+
+        FeaturePlotClonotype(vals$data, input$transcriptomics.reduction, input$transcriptomics.clonotype) + theme(
+            legend.position = "none",
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+            plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
+        ) + ggtitle(paste0("Featureplot clonotype (", input$transcriptomics.clonotype, ")"))
+    })
+
+    # ======================================================================= #
+    # DEG
+    # ======================================================================= #
+
+    observeEvent(input$deg.column, {
+        req(vals$data)
+
+        choices <- vals$data@meta.data[[input$deg.column]] %>% unique() %>% gtools::mixedsort()
+
+        updateSelectizeInput(session, "deg.group1", choices = choices, selected = NULL, server = T)
+        updateSelectizeInput(session, "deg.group2", choices = choices, selected = NULL, server = T)
+    })
+
+    observeEvent(input$deg.calculate, {
+        vals$deg.results <- NULL
+
+        ident.1 <- input$deg.group1
+
+        if (input$deg.group2.choice == 1) {
+            ident.2 <- NULL
+        } else {
+            ident.2 <- input$deg.group2
+        }
+
+        if (intersect(ident.1, ident.2) %>% length() > 0) {
+            showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
+        } else {
+            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
+                vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.column)
+            })
+        }
+    })
+
+    output$deg.output <- DT::renderDT({
+        req(vals$data, vals$deg.results)
+
+        vals$deg.results
+    })
 }
