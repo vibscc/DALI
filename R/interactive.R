@@ -12,13 +12,16 @@ Interactive_VDJ <- function(object = NULL) {
 
     # Load object in global environment so shiny app can use it
     if (!is.null(object)) {
-        .GlobalEnv$.data.object.VDJ <- object
+        if (IsValidSeuratObject(object)) {
+            .GlobalEnv$.data.object.VDJ <- object
+        } else {
+            stop("The given object is not valid. Please make sure it contains VDJ information, loaded by Diversity::Read10X_vdj()", call. = F)
+        }
     } else {
         .GlobalEnv$.data.object.VDJ <- NULL
     }
     on.exit(rm('.data.object.VDJ', envir = .GlobalEnv))
 
-    options(shiny.maxRequestSize = max.upload.size*1024^2)
     shiny::runApp(app.directory, display.mode = "normal")
 }
 
