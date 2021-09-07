@@ -1,11 +1,10 @@
 #' Explore VDJ data in an interactive way
 #'
 #' @param object Seurat object
-#' @param max.upload.size Maximum upload size for shiny application (in MB). Default = 1000
 #'
 #' @export
 
-Interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
+Interactive_VDJ <- function(object = NULL) {
     app.directory <- system.file("shiny", package = "Diversity")
     if (app.directory == "") {
         stop("Could not shiny application directory. Try re-installing `Diversity`.", call. = FALSE)
@@ -13,7 +12,7 @@ Interactive_VDJ <- function(object = NULL, max.upload.size = 1000) {
 
     # Load object in global environment so shiny app can use it
     if (!is.null(object)) {
-        .GlobalEnv$.data.object.VDJ <- Seurat::DietSeurat(object, counts = F, data = T, scale.data = F, assays = NULL, dimreducs = names(object@reductions), graphs = NULL)
+        .GlobalEnv$.data.object.VDJ <- object
     } else {
         .GlobalEnv$.data.object.VDJ <- NULL
     }

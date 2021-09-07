@@ -4,12 +4,10 @@
 \alias{Interactive_VDJ}
 \title{Explore VDJ data in an interactive way}
 \usage{
-Interactive_VDJ(object = NULL, max.upload.size = 1000)
+Interactive_VDJ(object = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
-
-\item{max.upload.size}{Maximum upload size for shiny application (in MB). Default = 1000}
 }
 \description{
 Explore VDJ data in an interactive way
