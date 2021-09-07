@@ -1,7 +1,5 @@
 seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
 seuratObj_BCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC")
-seuratObj_TCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR")
-seuratObj_double <- Read10X_vdj(seuratObj_BCR, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR")
 
 test_that("can load data", {
 
@@ -14,12 +12,31 @@ test_that("can load data", {
 
     expect_named(seuratObj_BCR@misc, c("VDJ", "default.chain.VDJ", "default.assay.VDJ"), ignore.order = T)
     expect_equal(seuratObj_BCR@misc$default.chain.VDJ, "primary")
+
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$heavy.primary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$heavy.secondary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$light.primary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$light.secondary) > 0)
 })
+
 
 test_that("fails on invalid input", {
     expect_error(Read10X_vdj(seuratObj, "../testdata"))
     expect_error(Read10X_vdj(seuratobj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "foo"))
+    expect_error(Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR"))
 })
+
+test_that("can force load data", {
+    obj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR", force = T)
+
+    expect_equal(obj@misc$default.assay.VDJ, "TCR")
+    expect_equal(nrow(obj@misc$VDJ$TCR$heavy.primary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$heavy.secondary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$light.primary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$light.secondary), 0)
+})
+
+seuratObj_TCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR", force = T)
 
 test_that("sets type correctly", {
     expect_equal(seuratObj_BCR@misc$default.assay.VDJ, "BCR")
@@ -28,6 +45,8 @@ test_that("sets type correctly", {
     expect_equal(seuratObj_TCR@misc$default.assay.VDJ, "TCR")
     expect_named(seuratObj_TCR@misc$VDJ, c("TCR"))
 })
+
+seuratObj_double <- Read10X_vdj(seuratObj_BCR, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR", force = T)
 
 test_that("can load multiple assays", {
     expect_named(seuratObj_double@misc$VDJ, c("BCR", "TCR"), ignore.order = T)

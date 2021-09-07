@@ -16,7 +16,6 @@
 Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('umis', 'reads'), use.filtered = T) {
 
     location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
-    location.metrics <- file.path(data.dir, "metrics_summary.csv")
 
     sort.by <- match.arg(sort.by)
 
@@ -25,20 +24,6 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
     }
 
     annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(grepl('true', .data$productive, ignore.case = T))
-
-    if (is.null(type)) {
-        if (!file.exists(location.metrics)) {
-            stop("Metrics summary file (", location.metrics, ") is missing!", call. = F)
-        }
-
-        type <- GetAssayForData(location.metrics)
-
-        if (is.null(type)) {
-            stop("Unable to determine if the data is TCR or BCR. Please check the input files or specify the type via the `type` parameter", call. = F)
-        }
-    } else {
-        type <- match.arg(type, choices = c("BCR", "TCR"))
-    }
 
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
@@ -130,6 +115,16 @@ Read_AIRR <- function(object, files, type, fields, columns, only.productive = T,
 
 ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort.by = c('umis', 'reads')) {
 
+    if (is.null(type)) {
+        if (sum(grepl("^TR[AB]", data$c_gene)) > 0) {
+            type <- "TCR"
+        } else if (sum(grepl("^IG[HKL]", data$c_gene)) > 0) {
+            type <- "BCR"
+        } else {
+            stop("Could not determine if the data is TCR or BCR, please provide the data type manually with the `type` parameter", call. = F)
+        }
+    }
+
     if (!type %in% c("BCR", "TCR")) {
         stop("Invalid type '", type, "', must be one of TCR or BCR")
     }
@@ -151,8 +146,8 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     fields <- c(fields, "dual_IR")
     columns <- c(columns, "dual_IR")
 
-    heavy.name <- if (type == "TCR") "a" else "h"
-    light.name <- if (type == "TCR") "b" else "l"
+    heavy.prefix <- if (type == "TCR") "a" else "h"
+    light.prefix <- if (type == "TCR") "b" else "l"
 
     heavy.regex <- if (type == "TCR") "^TRA" else "^IGH"
     light.regex <- if (type == "TCR") "^TRB" else "^IG[KL]"
@@ -172,14 +167,14 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(heavy.name, ".", .))
+        rename_all(~ paste0(heavy.prefix, ".", .))
 
     heavy.secondary <- heavy %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(heavy.name, ".", .))
+        rename_all(~ paste0(heavy.prefix, ".", .))
 
     colnames(heavy.primary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.primary))
     colnames(heavy.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.secondary))
@@ -197,23 +192,23 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(light.name, ".", .))
+        rename_all(~ paste0(light.prefix, ".", .))
 
     light.secondary <- light %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(light.name, ".", .))
+        rename_all(~ paste0(light.prefix, ".", .))
 
     colnames(light.primary) <- gsub(".\\.clonotype", "clonotype", colnames(light.primary))
     colnames(light.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(light.secondary))
 
-    if (nrow(heavy.primary) == 0) {
+    if (nrow(heavy.primary) == 0 & !force) {
         stop("Could not find heavy primary chains in the data!", call. = F)
     }
 
-    if (nrow(light.primary) == 0) {
+    if (nrow(light.primary) == 0 & !force) {
         stop("Could not find light primary chains in the data!", call. = F)
     }
 
@@ -287,24 +282,6 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
     slot(object, 'misc')[['default.chain.VDJ']] <- value
 
     return(object)
-}
-
-#' Determine assay type from metrics_summary.csv
-#'
-#' @param csv.path Path to metrics_summary.csv
-
-GetAssayForData <- function(csv.path) {
-    metrics <- read.csv(csv.path, header = T)
-
-    if (sum(grepl("IGK", colnames(metrics))) > 0 && sum(grepl("IGH", colnames(metrics))) > 0) {
-        return("BCR")
-    }
-
-    if (sum(grepl("TRA", colnames(metrics))) > 0 && sum(grepl("TRB", colnames(metrics))) > 0) {
-        return("TCR")
-    }
-
-    return(NULL)
 }
 
 #' Extract V-family from a vector of v-genes
