@@ -841,7 +841,7 @@ ExpansionPlot <- function(
 #'
 #' @export
 
-FeaturePlotChainRegion <- function(
+FeaturePlotClonotype <- function(
   object,
   reduction,
   clonotypes,
