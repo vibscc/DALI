@@ -587,7 +587,7 @@ function(input, output, session) {
     # ======================================================================= #
 
     observeEvent(input$transcriptomics.assay, {
-        req(vals$data)
+        req(vals$data, input$transcriptomics.assay)
 
         Seurat::DefaultAssay(vals$data) <- input$transcriptomics.assay
 
