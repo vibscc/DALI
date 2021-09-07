@@ -32,8 +32,8 @@ function(input, output, session) {
         updateSelectizeInput(session, "compare.ident.1", choices = groups)
         updateSelectizeInput(session, "compare.ident.2", choices = groups)
 
-        assays <- names(isolate(vals$data@misc$VDJ))
-        updateSelectInput(session, "active.assay", choices = assays, selected = DefaultAssayVDJ(isolate(vals$data)))
+        assays.vdj <- names(isolate(vals$data@misc$VDJ))
+        updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
@@ -42,7 +42,9 @@ function(input, output, session) {
         selected <- if ('umap' %in% reductions) 'umap' else if ('tsne' %in% reductions) 'tsne' else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
-        updateSelectInput(session, "transcriptomics.assay", choices = names(isolate(vals$data@assays)))
+        assays <- names(isolate(vals$data@assays))
+        assays.default <- Seurat::DefaultAssay(vals$data)
+        updateSelectInput(session, "transcriptomics.assay", choices = assays, selected = assays.default)
         updateSelectInput(session, "transcriptomics.reduction", choices = reductions, selected = selected)
 
         clonotypes <- unique(isolate(vals$data@meta.data$clonotype)) %>% gtools::mixedsort()
@@ -61,6 +63,7 @@ function(input, output, session) {
 
         selected <- if ('seurat_clusters' %in% colnames(isolate(vals$data@meta.data))) 'seurat_clusters' else NULL
         updateSelectizeInput(session, "deg.column", choices = categorical.metadata, selected = selected, server = T)
+        updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
     }
 
     # ======================================================================= #
@@ -634,6 +637,8 @@ function(input, output, session) {
     })
 
     observeEvent(input$deg.calculate, {
+        req(vals$data, input$deg.assay)
+
         vals$deg.results <- NULL
 
         ident.1 <- input$deg.group1
@@ -644,11 +649,13 @@ function(input, output, session) {
             ident.2 <- input$deg.group2
         }
 
-        if (intersect(ident.1, ident.2) %>% length() > 0) {
+        if (is.null(input$deg.group1)) {
+            showNotification("Group 1 can't be empty", type = c("error"), session = session)
+        } else if (intersect(ident.1, ident.2) %>% length() > 0) {
             showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
         } else {
             withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
-                vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.column)
+                vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.column, assay = input$deg.assay)
             })
         }
     })

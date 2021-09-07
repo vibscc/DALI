@@ -106,7 +106,10 @@ fillPage(
                             column(4, selectizeInput("deg.column", label = "Metadata column", choices = NULL)),
                             column(8, selectizeInput("deg.group1", label = "Values", multiple = T, choices = NULL))
                         ),
-                        actionButton("deg.calculate", "Calculate DEG")
+                        fluidRow(
+                            column(4, selectInput("deg.assay", label = "Assay for results", choices = NULL)),
+                            column(4, actionButton("deg.calculate", "Calculate DEG"))
+                        )
                     ),
                     column(6,
                        h3("Specify group 2"),
