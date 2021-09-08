@@ -149,15 +149,16 @@ function(input, output, session) {
                     ) + ggtitle("Clonal expansion")
                 })
 
-                # output[[paste0('graph.', r)]] <- renderPlot({
-                #     CloneConnGraph(
-                #         object = object,
-                #         reduction = r
-                #     ) + theme(
-                #         legend.position = "none"
-                #     ) + ggtitle("Clonal connection plot")
-                #
-                # })
+                output[[paste0('graph.', r)]] <- renderPlot({
+                    CloneConnGraph(
+                        object = object,
+                        reduction = r
+                    ) + theme(
+                        legend.position = "none",
+                        plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
+                    ) + ggtitle("Clonal connection plot")
+
+                })
             })
         }
     }
@@ -356,9 +357,9 @@ function(input, output, session) {
             tabPanel(
                 Diversity:::FormatDimred(reduction),
                 fluidRow(
-                    column(6, plotOutput(plotname.dimred) %>% withSpinner()),
-                    column(6, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
-                    # column(4, plotOutput(plotname.graph) %>% withSpinner())
+                    column(4, plotOutput(plotname.dimred) %>% withSpinner()),
+                    column(4, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
+                    column(4, plotOutput(plotname.graph) %>% withSpinner())
                 )
             )
         })
