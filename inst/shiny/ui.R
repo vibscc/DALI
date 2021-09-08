@@ -103,7 +103,7 @@ fillPage(
                     column(6,
                         h3("Specify group 1"),
                         fluidRow(
-                            column(4, selectizeInput("deg.group.be", label = "Metadata column", choices = NULL)),
+                            column(4, selectizeInput("deg.group.by", label = "Metadata column", choices = NULL)),
                             column(8, selectizeInput("deg.ident.1", label = "Values", multiple = T, choices = NULL))
                         ),
                         fluidRow(

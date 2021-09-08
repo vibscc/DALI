@@ -63,10 +63,10 @@ function(input, output, session) {
         updateSelectInput(session, "transcriptomics.assay", choices = assays, selected = assays.default)
         updateSelectInput(session, "transcriptomics.reduction", choices = reductions, selected = selected)
 
-        clonotypes <- unique(isolate(vals$data@meta.data$clonotype)) %>% gtools::mixedsort()
+        clonotypes <- unique(isolate(vals$data@meta.data$clonotype)) %>% gtools::mixedsort(x = .)
         updateSelectizeInput(session, "transcriptomics.clonotype", choices = clonotypes, server = T)
 
-        # updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
+        updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
     }
 
