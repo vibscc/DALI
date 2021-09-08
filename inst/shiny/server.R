@@ -26,11 +26,27 @@ function(input, output, session) {
         groups <- levels(isolate(vals$data@meta.data$seurat_clusters))
         reductions <- names(isolate(vals$data@reductions))
 
+        categorical.metadata <- c()
+        categorical.metadata.comparable <- c()
+        rows <- nrow(isolate(vals$data@meta.data))
+        for (column in colnames(isolate(vals$data@meta.data))) {
+            coldata <- isolate(vals$data@meta.data[[column]])
+            unique.count <- coldata %>% unique() %>% length()
+
+            if ((is.factor(coldata) || is.character(coldata) || is.logical(coldata)) & unique.count < 0.75 * rows) {
+                categorical.metadata <- c(categorical.metadata, column)
+                if (unique.count > 1) {
+                    categorical.metadata.comparable <- c(categorical.metadata.comparable, column)
+                }
+            }
+        }
+        categorical.metadata <- gtools::mixedsort(categorical.metadata)
+        metadata.default <- if ('seurat_clusters' %in% categorical.metadata) 'seurat_clusters' else NULL
+
         updateSelectInput(session, "group.highlight", choices = groups)
 
-        # updateSelectInput(session, "compare.group.by", choices = colnames(isolate(vals$data@meta.data)), selected = "seurat_clusters")
-        updateSelectizeInput(session, "compare.ident.1", choices = groups)
-        updateSelectizeInput(session, "compare.ident.2", choices = groups)
+        updateSelectInput(session, "compare.group.by", choices = categorical.metadata.comparable, selected = metadata.default)
+        updateSelectInput(session, "clonotype.group.by", choices = categorical.metadata, selected = metadata.default)
 
         assays.vdj <- names(isolate(vals$data@misc$VDJ))
         updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
@@ -50,19 +66,7 @@ function(input, output, session) {
         clonotypes <- unique(isolate(vals$data@meta.data$clonotype)) %>% gtools::mixedsort()
         updateSelectizeInput(session, "transcriptomics.clonotype", choices = clonotypes, server = T)
 
-        categorical.metadata <- c()
-        rows <- nrow(isolate(vals$data@meta.data))
-        for (column in colnames(isolate(vals$data@meta.data))) {
-            unique.count <- isolate(vals$data@meta.data[[column]]) %>% unique() %>% length()
-
-            if (unique.count < 0.75 * rows) {
-                categorical.metadata <- c(categorical.metadata, column)
-            }
-        }
-        categorical.metadata <- gtools::mixedsort(categorical.metadata)
-
-        selected <- if ('seurat_clusters' %in% colnames(isolate(vals$data@meta.data))) 'seurat_clusters' else NULL
-        updateSelectizeInput(session, "deg.column", choices = categorical.metadata, selected = selected, server = T)
+        # updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
     }
 
@@ -417,6 +421,10 @@ function(input, output, session) {
     output$cdr3.frequency <- renderPlot({
         req(vals$data, input$clonotype.group.by, input$clonotype.group, input$cdr3.frequency.threshold)
 
+        if (!input$clonotype.group %in% vals$data@meta.data[, input$clonotype.group.by]) {
+            return()
+        }
+
         ClonotypeFrequency(
             vals$data,
             chain = NULL,
@@ -491,8 +499,9 @@ function(input, output, session) {
         req(vals$data, input$compare.group.by)
 
         groups <- vals$data@meta.data[, input$compare.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
-        updateSelectizeInput(session, "compare.ident.1", choices = groups, selected = groups[[1]])
-        updateSelectizeInput(session, "compare.ident.2", choices = groups, selected = groups[[2]])
+
+        updateSelectizeInput(session, "compare.ident.1", choices = groups, selected = groups[[1]], server = T)
+        updateSelectizeInput(session, "compare.ident.2", choices = groups, selected = groups[[2]], server = T)
     })
 
     observeEvent(input$clonotype.group.by, {
@@ -627,13 +636,13 @@ function(input, output, session) {
     # DEG
     # ======================================================================= #
 
-    observeEvent(input$deg.column, {
+    observeEvent(input$deg.group.by, {
         req(vals$data)
 
-        choices <- vals$data@meta.data[[input$deg.column]] %>% unique() %>% gtools::mixedsort()
+        choices <- vals$data@meta.data[[input$deg.group.by]] %>% unique() %>% gtools::mixedsort()
 
-        updateSelectizeInput(session, "deg.group1", choices = choices, selected = NULL, server = T)
-        updateSelectizeInput(session, "deg.group2", choices = choices, selected = NULL, server = T)
+        updateSelectizeInput(session, "deg.ident.1", choices = choices, selected = NULL, server = T)
+        updateSelectizeInput(session, "deg.ident.2", choices = choices, selected = NULL, server = T)
     })
 
     observeEvent(input$deg.calculate, {
@@ -641,21 +650,21 @@ function(input, output, session) {
 
         vals$deg.results <- NULL
 
-        ident.1 <- input$deg.group1
+        ident.1 <- input$deg.ident.1
 
-        if (input$deg.group2.choice == 1) {
+        if (input$deg.ident.2.choice == 1) {
             ident.2 <- NULL
         } else {
-            ident.2 <- input$deg.group2
+            ident.2 <- input$deg.ident.2
         }
 
-        if (is.null(input$deg.group1)) {
+        if (is.null(input$deg.ident.1)) {
             showNotification("Group 1 can't be empty", type = c("error"), session = session)
         } else if (intersect(ident.1, ident.2) %>% length() > 0) {
             showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
         } else {
             withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
-                vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.column, assay = input$deg.assay)
+                vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.group.by, assay = input$deg.assay)
             })
         }
     })

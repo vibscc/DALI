@@ -45,7 +45,7 @@ fillPage(
                     column(8,
                         fluidRow(
                             column(2,
-                               selectInput("clonotype.group.by", label = "Group data by", choices = list("seurat_clusters", "orig.ident")),
+                               selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
                                selectizeInput("clonotype.group", label = "Group", choices = NULL),
                                sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
                                checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
@@ -70,9 +70,9 @@ fillPage(
                         fluidRow(
                             column(8, plotOutput("barplot.comparison") %>% withSpinner()),
                             column(4,
-                                selectInput("compare.group.by", label = "Group data by", choices = list("seurat_clusters")),
-                                selectizeInput("compare.ident.1", label = "Ident 1 (red)", choices = NULL, multiple = T),
-                                selectizeInput("compare.ident.2", label = "Ident 2 (blue)", choices = NULL, multiple = T)
+                                selectInput("compare.group.by", label = "Group data by", choices = NULL),
+                                selectizeInput("compare.ident.1", label = "Ident 1 (yellow)", choices = NULL, multiple = T),
+                                selectizeInput("compare.ident.2", label = "Ident 2 (red)", choices = NULL, multiple = T)
                             )
                         ),
                         plotOutput("spectratypeplot") %>% withSpinner()
@@ -103,8 +103,8 @@ fillPage(
                     column(6,
                         h3("Specify group 1"),
                         fluidRow(
-                            column(4, selectizeInput("deg.column", label = "Metadata column", choices = NULL)),
-                            column(8, selectizeInput("deg.group1", label = "Values", multiple = T, choices = NULL))
+                            column(4, selectizeInput("deg.group.be", label = "Metadata column", choices = NULL)),
+                            column(8, selectizeInput("deg.ident.1", label = "Values", multiple = T, choices = NULL))
                         ),
                         fluidRow(
                             column(4, selectInput("deg.assay", label = "Assay for results", choices = NULL)),
@@ -114,8 +114,8 @@ fillPage(
                     column(6,
                        h3("Specify group 2"),
                        fluidRow(
-                           column(4, radioButtons("deg.group2.choice", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
-                           column(4, selectizeInput("deg.group2", label = "Values", multiple = T, choices = NULL))
+                           column(4, radioButtons("deg.ident.2.choice", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
+                           column(4, selectizeInput("deg.ident.2", label = "Values", multiple = T, choices = NULL))
                        )
                     )
                 ),
