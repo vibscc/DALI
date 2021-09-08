@@ -990,7 +990,7 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   }
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
-    geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group)) +
+    geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group), size = 1) +
     scale_color_manual(values = cols) +
     scale_edge_alpha(range = c(0.1, 1)) +
     scale_edge_width(range = c(0.5, 2)) +
