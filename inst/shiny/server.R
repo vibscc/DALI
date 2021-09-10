@@ -171,7 +171,8 @@ function(input, output, session) {
                 output[[paste0('dimred.', r)]] <- renderPlot({
                     Seurat::DimPlot(
                         object,
-                        reduction = r
+                        reduction = r,
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
