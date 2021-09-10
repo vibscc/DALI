@@ -473,7 +473,7 @@ function(input, output, session) {
     output$featureplot.clonotype <- renderPlot({
         req(vals$data, input$featureplot.clonotype, input$featureplot.reduction)
 
-        FeaturePlotClonotype(vals$data, input$featureplot.reduction, input$featureplot.clonotype) + theme(
+        FeaturePlotClonotype(vals$data, input$featureplot.reduction, input$featureplot.clonotype, size = 0.8, missing.alpha = 0.4) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
