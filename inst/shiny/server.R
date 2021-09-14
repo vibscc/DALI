@@ -1,8 +1,5 @@
-library(promises)
-library(future)
 library(shinyFiles)
 library(dplyr)
-plan(multisession)
 
 function(input, output, session) {
 
@@ -59,7 +56,7 @@ function(input, output, session) {
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
         assays <- names(isolate(vals$data@assays))
-        assays.default <- Seurat::DefaultAssay(vals$data)
+        assays.default <- Seurat::DefaultAssay(isolate(vals$data))
         updateSelectInput(session, "transcriptomics.assay", choices = assays, selected = assays.default)
         updateSelectInput(session, "transcriptomics.reduction", choices = reductions, selected = selected)
 
@@ -550,7 +547,7 @@ function(input, output, session) {
     output$clonotypes.table <- DT::renderDT({
         req(vals$data)
 
-        data <- vals$data@meta.data
+        data <- vals$data@meta.data %>% filter(!is.na(clonotype))
 
         cols.for.nt.sequence <- c("fwr1_nt", "cdr1_nt", "fwr2_nt", "cdr2_nt", "fwr3_nt", "cdr3_nt", "fwr4_nt")
         cols.for.aa.sequence <- c("fwr1", "cdr1", "fwr2", "cdr2", "fwr3", "cdr3", "fwr4")
@@ -587,11 +584,12 @@ function(input, output, session) {
         data <- data %>%
             dplyr::group_by(clonotype) %>%
             summarize(
+                n.cells = n(),
                 h.seq.nt = h.seq.nt %>% unique() %>% paste(collapse = "<br>"),
                 h.seq.aa = h.seq.aa %>% unique() %>% paste(collapse = "<br>"),
                 l.seq.nt = l.seq.nt %>% unique() %>% paste(collapse = "<br>"),
-                l.seq.aa = l.seq.aa %>% unique() %>% paste(collapse = "<br>")
-            ) %>% mutate(clonotype = gsub("clonotype", "", clonotype) %>% as.numeric())
+                l.seq.aa = l.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+            )
 
         DT::datatable(data, escape = F, rownames = F, options = list(scrollX = T)) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
     })

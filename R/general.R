@@ -243,8 +243,8 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 
     chain <- DefaultChainVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('heavy.', chain)]])
     object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('light.', chain)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('heavy.', chain)]])
 
     slot(object, 'misc')[['default.assay.VDJ']] <- value
 
@@ -290,7 +290,6 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 #' @param type TCR/BCR
 #'
 #' @importFrom stringr str_replace_all
-
 
 GetVFamilies <- function(v_genes, type) {
     v_families <- c()
@@ -369,7 +368,7 @@ IsValidSeuratObject <- function(object) {
     }
 
     assays <- c("TCR", "BCR")
-    tables <- c("heavy.primary", "heavy.secondary", "light.primary", "light.secondary")
+    tables <- c("heavy.primary", "light.primary")
 
     missing <- 0
     for (assay in assays) {
