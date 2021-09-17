@@ -129,6 +129,13 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         stop("Invalid type '", type, "', must be one of TCR or BCR")
     }
 
+    # if (!"cdr3" %in% columns & "cdr3_nt" %in% columns) {
+    #     fields <- c(fields, "cdr3.translated")
+    #     columns <- c(columns, "cdr3")
+    #
+    #     data <- data %>% mutate(cdr3.translated = TranslateIMGTGappedSequences(.data[[FieldForColumn("cdr3_nt", fields, columns)]]))
+    # }
+
     sort.by <- match.arg(sort.by)
 
     if (is.null(columns)) {
@@ -409,4 +416,49 @@ AvailableChains <- function(object) {
     }
 
     return(c("H", "L", "A", "B"))
+}
+
+#' Translate sequences which may contain gaps, indicated by .
+#'
+#' @param sequences vector of sequences to translate
+
+TranslateIMGTGappedSequences <- function(sequences) {
+    ret = c()
+    for (sequence in sequences) {
+        if (is.na(sequence)) {
+            ret <- c(ret, NA)
+        } else {
+            ret <- c(ret, TranslateIMGTGappedSequence(sequence))
+        }
+    }
+
+    return(ret)
+}
+
+#' Translate sequence which may contain gaps, indicate by .
+#'
+#' @param sequence sequence to translate
+
+TranslateIMGTGappedSequence <- function(sequence) {
+
+    if (!grepl("\\.", sequence)) {
+        return(Biostrings::DNAString(sequence) %>% Biostrings::translate() %>% as.character())
+    }
+
+    # TODO: make this work for multiple gaps
+    gap <- stringr::str_locate_all(sequence, "\\.")[[1]]
+
+    if (nrow(gap) %% 3 != 0) {
+        stop("Gap sequence not in frame for sequence ", sequence)
+    }
+
+    gap.start <- ceiling(gap[1,1]/3)
+    gap.end <- ceiling(gap[nrow(gap), 1]/3)
+    gap.length <- gap.end - gap.start + 1
+
+    sequence <- gsub("\\.", "", sequence)
+    aa <- Biostrings::DNAString(sequence) %>% Biostrings::translate() %>% as.character()
+    aa <- paste(substring(aa, c(1, gap.start), c(gap.start - 1, nchar(aa))), collapse = paste(rep(".", gap.length), collapse = ""))
+
+    return(aa)
 }
