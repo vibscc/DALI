@@ -947,7 +947,7 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
   edges <- object@meta.data[, c(clonotype.column, group.by)] %>%
     na.omit() %>%
-    group_by(clonotype) %>%
+    group_by(.data[[clonotype.column]]) %>%
     distinct() %>%
     filter(n() > 1) %>%
     group_map(~ gtools::combinations(nrow(.x), 2, as.numeric(.x[[1]])) %>% as.data.frame()) %>%
