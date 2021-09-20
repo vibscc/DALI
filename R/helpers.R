@@ -81,3 +81,57 @@ GetCategoricalColorPalette <- function(data) {
 
     return(ggplotColors(n = n.categories))
 }
+
+#' Get metadata column for given chain and region
+#'
+#' @param chain VDJ chain
+#' @param region VDJ region
+#' @param by.family Data grouped by family. Default = F
+
+GetDataColumn <- function(chain, region, by.family = F) {
+    chain <- tolower(chain)
+    region <- tolower(region)
+
+    data.column <- paste0(chain, '.', region, '_')
+
+    if (by.family && region == 'v') {
+        data.column <- paste0(data.column, 'fam')
+    } else {
+        data.column <- paste0(data.column, 'gene')
+    }
+}
+
+#' Add missing VDJ families to a list of families.
+#'
+#' @param families Families to complete
+#'
+#' @importFrom dplyr %>%
+
+AddMissingVDJFamilies <- function(families) {
+    families.completed <- c()
+    prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families)) %>% unique()
+
+    for (prefix in prefixes) {
+        families.with.prefix <- families[grepl(prefix, families)]
+
+        # Ignore all families that contain a / in the name
+        # These families will just be appended to the final families without attempting to complete the missing families
+        families.ignored <- families.with.prefix[grepl("/", families.with.prefix)]
+
+        # Only keep families without / in the name
+        families.with.prefix <- setdiff(families.with.prefix, families.ignored)
+
+        family.numbers <- c()
+        for (family in families.with.prefix) {
+            family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
+        }
+
+        if (length(family.numbers) > 0) {
+            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
+        }
+
+        families.completed <- c(families.completed, families.ignored)
+    }
+
+    return(families.completed)
+}
