@@ -526,6 +526,13 @@ function(input, output, session) {
         updateSelectInput(session, "featureplot.clonotype", choices = vals$top.clonotypes$clonotype)
     })
 
+    # VDJ assay change
+
+    observeEvent(input$active.assay, {
+        DefaultAssayVDJ(vals$data) <- input$active.assay
+        app.initialize()
+    })
+
     # ======================================================================= #
     # Barplot to compare groups
     # ======================================================================= #
