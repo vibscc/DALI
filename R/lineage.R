@@ -97,7 +97,7 @@ Read10XVDJReference <- function(fasta) {
         if (grepl("^>", line)) {
             header <- Parse10XVDJReferenceHeader(line)
         } else {
-            if (!is.null(description)) {
+            if (!is.null(header)) {
                 if (!header[["gene_name"]] %in% names(sequences)) {
                     sequences[[header[["gene_name"]]]] <- line
                 } else {
