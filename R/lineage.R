@@ -118,7 +118,7 @@ Read10XVDJReference <- function(fasta) {
 Parse10XVDJReferenceHeader <- function(header) {
     data <- list()
 
-    parts <- strsplit(substr(description, 2, nchar(description)), "\\|") %>% unlist()
+    parts <- strsplit(substr(header, 2, nchar(header)), "\\|") %>% unlist()
 
     if (!grepl("REGION", parts[[4]], ignore.case = T)) {
         return(NULL)
