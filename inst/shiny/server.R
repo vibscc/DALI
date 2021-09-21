@@ -16,11 +16,13 @@ function(input, output, session) {
     )
 
     app.initialize <- function() {
+        vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
+
         renderReductionPlotsChainUsage(isolate(vals$data))
         renderReductionPlotsExpansion(isolate(vals$data))
         renderReductionPlotsComparison(isolate(vals$data))
 
-        groups <- levels(isolate(vals$data@meta.data$seurat_clusters))
+        groups <- levels(isolate(vals$data@meta.data$default.clustering))
         reductions <- names(isolate(vals$data@reductions))
 
         categorical.metadata <- c()
@@ -38,7 +40,7 @@ function(input, output, session) {
             }
         }
         categorical.metadata <- gtools::mixedsort(categorical.metadata)
-        metadata.default <- if ('seurat_clusters' %in% categorical.metadata) 'seurat_clusters' else NULL
+        metadata.default <- if ("default.clustering" %in% categorical.metadata) "default.clustering" else NULL
 
         updateSelectInput(session, "group.highlight", choices = groups)
 
@@ -49,10 +51,10 @@ function(input, output, session) {
         updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
-        updateSelectInput(session, "group.by", choices = metadata.columns, selected = "seurat_clusters")
+        updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
 
         updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
-        selected <- if ('umap' %in% reductions) 'umap' else if ('tsne' %in% reductions) 'tsne' else NULL
+        selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
         assays <- names(isolate(vals$data@assays))
@@ -83,8 +85,8 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "seurat_clusters",
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
+                        group.by = "default.clustering",
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -121,8 +123,8 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "seurat_clusters",
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
+                        group.by = "default.clustering",
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -169,7 +171,7 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$seurat_clusters)
+                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
