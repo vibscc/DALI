@@ -13,6 +13,7 @@ RoxygenNote: 7.1.2
 Requires:
     R (>= 3.5.0)
 Imports:
+    ape,
     circlize,
     dplyr,
     ggraph,
@@ -29,6 +30,7 @@ Imports:
     rlang,
     Seurat,
     stringr,
+    stringdist,
     tibble,
     tidyr,
     tidygraph,
