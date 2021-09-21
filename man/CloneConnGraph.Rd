@@ -18,7 +18,7 @@ CloneConnGraph(
 
 \item{reduction}{Dimensionality reduction}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{group.by}{Metadata column to group the family data by.}
 
 \item{groups.highlight}{Groups for which to highlight the edges in the graph}
 

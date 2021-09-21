@@ -16,7 +16,7 @@ BarplotClonotypes(
 \arguments{
 \item{object}{Seurat object}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{group.by}{Metadata column to group the family data by.}
 
 \item{subset}{Subset data to these groups}
 

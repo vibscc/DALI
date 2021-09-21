@@ -9,7 +9,7 @@ CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column, cols)
 \arguments{
 \item{object}{Seurat object}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{group.by}{Metadata column to group the family data by.}
 
 \item{heavy.cdr3.column}{Column name for heavy cdr3 data}
 

@@ -3,7 +3,7 @@
 #' @param object Seurat object
 #' @param ident.1 Identy class(es) to plot
 #' @param ident.2 Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
 #' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param by.family Group genes of 1 family together. Default = TRUE
@@ -14,7 +14,7 @@
 #' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
 #' @param cols Colors to use
 #'
-#' @importFrom dplyr arrange case_when count rename  %>%
+#' @importFrom dplyr case_when count %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
 #' @importFrom reshape2 melt
 #' @importFrom rlang .data
@@ -42,21 +42,19 @@ BarplotChainRegion <- function(
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
 
-  data.column <- paste0(chain, '.', region, '_')
+  data.column <- GetDataColumn(chain, region, by.family)
 
-  if (by.family && region == 'v') {
-      data.column <- paste0(data.column, 'fam')
-  } else {
-      data.column <- paste0(data.column, 'gene')
-      by.family <- F
+  if (!grepl("fam", data.column)) {
+    by.family <- F
   }
 
   if (is.null(group.by)) {
-      group.by <- 'seurat_clusters'
+    object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+    group.by <- "default.clustering"
   }
 
   if (!group.by %in% colnames(object@meta.data)) {
-      stop("Invalid group.by column ", group.by)
+    stop("Invalid group.by column ", group.by)
   }
 
   if (!is.null(ident.1) && !ident.1 %in% object@meta.data[[group.by]]) {
@@ -73,33 +71,8 @@ BarplotChainRegion <- function(
 
   families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
 
-  # Add missing families
   if (by.family && add.missing.families) {
-      families.completed <- c()
-      prefixes <- gsub("/.*$", "", gsub("[0-9-]", "", families)) %>% unique()
-
-      for (prefix in prefixes) {
-        families.with.prefix <- families[grepl(prefix, families)]
-
-        # Ignore all families that contain a / in the name
-        # These families will just be appended to the final families without attempting to complete the missing families
-        families.ignored <- families.with.prefix[grepl("/", families.with.prefix)]
-
-        # Only keep families without / in the name
-        families.with.prefix <- setdiff(families.with.prefix, families.ignored)
-
-        family.numbers <- c()
-        for (family in families.with.prefix) {
-            family.numbers <- c(family.numbers, gsub("[A-Za-z-]", "", family)) %>% as.numeric()
-        }
-
-        if (length(family.numbers) > 0) {
-          families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
-        }
-
-        families.completed <- c(families.completed, families.ignored)
-      }
-      families <- families.completed
+    families <- AddMissingVDJFamilies(families)
   }
 
   families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
@@ -191,7 +164,7 @@ BarplotChainRegion <- function(
 #' Barplot with clonotype distribution
 #'
 #' @param object Seurat object
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param subset Subset data to these groups
 #' @param clonotypes Clonotypes to plot. Default = top 10
 #' @param position Position of the bars in the plots. Options = stack or dodge
@@ -207,7 +180,8 @@ BarplotChainRegion <- function(
 BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge"), cols = NULL) {
 
   if (is.null(group.by)) {
-    group.by <- "seurat_clusters"
+    object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+    group.by <- "default.clustering"
   }
 
   if (!group.by %in% colnames(object@meta.data)) {
@@ -260,7 +234,7 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 #' Circosplot for family to gene distribution
 #'
 #' @param object Seurat object
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param subset Subset data to these groups
 #' @param seed Random seed to use. Using the same seed ensures that colors in the plot will be identical. Default = NULL
 #'
@@ -275,11 +249,12 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 
     if (!is.null(seed)) {
-      set.seed(seed)
+        set.seed(seed)
     }
 
     if (is.null(group.by)) {
-        group.by <- "seurat_clusters"
+        object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+        group.by <- "default.clustering"
     }
 
     if (!group.by %in% colnames(object@meta.data)) {
@@ -315,7 +290,7 @@ CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 #' Plot length of CDR3 AA/NT sequences
 #'
 #' @param object Seurat object
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param subset Subset data to these groups
 #' @param plot.type Type of plot. Options = ridge, line
 #' @param sequence.type Which CDR3 sequence should be used? Options: "AA" or "NT"
@@ -329,7 +304,8 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
     sequence.type <- match.arg(sequence.type)
 
     if (is.null(group.by)) {
-        group.by <- "seurat_clusters"
+        object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+        group.by <- "default.clustering"
     }
 
     if (!group.by %in% colnames(object@meta.data)) {
@@ -358,7 +334,7 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
 #' Plot length of CDR3 aa sequences as a line plot
 #'
 #' @param object Seurat object
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param heavy.cdr3.column Column name for heavy cdr3 data
 #' @param light.cdr3.column Column name for light cdr3 data
 #' @param sequence.type AA or NT
@@ -415,7 +391,7 @@ CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column
 #' Plot length of CDR3 aa sequences as a ridgeplot
 #'
 #' @param object Seurat object
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param heavy.cdr3.column Column name for heavy cdr3 data
 #' @param light.cdr3.column Column name for light cdr3 data
 #' @param cols Colors to use
@@ -534,7 +510,7 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = A
 #'
 #' @param object Seurat object
 #' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR. NULL = both
-#' @param group.by Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by Metadata column to group the family data by.
 #' @param subset Subset data to these groups
 #' @param use.sequence Use AA/NT sequence instead of clonotype. Default = FALSE
 #' @param sequence.type What sequences to use, available options: "AA" or "NT". Only functional when use.sequence = T
@@ -567,7 +543,8 @@ ClonotypeFrequency <- function(
   }
 
   if (is.null(group.by)) {
-    group.by <- "seurat_clusters"
+    object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+    group.by <- "default.clustering"
   }
 
   if (is.null(clonotype.column)) {
@@ -908,7 +885,7 @@ FeaturePlotClonotype <- function(
 #'
 #' @param object Seurat object
 #' @param reduction Dimensionality reduction
-#' @param group.by  Metadata column to group the family data by. Default = seurat_clusters
+#' @param group.by  Metadata column to group the family data by.
 #' @param groups.highlight Groups for which to highlight the edges in the graph
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
 #' @param cols Colors to use
@@ -924,7 +901,8 @@ FeaturePlotClonotype <- function(
 CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL, cols = NULL) {
 
   if (is.null(group.by)) {
-    group.by <- "seurat_clusters"
+    object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+    group.by <- "default.clustering"
   }
 
   if (!reduction %in% names(object@reductions)) {

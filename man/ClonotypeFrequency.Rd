@@ -23,7 +23,7 @@ ClonotypeFrequency(
 
 \item{chain}{Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR. NULL = both}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{group.by}{Metadata column to group the family data by.}
 
 \item{subset}{Subset data to these groups}
 

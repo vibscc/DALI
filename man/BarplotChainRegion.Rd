@@ -27,7 +27,7 @@ BarplotChainRegion(
 
 \item{ident.2}{Second identity class(es). This class will be used as comparison. If NULL, ident.1 will just be used to subset the data}
 
-\item{group.by}{Metadata column to group the family data by. Default = seurat_clusters}
+\item{group.by}{Metadata column to group the family data by.}
 
 \item{region}{Region to plot. Available options: 'V'(ariable) or 'C'(onstant)}
 
