@@ -161,6 +161,81 @@ BarplotChainRegion <- function(
   return(plot)
 }
 
+#' Heatmap showing to percentage of cells with a specifiek chain/region combination
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by.
+#' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
+#' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
+#' @param by.family Group genes of 1 family together. Default = TRUE
+#' @param add.missing.families Should missing families be added to the plot. Default = TRUE
+#' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
+#' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
+#' @param cols Colors to use
+#'
+#' @importFrom dplyr case_when count filter group_by mutate select %>%
+#' @importFrom rlang .data
+#' @importFrom stats na.omit
+#' @importFrom tibble column_to_rownames
+#' @importFrom tidyr spread
+#'
+#' @export
+
+HeatmapChainRegion <- function(
+  object,
+  group.by = NULL,
+  chain = AvailableChains(object),
+  region = c("V", "C"),
+  by.family = T,
+  add.missing.families = T,
+  percent.total = T,
+  show.missing.values = F
+) {
+  region <- match.arg(region) %>% tolower()
+  chain <- match.arg(chain) %>% tolower()
+
+  if (is.null(group.by)) {
+    object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+    group.by <- "default.clustering"
+  }
+
+  data.column <- GetDataColumn(chain, region, by.family)
+
+  if (!grepl("fam", data.column)) {
+    by.family <- F
+  }
+
+  families <- object@meta.data[, data.column] %>% na.omit() %>% unique()
+
+  if (by.family && add.missing.families) {
+    families <- AddMissingVDJFamilies(families)
+  }
+
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+
+  data <- object@meta.data %>%
+    count(.data[[data.column]], .data[[group.by]]) %>%
+    filter(case_when((!percent.total && !show.missing.values) ~ !is.na(.data[[data.column]]),
+                     T ~ T)) %>%
+    group_by(.data[[group.by]]) %>%
+    mutate(freq = prop.table(.data$n) * 100) %>%
+    mutate(freq = round(.data$freq, 2)) %>%
+    select(.data[[data.column]], .data[[group.by]], .data$freq) %>%
+    filter(case_when(!show.missing.values ~ !is.na(.data[[data.column]]),
+                     T ~ T)) %>%
+    spread(.data[[group.by]], .data$freq) %>%
+    mutate(family = replace(.data[[data.column]], is.na(.data[[data.column]]), "NA")) %>%
+    select(-all_of(data.column)) %>%
+    replace(is.na(.), 0) %>%
+    column_to_rownames("family")
+
+  if (show.missing.values) {
+    families <- c(families, "NA")
+  }
+
+  pheatmap::pheatmap(data[families, ], cluster_rows = F, cluster_cols = F)
+}
+
 #' Barplot with clonotype distribution
 #'
 #' @param object Seurat object

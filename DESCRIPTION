@@ -22,6 +22,7 @@ Imports:
     gtools,
     igraph,
     methods,
+    pheatmap,
     Polychrome,
     reldist,
     reshape2,
