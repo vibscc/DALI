@@ -87,7 +87,7 @@ CalculateDistances <- function(sequences, metric) {
 CalculateDistances.identity <- function(sequences) {
     # Distances are stored in a sparse matrix. therefor 1 should be added to each distance so we also keep 0 distances.
     # For the identity metric, this results in an identity matrix
-    dist <- diag(length(sequences)) %>% as("dgRMatrix")
+    dist <- diag(length(sequences)) %>% as("dgCMatrix")
 
     return(dist)
 }
