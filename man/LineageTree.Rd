@@ -2,7 +2,7 @@
 % Please edit documentation in R/lineage.R
 \name{LineageTree}
 \alias{LineageTree}
-\title{Calculate a tree for the given sequences}
+\title{Build a lineage tree for the given sequences}
 \usage{
 LineageTree(sequences, distance.method = "lv", outgroup = NULL, root = F)
 }
@@ -16,5 +16,5 @@ LineageTree(sequences, distance.method = "lv", outgroup = NULL, root = F)
 \item{root}{Should the tree be rooted. Default = FALSE}
 }
 \description{
-Calculate a tree for the given sequences
+Build a lineage tree for the given sequences
 }

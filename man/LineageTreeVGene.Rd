@@ -2,7 +2,7 @@
 % Please edit documentation in R/lineage.R
 \name{LineageTreeVGene}
 \alias{LineageTreeVGene}
-\title{Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain}
+\title{Build a phylogenetic tree of the v-gene sequence of either the heavy or light chain}
 \usage{
 LineageTreeVGene(
   object,
@@ -27,5 +27,5 @@ LineageTreeVGene(
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
 }
 \description{
-Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain
+Build a phylogenetic tree of the v-gene sequence of either the heavy or light chain
 }

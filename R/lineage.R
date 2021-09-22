@@ -1,4 +1,4 @@
-#' Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain
+#' Build a phylogenetic tree of the v-gene sequence of either the heavy or light chain
 #'
 #' @param object Seurat object
 #' @param clonotype Clonotype to plot
@@ -53,7 +53,7 @@ LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ"
     plot(tree)
 }
 
-#' Calculate a tree for the given sequences
+#' Build a lineage tree for the given sequences
 #'
 #' @param sequences Named vector of sequences
 #' @param distance.method Method to use to compute distances between the sequences. Default = lv (Levenshtein)
