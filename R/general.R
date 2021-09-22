@@ -253,13 +253,13 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 "DefaultAssayVDJ<-.Seurat" <- function(object, ..., value) {
 
     if (!value %in% names(x = slot(object, 'misc')[['VDJ']])) {
-        stop("Cannot find assay ", value)
+        stop("Cannot find assay ", assay)
     }
 
     chain <- DefaultChainVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('vj.', chain)]])
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('vdj.', chain)]])
+    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vj.", chain)))
+    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vdj.", chain)))
 
     slot(object, 'misc')[['default.assay.VDJ']] <- value
 
@@ -451,4 +451,15 @@ TranslateIMGTGappedSequence <- function(sequence) {
     aa <- paste(substring(aa, c(1, gap.start), c(gap.start - 1, nchar(aa))), collapse = paste(rep(".", gap.length), collapse = ""))
 
     return(aa)
+}
+
+GetInfoForMetadata <- function(object, assay, chain) {
+    data <- slot(object, "misc")[["VDJ"]][[assay]][[chain]]
+    columns.to.ignore <- grep("sequence", colnames(data))
+
+    if (length(columns.to.ignore) > 0) {
+        return(data[, -columns.to.ignore])
+    }
+
+    return(data)
 }
