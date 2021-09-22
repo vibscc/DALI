@@ -10,8 +10,7 @@ LineageTreeVGene(
   airr,
   reference,
   chain = c("VDJ", "VJ"),
-  clonotype.column = NULL,
-  do.plot = T
+  clonotype.column = NULL
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ LineageTreeVGene(
 \item{chain}{Which chain to use?}
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
-
-\item{do.plot}{Should the tree be plotted. Default = TRUE}
 }
 \description{
 Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain

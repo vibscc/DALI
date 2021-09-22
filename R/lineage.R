@@ -6,13 +6,16 @@
 #' @param reference Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.
 #' @param chain Which chain to use?
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
-#' @param do.plot Should the tree be plotted. Default = TRUE
 #'
 #' @importFrom dplyr %>% filter pull
 #'
 #' @export
 
-LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL, do.plot = T) {
+LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
+    if (DefaultAssayVDJ(object) != "BCR") {
+        stop("Lineages can only be computed on BCR data!", call. = F)
+    }
+
     chain <- match.arg(chain) %>% tolower()
     clonotype.name <- clonotype
 
@@ -44,14 +47,40 @@ LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ"
     }
 
     germline.name <- paste0("germline (", v_call, ")")
-    distance.mat <- stringdist::stringdistmatrix(sequences, sequences, method = "lv")
-    colnames(distance.mat) <- c(germline.name, data.airr$cell_id)
-    rownames(distance.mat) <- c(germline.name, data.airr$cell_id)
+    names(sequences) <- c(germline.name, data.airr$cell_id)
 
-    tree <- ape::nj(distance.mat) %>% ape::root(outgroup = germline.name, r = T)
+    tree <- LineageTree(sequences, outgroup = germline.name, root = T)
+    plot(tree)
+}
 
-    if (do.plot) {
-        plot(tree)
+#' Calculate a tree for the given sequences
+#'
+#' @param sequences Named vector of sequences
+#' @param distance.method Method to use to compute distances between the sequences. Default = lv (Levenshtein)
+#' @param root Should the tree be rooted. Default = FALSE
+#' @param outgroup Outgroup to root the tree
+
+LineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root = F) {
+    if (root & is.null(outgroup)) {
+        stop("Missing outgroup to root the tree.", call. = F)
+    }
+
+    if (length(sequences) <= 2) {
+        stop("Need at least 3 sequences to build a tree.", call. = F)
+    }
+
+    if (is.null(names(sequences))) {
+        stop("Sequence vector should be named", call. = F)
+    }
+
+    distance.mat <- stringdist::stringdistmatrix(sequences, sequences, method = distance.method)
+    colnames(distance.mat) <- names(sequences)
+    rownames(distance.mat) <- names(sequences)
+
+    tree <- ape::nj(distance.mat)
+
+    if (root) {
+        tree <- ape::root(tree, outgroup = outgroup)
     }
 
     return(tree)
