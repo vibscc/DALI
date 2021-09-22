@@ -2,7 +2,6 @@
 #'
 #' @param object Seurat object
 #' @param clonotype Clonotype to plot
-#' @param airr Path to airr_rearrangement.tsv. This file can be found in cellranger multi output (> v6.1.1)
 #' @param reference Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.
 #' @param chain Which chain to use?
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
@@ -11,7 +10,7 @@
 #'
 #' @export
 
-LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
+LineageTreeVGene <- function(object, clonotype, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
     if (DefaultAssayVDJ(object) != "BCR") {
         stop("Lineages can only be computed on BCR data!", call. = F)
     }
@@ -36,18 +35,13 @@ LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ"
         stop("Found more than 1 v_gene for given clonotype.", call. = F)
     }
 
-    c_call.regex <- if (chain == "vdj") "IGH" else "IG[KL]"
-    data.airr <- read.csv(airr, sep = "\t") %>% filter(cell_id %in% cells & grepl(c_call.regex, c_call))
-
     sequences <- GetGermline(reference, v_call = v_call)
-    for (i in seq(1, nrow(data.airr))) {
-        v_start <- data.airr[i, "v_sequence_start"]
-        v_end <- data.airr[i, "v_sequence_end"]
-        sequences <- c(sequences, substr(data.airr[i, "sequence_alignment"], v_start, v_end))
+    for (cell in cells) {
+        sequences <- c(sequences, GetSequence(object, cell, "BCR", chain = chain %>% toupper(), region = "V"))
     }
 
     germline.name <- paste0("germline (", v_call, ")")
-    names(sequences) <- c(germline.name, data.airr$cell_id)
+    names(sequences) <- c(germline.name, cells)
 
     tree <- LineageTree(sequences, outgroup = germline.name, root = T)
     plot(tree)

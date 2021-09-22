@@ -136,3 +136,61 @@ AddMissingVDJFamilies <- function(families) {
 
     return(families.completed)
 }
+
+#' Get the sequence of a v,d,j or c gene for a cell
+#'
+#' @param object Seurat object
+#' @param cell Cell id
+#' @param assay VDJ assay to use. Default = DefaultAssayVDJ(object)
+#' @param chain Chain to use. Options = VDJ (=heavy/alpha); VJ (=light/beta)
+#' @param region Region to get sequence from
+#'
+#' @importFrom dplyr %>%
+#'
+#' @export
+
+GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), region = c("V", "D", "J", "C")) {
+    chain <- match.arg(chain) %>% tolower()
+    region <- match.arg(region) %>% tolower()
+
+    if (region == "d" & chain == "vj") {
+        stop("No d-region in light/beta chain!", call. = F)
+    }
+
+    df.name <- paste0(chain, ".", DefaultChainVDJ(object))
+    column.name.start <- paste0(chain, ".", region, "_sequence_start")
+    column.name.end <- paste0(chain, ".", region, "_sequence_end")
+    column.name.sequence <- paste0(chain, ".sequence")
+
+    if (is.null(assay)) {
+        assay <- DefaultAssayVDJ(object)
+    }
+
+    if (!assay %in% names(slot(object, "misc")[["VDJ"]])) {
+        stop("Invalid assay ", assay, call. = F)
+    }
+
+    data.df <- slot(object, "misc")[["VDJ"]][[assay]][[df.name]]
+
+    if (!cell %in% rownames(data.df)) {
+        stop("Invalid cell ", cell, call. = F)
+    }
+
+    start <- data.df[cell, column.name.start]
+    end <- data.df[cell, column.name.end]
+    sequence <- data.df[cell, column.name.sequence]
+
+    if (is.na(start) | is.na(end) | is.na(sequence)) {
+        stop("Could not extract requested sequence for given cell. Missing information.", call. = F)
+    }
+
+    if (end < start) {
+        stop("Failed to extract sequence. End of sequence is before start.", call. = F)
+    }
+
+    if (end > nchar(sequence)) {
+        stop("Failed to extract sequence. End is outside the sequence.", call. = F)
+    }
+
+    return(substr(sequence, start, end))
+}

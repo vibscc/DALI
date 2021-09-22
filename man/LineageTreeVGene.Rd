@@ -7,7 +7,6 @@
 LineageTreeVGene(
   object,
   clonotype,
-  airr,
   reference,
   chain = c("VDJ", "VJ"),
   clonotype.column = NULL
@@ -17,8 +16,6 @@ LineageTreeVGene(
 \item{object}{Seurat object}
 
 \item{clonotype}{Clonotype to plot}
-
-\item{airr}{Path to airr_rearrangement.tsv. This file can be found in cellranger multi output (> v6.1.1)}
 
 \item{reference}{Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.}
 
