@@ -12,7 +12,7 @@
 #'
 #' @export
 
-LineageTreeVGene <- function(object, clonotype, airr, reference, chain = Diversity:::AvailableChains(object), clonotype.column = NULL, do.plot = T) {
+LineageTreeVGene <- function(object, clonotype, airr, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL, do.plot = T) {
     chain <- match.arg(chain) %>% tolower()
     clonotype.name <- clonotype
 
@@ -33,7 +33,7 @@ LineageTreeVGene <- function(object, clonotype, airr, reference, chain = Diversi
         stop("Found more than 1 v_gene for given clonotype.", call. = F)
     }
 
-    c_call.regex <- if (chain == "h") "IGH" else "IG[KL]"
+    c_call.regex <- if (chain == "vdj") "IGH" else "IG[KL]"
     data.airr <- read.csv(airr, sep = "\t") %>% filter(cell_id %in% cells & grepl(c_call.regex, c_call))
 
     sequences <- GetGermline(reference, v_call = v_call)

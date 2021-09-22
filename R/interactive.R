@@ -46,37 +46,15 @@ FormatDimred <- function(reduction) {
     return(reduction)
 }
 
-#' Create options list of chains for dropdown
-#'
-#' @param object Seurat object
-
-AvailableChainsList <- function(object) {
-    chains <- list()
-
-    for (chain in AvailableChains(object)) {
-        key <- switch(chain,
-            "H" = "Heavy",
-            "L" = "Light",
-            "A" = "Alpha",
-            "B" = "Beta"
-        )
-        chains[[key]] = chain
-    }
-
-    return(chains)
-}
-
 #' Get regions for given chain
 #'
-#' @param chain One of H, L, A or B
+#' @param chain VDJ (heavy/alpha) OR VJ (light/beta)
 
 AvailableRegions <- function(chain) {
-    heavy <- c("H", "A")
-    light <- c("L", "B")
 
-    if (chain %in% heavy) {
+    if (chain == "VDJ") {
         return(c("V", "D", "J", "C"))
-    } else if (chain %in% light) {
+    } else if (chain == "VJ") {
         return(c("V", "J", "C"))
     } else {
         return(c())

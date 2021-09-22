@@ -9,7 +9,7 @@ LineageTreeVGene(
   clonotype,
   airr,
   reference,
-  chain = Diversity:::AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   clonotype.column = NULL,
   do.plot = T
 )

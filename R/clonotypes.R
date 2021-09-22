@@ -22,10 +22,10 @@ DefineClonotypes <- function(object, sequence = c("aa", "nt"), metric = c("ident
     }
 
     cdr3.column <- if (sequence == "aa") "cdr3" else "cdr3_nt"
-    heavy.column <- paste0("h.", cdr3.column)
-    light.column <- paste0("l.", cdr3.column)
+    vdj.column <- paste0("vdj.", cdr3.column)
+    vj.column <- paste0("vj.", cdr3.column)
 
-    object@meta.data <- object@meta.data %>% mutate(tmp_cdr3_concat = paste0(.data[[heavy.column]], .data[[light.column]]))
+    object@meta.data <- object@meta.data %>% mutate(tmp_cdr3_concat = paste0(.data[[vdj.column]], .data[[vj.column]]))
     object@meta.data$tmp_cdr3_concat <- gsub("NA", "_", object@meta.data$tmp_cdr3_concat) %>% na_if(y = "__")
 
     sequences <- object@meta.data %>%

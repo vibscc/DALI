@@ -7,10 +7,10 @@
 AddVDJDataForType(
   type,
   object,
-  heavy.primary,
-  heavy.secondary,
-  light.primary,
-  light.secondary,
+  vdj.primary,
+  vdj.secondary,
+  vj.primary,
+  vj.secondary,
   force = F
 )
 }
@@ -19,13 +19,13 @@ AddVDJDataForType(
 
 \item{object}{Seurat object}
 
-\item{heavy.primary}{Data frame with the metadata columns for the primary heavy chains}
+\item{vdj.primary}{Data frame with the metadata columns for the primary heavy/alpha chains}
 
-\item{heavy.secondary}{Data frame with the metadata columns for the secondary heavy chains}
+\item{vdj.secondary}{Data frame with the metadata columns for the secondary heavy/alpha chains}
 
-\item{light.primary}{Data frame with metadata columns for the primary light chains}
+\item{vj.primary}{Data frame with metadata columns for the primary light/beta chains}
 
-\item{light.secondary}{Data frame with the metadata columns for the secondary light chains}
+\item{vj.secondary}{Data frame with the metadata columns for the secondary light/beta chains}
 
 \item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
 }

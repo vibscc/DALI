@@ -4,16 +4,16 @@
 \alias{CDR3Plot.ridge}
 \title{Plot length of CDR3 aa sequences as a ridgeplot}
 \usage{
-CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column, cols)
+CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
 }
 \arguments{
 \item{object}{Seurat object}
 
 \item{group.by}{Metadata column to group the family data by.}
 
-\item{heavy.cdr3.column}{Column name for heavy cdr3 data}
+\item{vdj.cdr3.column}{Column name for heavy/alpha cdr3 data}
 
-\item{light.cdr3.column}{Column name for light cdr3 data}
+\item{vj.cdr3.column}{Column name for light/beta cdr3 data}
 
 \item{cols}{Colors to use}
 }

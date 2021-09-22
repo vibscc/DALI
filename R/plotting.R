@@ -30,7 +30,7 @@ BarplotChainRegion <- function(
   ident.2 = NULL,
   group.by = NULL,
   region = c("V", "C"),
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   by.family = T,
   legend = T,
   grid = F,
@@ -184,7 +184,7 @@ BarplotChainRegion <- function(
 HeatmapChainRegion <- function(
   object,
   group.by = NULL,
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   region = c("V", "C"),
   by.family = T,
   add.missing.families = T,
@@ -343,8 +343,8 @@ CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 
     type <- object@misc$default.assay.VDJ
 
-    family.column <- paste0(if (type == "TCR") "a" else "h", ".v_fam")
-    gene.column <- paste0(if (type == "TCR") "b" else "l", ".v_gene")
+    family.column <- "vdj.v_fam"
+    gene.column <- "vj.v_gene"
 
     plot.data <- object@meta.data %>%
         select(.data[[family.column]], .data[[gene.column]]) %>%
@@ -392,15 +392,14 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
         object <- subset(object, cells = cells)
     }
 
-    type <- DefaultAssayVDJ(object)
     cdr3.sequence <- if (sequence.type == "AA") ".cdr3" else ".cdr3_nt"
-    heavy.cdr3.column <- paste0(if (type == "TCR") "a" else "h", cdr3.sequence)
-    light.cdr3.column <- paste0(if (type == "TCR") "b" else "l", cdr3.sequence)
+    vdj.cdr3.column <- paste0("vdj", cdr3.sequence)
+    vj.cdr3.column <- paste0("vj", cdr3.sequence)
 
     if (plot.type == "line") {
-      plots <- CDR3Plot.line(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type)
+      plots <- CDR3Plot.line(object, group.by, vdj.cdr3.column, vj.cdr3.column, sequence.type)
     } else if (plot.type == "ridge") {
-      plots <- CDR3Plot.ridge(object, group.by, heavy.cdr3.column, light.cdr3.column, cols)
+      plots <- CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
     }
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
@@ -410,8 +409,8 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
 #'
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by.
-#' @param heavy.cdr3.column Column name for heavy cdr3 data
-#' @param light.cdr3.column Column name for light cdr3 data
+#' @param vdj.cdr3.column Column name for heavy/alpha cdr3 data
+#' @param vj.cdr3.column Column name for light/beta cdr3 data
 #' @param sequence.type AA or NT
 #'
 #' @importFrom dplyr %>% mutate select full_join count
@@ -419,7 +418,7 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
 
-CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, sequence.type) {
+CDR3Plot.line <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, sequence.type) {
   plots <- list()
   groups <- unique(object@meta.data[[group.by]]) %>% gtools::mixedsort(x = .)
 
@@ -428,24 +427,24 @@ CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column
     subset <- subset(object, cells = cells)
 
     plot.data.h <- subset@meta.data %>%
-      mutate(len = nchar(.data[[heavy.cdr3.column]])) %>%
+      mutate(len = nchar(.data[[vdj.cdr3.column]])) %>%
       count(.data$len) %>%
       na.omit() %>%
       mutate(freq = .data$n/sum(.data$n) * 100) %>%
       select(.data$len, .data$freq)
     plot.data.l <- subset@meta.data %>%
-      mutate(len = nchar(.data[[light.cdr3.column]])) %>%
+      mutate(len = nchar(.data[[vj.cdr3.column]])) %>%
       count(.data$len) %>%
       na.omit() %>%
       mutate(freq = .data$n/sum(.data$n) * 100) %>%
       select(.data$len, .data$freq)
 
     plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
-    colnames(plot.data) <- c("cdr3.length", "heavy.chain", "light.chain")
+    colnames(plot.data) <- c("cdr3.length", "vdj.chain", "vj.chain")
 
     plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
-      geom_line(aes(y = .data$heavy.chain), color = "black") +
-      geom_line(aes(y = .data$light.chain), color = "red") +
+      geom_line(aes(y = .data$vdj.chain), color = "black") +
+      geom_line(aes(y = .data$vj.chain), color = "red") +
       labs(x = paste0("CDR3 length (", sequence.type,")"), y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
       theme(
         panel.background = element_rect(fill = "white"), # bg of the panel
@@ -467,8 +466,8 @@ CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column
 #'
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by.
-#' @param heavy.cdr3.column Column name for heavy cdr3 data
-#' @param light.cdr3.column Column name for light cdr3 data
+#' @param vdj.cdr3.column Column name for heavy/alpha cdr3 data
+#' @param vj.cdr3.column Column name for light/beta cdr3 data
 #' @param cols Colors to use
 #'
 #' @importFrom dplyr %>% mutate
@@ -476,15 +475,15 @@ CDR3Plot.line <- function(object, group.by, heavy.cdr3.column, light.cdr3.column
 #' @importFrom ggridges geom_density_ridges theme_ridges
 #' @importFrom rlang .data
 
-CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.column, cols) {
+CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols) {
   plots <- list()
 
-  for (column in c(heavy.cdr3.column, light.cdr3.column)) {
+  for (column in c(vdj.cdr3.column, vj.cdr3.column)) {
 
     plot.data <- object@meta.data %>%
       mutate(len = nchar(.data[[column]]))
 
-    if (column == heavy.cdr3.column) {
+    if (column == vdj.cdr3.column) {
       if (DefaultAssayVDJ(object) == 'TCR') {
         title <- "TCR-a"
       } else {
@@ -531,7 +530,7 @@ CDR3Plot.ridge <- function(object, group.by, heavy.cdr3.column, light.cdr3.colum
 #'
 #' @export
 
-DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = AvailableChains(object), by.family = T, grid = T, highlight = NULL, cols = NULL, ...) {
+DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = c("VDJ", "VJ"), by.family = T, grid = T, highlight = NULL, cols = NULL, ...) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -601,7 +600,7 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = A
 
 ClonotypeFrequency <- function(
   object,
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   group.by = NULL,
   subset = NULL,
   use.sequence = F,
@@ -642,7 +641,7 @@ ClonotypeFrequency <- function(
   chains <- chain
 
   if (is.null(chains)) {
-    chains <- AvailableChains(object) %>% tolower()
+    chains <- c("vdj", "vj")
   }
 
   if (plot.type == "bar") {

@@ -6,7 +6,7 @@
 \usage{
 ClonotypeFrequency(
   object,
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   group.by = NULL,
   subset = NULL,
   use.sequence = F,

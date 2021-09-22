@@ -153,16 +153,16 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     fields <- c(fields, "dual_IR")
     columns <- c(columns, "dual_IR")
 
-    heavy.prefix <- if (type == "TCR") "a" else "h"
-    light.prefix <- if (type == "TCR") "b" else "l"
+    vdj.prefix <- "vdj"
+    vj.prefix <- "vj"
 
-    heavy.regex <- if (type == "TCR") "^TRA" else "^IGH"
-    light.regex <- if (type == "TCR") "^TRB" else "^IG[KL]"
+    vdj.regex <- if (type == "TCR") "^TRA" else "^IGH"
+    vj.regex <- if (type == "TCR") "^TRB" else "^IG[KL]"
 
     data <- data %>% mutate_all(~ na_if(.x, ""))
 
-    heavy <- data %>%
-        filter(grepl(heavy.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+    vdj <- data %>%
+        filter(grepl(vdj.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
         add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
@@ -170,24 +170,24 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         `colnames<-`(columns) %>%
         mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
-    heavy.primary <- heavy %>%
+    vdj.primary <- vdj %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(heavy.prefix, ".", .))
+        rename_all(~ paste0(vdj.prefix, ".", .))
 
-    heavy.secondary <- heavy %>%
+    vdj.secondary <- vdj %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(heavy.prefix, ".", .))
+        rename_all(~ paste0(vdj.prefix, ".", .))
 
-    colnames(heavy.primary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.primary))
-    colnames(heavy.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(heavy.secondary))
+    colnames(vdj.primary) <- gsub(".*\\.clonotype", "clonotype", colnames(vdj.primary))
+    colnames(vdj.secondary) <- gsub(".*\\.clonotype", "clonotype", colnames(vdj.secondary))
 
-    light <- data %>%
-        filter(grepl(light.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
+    vj <- data %>%
+        filter(grepl(vj.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
         add_count(.data[[FieldForColumn("barcode", fields, columns)]]) %>%
         mutate(dual_IR = .data$n == 2) %>%
         mutate(multichain = .data$n > 2) %>%
@@ -195,31 +195,31 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         `colnames<-`(columns) %>%
         mutate(v_fam = GetVFamilies(.data$v_gene, type))
 
-    light.primary <- light %>%
+    vj.primary <- vj %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(light.prefix, ".", .))
+        rename_all(~ paste0(vj.prefix, ".", .))
 
-    light.secondary <- light %>%
+    vj.secondary <- vj %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(light.prefix, ".", .))
+        rename_all(~ paste0(vj.prefix, ".", .))
 
-    colnames(light.primary) <- gsub(".\\.clonotype", "clonotype", colnames(light.primary))
-    colnames(light.secondary) <- gsub(".\\.clonotype", "clonotype", colnames(light.secondary))
+    colnames(vj.primary) <- gsub(".*\\.clonotype", "clonotype", colnames(vj.primary))
+    colnames(vj.secondary) <- gsub(".*\\.clonotype", "clonotype", colnames(vj.secondary))
 
-    if (nrow(heavy.primary) == 0 & !force) {
-        stop("Could not find heavy primary chains in the data!", call. = F)
+    if (nrow(vdj.primary) == 0 & !force) {
+        stop("Could not find VDJ (heavy/alpha) primary chains in the data!", call. = F)
     }
 
-    if (nrow(light.primary) == 0 & !force) {
-        stop("Could not find light primary chains in the data!", call. = F)
+    if (nrow(vj.primary) == 0 & !force) {
+        stop("Could not find VJ (light/beta) primary chains in the data!", call. = F)
     }
 
-    object <- AddVDJDataForType(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force)
+    object <- AddVDJDataForType(type, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force)
     DefaultAssayVDJ(object) <- type
 
     return(object)
@@ -250,8 +250,8 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 
     chain <- DefaultChainVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('light.', chain)]])
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('heavy.', chain)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('vj.', chain)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[value]][[paste0('vdj.', chain)]])
 
     slot(object, 'misc')[['default.assay.VDJ']] <- value
 
@@ -283,8 +283,8 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 
     assay <- DefaultAssayVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('heavy.', value)]])
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('light.', value)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('vdj.', value)]])
+    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('vj.', value)]])
 
     slot(object, 'misc')[['default.chain.VDJ']] <- value
 
@@ -327,15 +327,15 @@ GetVFamilies <- function(v_genes, type) {
 #'
 #' @param type VDJ assay type
 #' @param object Seurat object
-#' @param heavy.primary Data frame with the metadata columns for the primary heavy chains
-#' @param heavy.secondary Data frame with the metadata columns for the secondary heavy chains
-#' @param light.primary Data frame with metadata columns for the primary light chains
-#' @param light.secondary Data frame with the metadata columns for the secondary light chains
+#' @param vdj.primary Data frame with the metadata columns for the primary heavy/alpha chains
+#' @param vdj.secondary Data frame with the metadata columns for the secondary heavy/alpha chains
+#' @param vj.primary Data frame with metadata columns for the primary light/beta chains
+#' @param vj.secondary Data frame with the metadata columns for the secondary light/beta chains
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 
-AddVDJDataForType <- function(type, object, heavy.primary, heavy.secondary, light.primary, light.secondary, force = F) {
+AddVDJDataForType <- function(type, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force = F) {
     if (!force) {
-        overlap <- min(length(intersect(colnames(object), rownames(heavy.primary))) / nrow(heavy.primary), length(intersect(colnames(object), rownames(light.primary))) / nrow(light.primary))
+        overlap <- min(length(intersect(colnames(object), rownames(vdj.primary))) / nrow(vdj.primary), length(intersect(colnames(object), rownames(vj.primary))) / nrow(vj.primary))
 
         if (overlap < 0.50) {
             stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n", call. = F)
@@ -349,10 +349,10 @@ AddVDJDataForType <- function(type, object, heavy.primary, heavy.secondary, ligh
     slot(object, 'misc')[['default.chain.VDJ']] <- 'primary'
 
     slot(object, 'misc')[['VDJ']][[type]] <- list(
-        heavy.primary = heavy.primary,
-        heavy.secondary = heavy.secondary,
-        light.primary = light.primary,
-        light.secondary = light.secondary
+        vdj.primary = vdj.primary,
+        vdj.secondary = vdj.secondary,
+        vj.primary = vj.primary,
+        vj.secondary = vj.secondary
     )
 
     return(object)
@@ -375,7 +375,7 @@ IsValidSeuratObject <- function(object) {
     }
 
     assays <- c("TCR", "BCR")
-    tables <- c("heavy.primary", "light.primary")
+    tables <- c("vdj.primary", "vj.primary")
 
     missing <- 0
     for (assay in assays) {
@@ -398,24 +398,6 @@ IsValidSeuratObject <- function(object) {
     }
 
     return(T)
-}
-
-#' Get available chains from object
-#'
-#' @param object Seurat object
-
-AvailableChains <- function(object) {
-    assay <- DefaultAssayVDJ(object)
-
-    if (grepl("BCR", assay, ignore.case = T)) {
-        return(c("H", "L"))
-    }
-
-    if (grepl("TCR", assay, ignore.case = T)) {
-        return(c("A", "B"))
-    }
-
-    return(c("H", "L", "A", "B"))
 }
 
 #' Translate sequences which may contain gaps, indicated by .

@@ -7,7 +7,7 @@
 AvailableRegions(chain)
 }
 \arguments{
-\item{chain}{One of H, L, A or B}
+\item{chain}{VDJ (heavy/alpha) OR VJ (light/beta)}
 }
 \description{
 Get regions for given chain

@@ -7,7 +7,7 @@
 DimplotChainRegion(
   object,
   region = c("V", "D", "J", "C"),
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   by.family = T,
   grid = T,
   highlight = NULL,

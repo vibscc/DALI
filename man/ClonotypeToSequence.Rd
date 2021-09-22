@@ -7,7 +7,7 @@
 ClonotypeToSequence(
   object,
   ct,
-  chain,
+  chain = c("VDJ", "VJ"),
   clonotype.column = "clonotype",
   sequence.type = "AA",
   collapse = "\\n"

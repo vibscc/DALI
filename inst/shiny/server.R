@@ -53,7 +53,6 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
 
-        updateSelectInput(session, "chain.usage.chain", choices = Diversity:::AvailableChainsList(isolate(vals$data)))
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
@@ -307,12 +306,7 @@ function(input, output, session) {
     output$dataset.metrics <- renderUI({
         req(vals$data)
 
-        if ("h.v_gene" %in% colnames(vals$data@meta.data)) {
-            cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$h.v_gene) | !is.na(.data$l.v_gene) ) %>% nrow()
-        }
-        if ("a.v_gene" %in% colnames(vals$data@meta.data)) {
-            cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$a.v_gene) | !is.na(.data$b.v_gene) ) %>% nrow()
-        }
+        cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$vdj.v_gene) | !is.na(.data$vj.v_gene) ) %>% nrow()
 
         list(
             div("# cells: ", strong(ncol(vals$data))),
@@ -454,14 +448,14 @@ function(input, output, session) {
         h_seqs <- c()
         l_seqs <- c()
         for (clonotype in top.clonotypes$clonotype) {
-            h_seqs <- c(h_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "H"))
-            l_seqs <- c(l_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "L"))
+            h_seqs <- c(h_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "VDJ"))
+            l_seqs <- c(l_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "VJ"))
         }
 
         top.clonotypes$h_seq <- h_seqs
         top.clonotypes$l_seq <- l_seqs
 
-        colnames(top.clonotypes) <- c("Clonotype", "Cells", "pct.group", "H CDR3 AA seq", "L CDR3 AA seq")
+        colnames(top.clonotypes) <- c("Clonotype", "Cells", "pct.group", "VDJ CDR3 AA seq", "VJ CDR3 AA seq")
         top.clonotypes
     })
 
@@ -561,15 +555,15 @@ function(input, output, session) {
         cols.for.nt.sequence <- c("fwr1_nt", "cdr1_nt", "fwr2_nt", "cdr2_nt", "fwr3_nt", "cdr3_nt", "fwr4_nt")
         cols.for.aa.sequence <- c("fwr1", "cdr1", "fwr2", "cdr2", "fwr3", "cdr3", "fwr4")
 
-        heavy.prefix <- if (DefaultAssayVDJ(vals$data) == "TCR") "a" else "h"
-        light.prefix <- if (DefaultAssayVDJ(vals$data) == "TCR") "b" else "l"
+        vdj.prefix <- "vdj"
+        vj.prefix <- "vj"
 
-        h.seq.nt.cols <- paste0(heavy.prefix, ".", cols.for.nt.sequence)
-        h.seq.aa.cols <- paste0(heavy.prefix, ".", cols.for.aa.sequence)
-        l.seq.nt.cols <- paste0(light.prefix, ".", cols.for.nt.sequence)
-        l.seq.aa.cols <- paste0(light.prefix, ".", cols.for.aa.sequence)
+        vdj.seq.nt.cols <- paste0(vdj.prefix, ".", cols.for.nt.sequence)
+        vdj.seq.aa.cols <- paste0(vdj.prefix, ".", cols.for.aa.sequence)
+        vj.seq.nt.cols <- paste0(vj.prefix, ".", cols.for.nt.sequence)
+        vj.seq.aa.cols <- paste0(vj.prefix, ".", cols.for.aa.sequence)
 
-        vars <- list("h.seq.nt" = h.seq.nt.cols, "h.seq.aa" = h.seq.aa.cols, "l.seq.nt" = l.seq.nt.cols, "l.seq.aa" = l.seq.aa.cols)
+        vars <- list("vdj.seq.nt" = vdj.seq.nt.cols, "vdj.seq.aa" = vdj.seq.aa.cols, "vj.seq.nt" = vj.seq.nt.cols, "vj.seq.aa" = vj.seq.aa.cols)
         i <- 1
         for (cols in vars) {
             for (col in cols) {
@@ -594,10 +588,10 @@ function(input, output, session) {
             dplyr::group_by(clonotype) %>%
             summarize(
                 n.cells = n(),
-                h.seq.nt = h.seq.nt %>% unique() %>% paste(collapse = "<br>"),
-                h.seq.aa = h.seq.aa %>% unique() %>% paste(collapse = "<br>"),
-                l.seq.nt = l.seq.nt %>% unique() %>% paste(collapse = "<br>"),
-                l.seq.aa = l.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+                vdj.seq.nt = vdj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                vdj.seq.aa = vdj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+                vj.seq.nt = vj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                vj.seq.aa = vj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
             )
 
         DT::datatable(data, escape = F, rownames = F, options = list(scrollX = T)) %>% DT::formatStyle(names(vars), `font-family` = "monospace")

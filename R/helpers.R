@@ -24,8 +24,9 @@ CalculateFrequency <- function(object, data.column, group.by, show.missing) {
 #' @param sequence.type One of AA or NT. Default = AA
 #' @param collapse Character to use to paste multiple sequence together
 
-ClonotypeToSequence <- function(object, ct, chain, clonotype.column = 'clonotype', sequence.type = 'AA', collapse = "\n") {
-    sequence.column <- paste0(tolower(chain), ".cdr3", if (tolower(sequence.type) == 'nt') '_nt' else '')
+ClonotypeToSequence <- function(object, ct, chain = c("VDJ", "VJ"), clonotype.column = 'clonotype', sequence.type = 'AA', collapse = "\n") {
+    chain <- match.arg(chain) %>% tolower()
+    sequence.column <- paste0(chain, ".cdr3", if (tolower(sequence.type) == 'nt') '_nt' else '')
 
     if (!sequence.column %in% colnames(object@meta.data)) {
         stop("Invalid metadata column ", sequence.column, call. = F)

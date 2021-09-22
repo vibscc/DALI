@@ -8,15 +8,15 @@ test_that("can load data", {
     metadata.columns <- colnames(seuratObj_BCR@meta.data)[7:ncol(seuratObj_BCR@meta.data)]
 
     expect_vector(metadata.columns, ptype = character(), size = 21)
-    expect_setequal(metadata.columns, c("h.v_gene", "h.d_gene", "h.j_gene", "h.c_gene", "h.cdr3", "h.cdr3_nt", "h.v_fam", "h.reads", "h.umis", "h.dual_IR", "l.v_gene", "l.d_gene", "l.j_gene", "l.c_gene", "l.cdr3", "l.cdr3_nt", "l.v_fam", "l.reads", "l.umis", "l.dual_IR", "clonotype"))
+    expect_setequal(metadata.columns, c("vdj.v_gene", "vdj.d_gene", "vdj.j_gene", "vdj.c_gene", "vdj.cdr3", "vdj.cdr3_nt", "vdj.v_fam", "vdj.reads", "vdj.umis", "vdj.dual_IR", "vj.v_gene", "vj.d_gene", "vj.j_gene", "vj.c_gene", "vj.cdr3", "vj.cdr3_nt", "vj.v_fam", "vj.reads", "vj.umis", "vj.dual_IR", "clonotype"))
 
     expect_named(seuratObj_BCR@misc, c("VDJ", "default.chain.VDJ", "default.assay.VDJ"), ignore.order = T)
     expect_equal(seuratObj_BCR@misc$default.chain.VDJ, "primary")
 
-    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$heavy.primary) > 0)
-    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$heavy.secondary) > 0)
-    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$light.primary) > 0)
-    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$light.secondary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$vdj.primary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$vdj.secondary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$vj.primary) > 0)
+    expect_true(nrow(seuratObj_BCR@misc$VDJ$BCR$vj.secondary) > 0)
 })
 
 
@@ -30,10 +30,10 @@ test_that("can force load data", {
     obj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR", force = T)
 
     expect_equal(obj@misc$default.assay.VDJ, "TCR")
-    expect_equal(nrow(obj@misc$VDJ$TCR$heavy.primary), 0)
-    expect_equal(nrow(obj@misc$VDJ$TCR$heavy.secondary), 0)
-    expect_equal(nrow(obj@misc$VDJ$TCR$light.primary), 0)
-    expect_equal(nrow(obj@misc$VDJ$TCR$light.secondary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$vdj.primary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$vdj.secondary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$vj.primary), 0)
+    expect_equal(nrow(obj@misc$VDJ$TCR$vj.secondary), 0)
 })
 
 seuratObj_TCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", type = "TCR", force = T)

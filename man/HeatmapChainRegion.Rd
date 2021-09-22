@@ -7,7 +7,7 @@
 HeatmapChainRegion(
   object,
   group.by = NULL,
-  chain = AvailableChains(object),
+  chain = c("VDJ", "VJ"),
   region = c("V", "C"),
   by.family = T,
   add.missing.families = T,
