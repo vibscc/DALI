@@ -6,16 +6,18 @@
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
+#' @param quiet Ignore warnings. Default = FALSE
 #'
-#' @importFrom dplyr %>% filter
+#' @importFrom dplyr %>% filter left_join
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('umis', 'reads'), use.filtered = T) {
+Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c("umis", "reads"), use.filtered = T, quiet = F) {
 
     location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
+    location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
 
     sort.by <- match.arg(sort.by)
 
@@ -23,19 +25,32 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c('u
         stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
     }
 
-    annotation.contig <- read.csv(location.annotation.contig, stringsAsFactors = F) %>% filter(grepl('true', .data$productive, ignore.case = T))
+    data <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
+                            filter(grepl('true', .data$productive, ignore.case = T))
 
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
+    if (file.exists(location.airr.rearrangement)) {
+        airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
+        colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
+        sequence.columns <- grep("sequence", colnames(airr.data), value = T)
+        data <- left_join(data, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
+        fields.extra <- sequence.columns
+    } else {
+        if (!quiet) {
+            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available")
+        }
+    }
+
     for (field in fields.extra) {
-        if (field %in% colnames(annotation.contig)) {
+        if (field %in% colnames(data)) {
             fields <- c(fields, field)
         }
     }
     columns <- gsub("raw_clonotype_id", "clonotype", fields)
 
-    return(ReadData(object, type = type, data = annotation.contig, fields = fields, columns = columns, force = force, sort.by = sort.by))
+    return(ReadData(object, type = type, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
 #' Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv
@@ -128,13 +143,6 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     if (!type %in% c("BCR", "TCR")) {
         stop("Invalid type '", type, "', must be one of TCR or BCR")
     }
-
-    # if (!"cdr3" %in% columns & "cdr3_nt" %in% columns) {
-    #     fields <- c(fields, "cdr3.translated")
-    #     columns <- c(columns, "cdr3")
-    #
-    #     data <- data %>% mutate(cdr3.translated = TranslateIMGTGappedSequences(.data[[FieldForColumn("cdr3_nt", fields, columns)]]))
-    # }
 
     sort.by <- match.arg(sort.by)
 

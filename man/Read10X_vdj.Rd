@@ -10,7 +10,8 @@ Read10X_vdj(
   type = NULL,
   force = F,
   sort.by = c("umis", "reads"),
-  use.filtered = T
+  use.filtered = T,
+  quiet = F
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ Read10X_vdj(
 \item{sort.by}{Column to sort the data to determine if chain is primary or secondary. Options = umis, reads}
 
 \item{use.filtered}{Load filtered contig annotation. Default = TRUE}
+
+\item{quiet}{Ignore warnings. Default = FALSE}
 }
 \description{
 Load 10x VDJ data in a seurat object

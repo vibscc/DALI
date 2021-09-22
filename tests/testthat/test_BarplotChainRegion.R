@@ -1,5 +1,5 @@
 seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
-seuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC")
+seuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", quiet = T)
 
 test_that("BarplotChainRegion catches invalid parameters", {
     expect_error(BarplotChainRegion(seuratObj, ident.1 = "foo"), regexp = "Invalid ident.1")
