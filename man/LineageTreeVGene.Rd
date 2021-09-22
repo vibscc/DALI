@@ -6,25 +6,28 @@
 \usage{
 LineageTreeVGene(
   object,
-  clonotype.name,
-  clonotype.column = NULL,
+  clonotype,
   airr,
   reference,
-  chain = Diversity:::AvailableChains(object)
+  chain = Diversity:::AvailableChains(object),
+  clonotype.column = NULL,
+  do.plot = T
 )
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{clonotype.name}{Clonotype to plot}
-
-\item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
+\item{clonotype}{Clonotype to plot}
 
 \item{airr}{Path to airr_rearrangement.tsv. This file can be found in cellranger multi output (> v6.1.1)}
 
 \item{reference}{Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.}
 
 \item{chain}{Which chain to use?}
+
+\item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
+
+\item{do.plot}{Should the tree be plotted. Default = TRUE}
 }
 \description{
 Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain

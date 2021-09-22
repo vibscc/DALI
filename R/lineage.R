@@ -1,18 +1,20 @@
 #' Create a phylogenetic tree of the v-gene sequence of either the heavy or light chain
 #'
 #' @param object Seurat object
-#' @param clonotype.name Clonotype to plot
-#' @param clonotype.column Metadata column with clonotype information. Default = clonotype
+#' @param clonotype Clonotype to plot
 #' @param airr Path to airr_rearrangement.tsv. This file can be found in cellranger multi output (> v6.1.1)
 #' @param reference Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.
 #' @param chain Which chain to use?
+#' @param clonotype.column Metadata column with clonotype information. Default = clonotype
+#' @param do.plot Should the tree be plotted. Default = TRUE
 #'
 #' @importFrom dplyr %>% filter pull
 #'
 #' @export
 
-LineageTreeVGene <- function(object, clonotype.name, clonotype.column = NULL, airr, reference, chain = Diversity:::AvailableChains(object)) {
+LineageTreeVGene <- function(object, clonotype, airr, reference, chain = Diversity:::AvailableChains(object), clonotype.column = NULL, do.plot = T) {
     chain <- match.arg(chain) %>% tolower()
+    clonotype.name <- clonotype
 
     if (is.null(clonotype.column)) {
         clonotype.column <- "clonotype"
@@ -46,8 +48,13 @@ LineageTreeVGene <- function(object, clonotype.name, clonotype.column = NULL, ai
     colnames(distance.mat) <- c(germline.name, data.airr$cell_id)
     rownames(distance.mat) <- c(germline.name, data.airr$cell_id)
 
-    tree <- ape::nj(distance.mat) %>% ape::root(germline.name)
-    plot(tree)
+    tree <- ape::nj(distance.mat) %>% ape::root(outgroup = germline.name, r = T)
+
+    if (do.plot) {
+        plot(tree)
+    }
+
+    return(tree)
 }
 
 #' Extract the germline sequence from a reference fasta with given v, d and/or j call
