@@ -5,7 +5,6 @@
 #' @param do.plot Show a plot indicating the doublets
 #' @param return.object Return the Seurat object with a column added with doublet annotation
 #' @param metadata.column Metadata column to add with doublet information. Default = vdj.doublets
-#' @param
 #'
 #' @importFrom dplyr %>%
 #' @export
@@ -23,7 +22,7 @@ VDJDoublets <- function(object, reduction = NULL, do.plot = T , return.object = 
     object@meta.data$vdj.doublets <- rownames(object@meta.data) %in% doublets
 
     if (do.plot) {
-        print(Seurat::DimPlot(object, group.by = "vdj.doublets", reduction = reduction))
+        print(Seurat::DimPlot(object, group.by = metadata.column, reduction = reduction))
     }
 
     if (return.object) {
