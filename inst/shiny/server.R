@@ -8,11 +8,13 @@ function(input, output, session) {
     # ======================================================================= #
     volumes <- c("Home (~)" = fs::path_home(), "/" = "/")
     shinyFileChoose(input, "seurat_rds", session = session, roots = volumes)
-    shinyDirChoose(input, "vdj_dir", session = session, roots = volumes)
+    shinyDirChoose(input, "bcr_dir", session = session, roots = volumes)
+    shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
     upload <- reactiveValues(
         seurat.rds = NULL,
-        vdj.dir = NULL
+        bcr.dir = NULL,
+        tcr.dir = NULL
     )
 
     app.initialize <- function() {
@@ -194,12 +196,14 @@ function(input, output, session) {
                 textOutput("seurat.rds.path.text", inline = T),
             ),
             div(
-                strong("(Optional) Cellranger output folder", title = "This is only required when the selected Seurat object does NOT contain VDJ data yet (loaded by Diversity::Read10X_vdj() or other Diversity method)"),
-                shinyDirButton("vdj_dir", "Browse...", "Select cellranger output folder containing VDJ data", multiple = F),
-                textOutput("vdj.dir.text", inline = T)
+                h4("-- BCR DATA (optional) --"),
+                shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
+                textOutput("bcr.dir.text", inline = T)
             ),
             div(
-                uiOutput("vdj.type.select")
+                h4("-- TCR DATA (optional) --"),
+                shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
+                textOutput("tcr.dir.text", inline = T)
             ),
             if (!is.null(error)) {
                 div(
@@ -235,8 +239,12 @@ function(input, output, session) {
         upload$seurat.rds <- shinyFiles::parseFilePaths(volumes, input$seurat_rds)
     })
 
-    observeEvent(input$vdj_dir, {
-        upload$vdj.dir <- shinyFiles::parseDirPath(volumes, input$vdj_dir)
+    observeEvent(input$bcr_dir, {
+        upload$bcr.dir <- shinyFiles::parseDirPath(volumes, input$bcr_dir)
+    })
+
+    observeEvent(input$tcr_dir, {
+        upload$tcr.dir <- shinyFiles::parseDirPath(volumes, input$tcr_dir)
     })
 
     observeEvent(input$load, {
@@ -254,11 +262,11 @@ function(input, output, session) {
 
         data <- readRDS(upload$seurat.rds$datapath)
 
-        if (length(upload$vdj.dir) > 0) {
+        if (length(upload$bcr.dir) > 0) {
             data <- tryCatch({
-                Read10X_vdj(data, upload$vdj.dir, type = input$vdj_type)
+                Read10X_vdj(data, upload$bcr.dir, type = "BCR")
             }, error = function(e) {
-                showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + the correct VDJ type is selected")))
+                showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + is of the type vdj_b (BCR)")))
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
@@ -266,6 +274,17 @@ function(input, output, session) {
             }
         }
 
+        if (length(upload$tcr.dir) > 0) {
+            data <- tryCatch({
+                Read10X_vdj(data, upload$tcr.dir, type = "TCR")
+            }, error = function(e) {
+                showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + is of the type vdj_t (TCR)")))
+                return(NULL)
+            })
+            if (!isS4(data) & is.null(data)) {
+                return()
+            }
+        }
 
         if (IsValidSeuratObject(data)) {
             vals$data <- data
@@ -287,16 +306,16 @@ function(input, output, session) {
         gsub("/+", "/", upload$seurat.rds$datapath)
     })
 
-    output$vdj.dir.text <- renderText({
-        req(upload$vdj.dir)
+    output$bcr.dir.text <- renderText({
+        req(upload$bcr.dir)
 
-        gsub("/+", "/", upload$vdj.dir)
+        gsub("/+", "/", upload$bcr.dir)
     })
 
-    output$vdj.type.select <- renderUI({
-        req(upload$vdj.dir)
+    output$tcr.dir.text <- renderText({
+        req(upload$tcr.dir)
 
-        selectInput("vdj_type", label = "VDJ data type", choices = c("TCR", "BCR"))
+        gsub("/+", "/", upload$tcr.dir)
     })
 
     # ======================================================================= #
