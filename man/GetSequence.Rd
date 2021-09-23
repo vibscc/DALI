@@ -4,13 +4,7 @@
 \alias{GetSequence}
 \title{Get the sequence of a v,d,j or c gene for a cell}
 \usage{
-GetSequence(
-  object,
-  cell,
-  assay = NULL,
-  chain = c("VDJ", "VJ"),
-  region = c("V", "D", "J", "C")
-)
+GetSequence(object, cell, assay = NULL, chain = c("VDJ", "VJ"), regions = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -21,7 +15,7 @@ GetSequence(
 
 \item{chain}{Chain to use. Options = VDJ (=heavy/alpha); VJ (=light/beta)}
 
-\item{region}{Region to get sequence from}
+\item{regions}{Regions to get sequence from}
 }
 \description{
 Get the sequence of a v,d,j or c gene for a cell

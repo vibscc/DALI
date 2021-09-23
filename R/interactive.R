@@ -51,10 +51,10 @@ FormatDimred <- function(reduction) {
 #' @param chain VDJ (heavy/alpha) OR VJ (light/beta)
 
 AvailableRegions <- function(chain) {
-
-    if (chain == "VDJ") {
+    chain <- tolower(chain)
+    if (chain == "vdj") {
         return(c("V", "D", "J", "C"))
-    } else if (chain == "VJ") {
+    } else if (chain == "vj") {
         return(c("V", "J", "C"))
     } else {
         return(c())

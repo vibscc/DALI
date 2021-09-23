@@ -1,7 +1,8 @@
-#' Build a phylogenetic tree of the v-gene sequence of either the heavy or light chain
+#' Build a phylogenetic tree based on v,d,j and/or c gene
 #'
 #' @param object Seurat object
 #' @param clonotype Clonotype to plot
+#' @param regions VDJ regions to use sequence for. Default = V
 #' @param reference Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.
 #' @param chain Which chain to use?
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
@@ -10,7 +11,7 @@
 #'
 #' @export
 
-LineageTreeVGene <- function(object, clonotype, reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
+LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
     if (DefaultAssayVDJ(object) != "BCR") {
         stop("Lineages can only be computed on BCR data!", call. = F)
     }
@@ -29,21 +30,36 @@ LineageTreeVGene <- function(object, clonotype, reference, chain = c("VDJ", "VJ"
         stop("Clonotype needs at least 2 cells to build a tree!", call. = F)
     }
 
-    v_call <- data %>% pull(paste0(chain, ".v_gene")) %>% unique()
+    calls <- list("v_call" = NULL, "d_call" = NULL, "j_call" = NULL, "c_call" = NULL)
 
-    if (length(v_call) > 1) {
-        stop("Found more than 1 v_gene for given clonotype.", call. = F)
+    for (region in regions) {
+        if (!region %in% AvailableRegions(chain)) {
+            stop("Invalid region ", region, call. = F)
+        }
+        region <- tolower(region)
+        region.call <- data %>% pull(paste0(chain, ".", region, "_gene")) %>% unique()
+
+        if (is.na(region.call)) {
+            next
+        }
+
+        if (length(region.call) > 1) {
+            stop("Found more than 1 ", region, "_gene for given clonotype.", call. = F)
+        }
+
+        calls[[paste0(region, "_call")]] <- region.call
     }
 
-    sequences <- GetGermline(reference, v_call = v_call)
+    sequences <- GetGermline(reference, v_call = calls[["v_call"]], d_call = calls[["d_call"]], j_call = calls[["j_call"]], c_call = calls[["c_call"]])
+
     for (cell in cells) {
-        sequences <- c(sequences, GetSequence(object, cell, "BCR", chain = chain %>% toupper(), region = "V"))
+        sequences <- c(sequences, GetSequence(object, cell, "BCR", chain = chain %>% toupper(), regions = regions))
     }
 
-    germline.name <- paste0("germline (", v_call, ")")
+    germline.name <- paste0("germline (", unname(unlist(calls)) %>% paste(collapse = ";"), ")")
     names(sequences) <- c(germline.name, cells)
 
-    tree <- LineageTree(sequences, outgroup = germline.name, root = T)
+    tree <- BuildLineageTree(sequences, outgroup = germline.name, root = T)
     plot(tree)
 }
 
@@ -54,7 +70,7 @@ LineageTreeVGene <- function(object, clonotype, reference, chain = c("VDJ", "VJ"
 #' @param root Should the tree be rooted. Default = FALSE
 #' @param outgroup Outgroup to root the tree
 
-LineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root = F) {
+BuildLineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root = F) {
     if (root & is.null(outgroup)) {
         stop("Missing outgroup to root the tree.", call. = F)
     }
@@ -86,9 +102,10 @@ LineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root
 #' @param v_call Call for the v-gene. Default = NULL
 #' @param d_call Call for the d-gene. Default = NULL
 #' @param j_call Call for the j-gene. Default = NULL
+#' @param c_call Call for the c-gene. Default = NULL
 
-GetGermline <- function(reference, v_call = NULL, d_call = NULL, j_call = NULL) {
-    calls <- c(v_call, d_call, j_call)
+GetGermline <- function(reference, v_call = NULL, d_call = NULL, j_call = NULL, c_call = NULL) {
+    calls <- c(v_call, d_call, j_call, c_call)
 
     if (is.null(calls)) {
         stop("No genes specified! Specify either v_call, d_call, j_call or a combination.", call. = F)

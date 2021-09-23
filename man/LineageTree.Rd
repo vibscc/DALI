@@ -2,19 +2,30 @@
 % Please edit documentation in R/lineage.R
 \name{LineageTree}
 \alias{LineageTree}
-\title{Build a lineage tree for the given sequences}
+\title{Build a phylogenetic tree based on v,d,j and/or c gene}
 \usage{
-LineageTree(sequences, distance.method = "lv", outgroup = NULL, root = F)
+LineageTree(
+  object,
+  clonotype,
+  regions = "V",
+  reference,
+  chain = c("VDJ", "VJ"),
+  clonotype.column = NULL
+)
 }
 \arguments{
-\item{sequences}{Named vector of sequences}
+\item{object}{Seurat object}
 
-\item{distance.method}{Method to use to compute distances between the sequences. Default = lv (Levenshtein)}
+\item{clonotype}{Clonotype to plot}
 
-\item{outgroup}{Outgroup to root the tree}
+\item{regions}{VDJ regions to use sequence for. Default = V}
 
-\item{root}{Should the tree be rooted. Default = FALSE}
+\item{reference}{Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.}
+
+\item{chain}{Which chain to use?}
+
+\item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
 }
 \description{
-Build a lineage tree for the given sequences
+Build a phylogenetic tree based on v,d,j and/or c gene
 }

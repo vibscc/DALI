@@ -4,7 +4,13 @@
 \alias{GetGermline}
 \title{Extract the germline sequence from a reference fasta with given v, d and/or j call}
 \usage{
-GetGermline(reference, v_call = NULL, d_call = NULL, j_call = NULL)
+GetGermline(
+  reference,
+  v_call = NULL,
+  d_call = NULL,
+  j_call = NULL,
+  c_call = NULL
+)
 }
 \arguments{
 \item{reference}{Path to reference fasta.}
@@ -14,6 +20,8 @@ GetGermline(reference, v_call = NULL, d_call = NULL, j_call = NULL)
 \item{d_call}{Call for the d-gene. Default = NULL}
 
 \item{j_call}{Call for the j-gene. Default = NULL}
+
+\item{c_call}{Call for the c-gene. Default = NULL}
 }
 \description{
 Extract the germline sequence from a reference fasta with given v, d and/or j call

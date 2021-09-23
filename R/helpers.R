@@ -143,24 +143,14 @@ AddMissingVDJFamilies <- function(families) {
 #' @param cell Cell id
 #' @param assay VDJ assay to use. Default = DefaultAssayVDJ(object)
 #' @param chain Chain to use. Options = VDJ (=heavy/alpha); VJ (=light/beta)
-#' @param region Region to get sequence from
+#' @param regions Regions to get sequence from
 #'
 #' @importFrom dplyr %>%
 #'
 #' @export
 
-GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), region = c("V", "D", "J", "C")) {
+GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), regions = NULL) {
     chain <- match.arg(chain) %>% tolower()
-    region <- match.arg(region) %>% tolower()
-
-    if (region == "d" & chain == "vj") {
-        stop("No d-region in light/beta chain!", call. = F)
-    }
-
-    df.name <- paste0(chain, ".", DefaultChainVDJ(object))
-    column.name.start <- paste0(chain, ".", region, "_sequence_start")
-    column.name.end <- paste0(chain, ".", region, "_sequence_end")
-    column.name.sequence <- paste0(chain, ".sequence")
 
     if (is.null(assay)) {
         assay <- DefaultAssayVDJ(object)
@@ -170,27 +160,48 @@ GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), regi
         stop("Invalid assay ", assay, call. = F)
     }
 
+    if (is.null(regions)) {
+        regions <- AvailableRegions(chain)
+    } else {
+        for (region in regions) {
+            if (!region %in% AvailableRegions(chain)) {
+                stop("Invalid region ", region, " for VDJ assay ", DefaultAssayVDJ(object), call. = F)
+            }
+        }
+    }
+
+    regions <- tolower(regions)
+
+    df.name <- paste0(chain, ".", DefaultChainVDJ(object))
+    column.name.sequence <- paste0(chain, ".sequence")
     data.df <- slot(object, "misc")[["VDJ"]][[assay]][[df.name]]
 
     if (!cell %in% rownames(data.df)) {
         stop("Invalid cell ", cell, call. = F)
     }
 
-    start <- data.df[cell, column.name.start]
-    end <- data.df[cell, column.name.end]
-    sequence <- data.df[cell, column.name.sequence]
+    sequence <- ""
+    for (region in regions) {
+        column.name.start <- paste0(chain, ".", region, "_sequence_start")
+        column.name.end <- paste0(chain, ".", region, "_sequence_end")
 
-    if (is.na(start) | is.na(end) | is.na(sequence)) {
-        stop("Could not extract requested sequence for given cell. Missing information.", call. = F)
+        start <- data.df[cell, column.name.start]
+        end <- data.df[cell, column.name.end]
+        sequence.full <- data.df[cell, column.name.sequence]
+
+        if (is.na(start) | is.na(end) | is.na(sequence.full)) {
+            stop("Could not extract requested sequence for given cell. Missing information for region ", region, ".", call. = F)
+        }
+
+        if (end < start) {
+            stop("Failed to extract sequence. End of sequence is before start for region ", region, ".", call. = F)
+        }
+
+        if (end > nchar(sequence.full)) {
+            stop("Failed to extract sequence. End is outside the sequence for region ", region, ".", call. = F)
+        }
+        sequence <- paste0(sequence, substr(sequence.full, start, end))
     }
 
-    if (end < start) {
-        stop("Failed to extract sequence. End of sequence is before start.", call. = F)
-    }
-
-    if (end > nchar(sequence)) {
-        stop("Failed to extract sequence. End is outside the sequence.", call. = F)
-    }
-
-    return(substr(sequence, start, end))
+    return(sequence)
 }
