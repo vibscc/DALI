@@ -2,7 +2,7 @@
 #'
 #' @param object Seurat object
 #' @param data.dir Cellranger output directory
-#' @param type VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
+#' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
@@ -14,7 +14,7 @@
 #'
 #' @export
 
-Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c("umis", "reads"), use.filtered = T, quiet = F) {
+Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("umis", "reads"), use.filtered = T, quiet = F) {
 
     location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
     location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
@@ -50,14 +50,14 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c("u
     }
     columns <- gsub("raw_clonotype_id", "clonotype", fields)
 
-    return(ReadData(object, type = type, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
+    return(ReadData(object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
 #' Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv
 #'
 #' @param object Seurat object
 #' @param file 10X AIRR rearrangement tsv
-#' @param type VDJ assay type for loaded data
+#' @param assay VDJ assay for loaded data
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #'
 #' @importFrom dplyr %>% filter
@@ -66,20 +66,20 @@ Read10X_vdj <- function(object, data.dir, type = NULL, force = F, sort.by = c("u
 #'
 #' @export
 
-Read10X_AIRR <- function(object, file, type, force = F) {
-    data <- read.csv(file, sep = "\t") %>% filter(grepl('true', .data$productive, ignore.case = T))
+Read10X_AIRR <- function(object, file, assay, force = F) {
+    data <- read.csv(file, sep = "\t") %>% filter(grepl("true", .data$productive, ignore.case = T))
 
     fields <- c("cell_id", "v_call", "d_call", "j_call", "c_call", "junction_aa", "junction", "consensus_count", "clone_id")
     columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "umis", "clonotype")
 
-    return(ReadData(object, type, data, fields, columns, force, sort.by = 'umis'))
+    return(ReadData(object, assay, data, fields, columns, force, sort.by = "umis"))
 }
 
 #' Load VDJ data from an AIRR rearrangement file
 #'
 #' @param object Seurat object
 #' @param files AIRR rearrangement tsv. Can be multiple
-#' @param type VDJ assay type for loaded data
+#' @param assay VDJ assay for loaded data
 #' @param fields Fields to keep from the AIRR file
 #' @param columns Column names to map the field names to
 #' @param only.productive Keep only productive rearrangements. Default = TRUE
@@ -92,7 +92,7 @@ Read10X_AIRR <- function(object, file, type, force = F) {
 #'
 #' @export
 
-Read_AIRR <- function(object, files, type, fields, columns, only.productive = T, productive.field = "productive", force = F) {
+Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T, productive.field = "productive", force = F) {
     data <- data.frame(matrix(ncol = 0, nrow = 0))
     for (f in files) {
         d <- read.csv(f, sep = "\t")
@@ -111,13 +111,13 @@ Read_AIRR <- function(object, files, type, fields, columns, only.productive = T,
         }
     }
 
-    return(ReadData(object, type, data, fields, columns, force = force, sort.by = "umis"))
+    return(ReadData(object, assay, data, fields, columns, force = force, sort.by = "umis"))
 }
 
 #' Load data in the Seurat object
 #'
 #' @param object Seurat object
-#' @param type VDJ assay type for loaded data
+#' @param assay VDJ assay for loaded data
 #' @param data data frame containg all data
 #' @param fields Fields to select from the data
 #' @param columns Rename fields to these names. If not specified, just use the field names
@@ -128,20 +128,20 @@ Read_AIRR <- function(object, files, type, fields, columns, only.productive = T,
 #' @importFrom tibble column_to_rownames
 #' @importFrom rlang .data
 
-ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort.by = c('umis', 'reads')) {
+ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sort.by = c("umis", "reads")) {
 
-    if (is.null(type)) {
+    if (is.null(assay)) {
         if (sum(grepl("^TR[AB]", data$c_gene)) > 0) {
-            type <- "TCR"
+            assay <- "TCR"
         } else if (sum(grepl("^IG[HKL]", data$c_gene)) > 0) {
-            type <- "BCR"
+            assay <- "BCR"
         } else {
-            stop("Could not determine if the data is TCR or BCR, please provide the data type manually with the `type` parameter", call. = F)
+            stop("Could not determine if the data is TCR or BCR, please provide the data assay manually with the `assay` parameter", call. = F)
         }
     }
 
-    if (!type %in% c("BCR", "TCR")) {
-        stop("Invalid type '", type, "', must be one of TCR or BCR")
+    if (!assay %in% c("BCR", "TCR")) {
+        stop("Invalid assay '", assay, "', must be one of TCR or BCR")
     }
 
     sort.by <- match.arg(sort.by)
@@ -164,8 +164,8 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
     vdj.prefix <- "vdj"
     vj.prefix <- "vj"
 
-    vdj.regex <- if (type == "TCR") "^TRA" else "^IGH"
-    vj.regex <- if (type == "TCR") "^TRB" else "^IG[KL]"
+    vdj.regex <- if (assay == "TCR") "^TRA" else "^IGH"
+    vj.regex <- if (assay == "TCR") "^TRB" else "^IG[KL]"
 
     data <- data %>% mutate_all(~ na_if(.x, ""))
 
@@ -176,7 +176,7 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         mutate(multichain = .data$n > 2) %>%
         select(all_of(fields)) %>%
         `colnames<-`(columns) %>%
-        mutate(v_fam = GetVFamilies(.data$v_gene, type))
+        mutate(v_fam = GetVFamilies(.data$v_gene, assay))
 
     vdj.primary <- vdj %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
@@ -201,7 +201,7 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         mutate(multichain = .data$n > 2) %>%
         select(all_of(fields)) %>%
         `colnames<-`(columns) %>%
-        mutate(v_fam = GetVFamilies(.data$v_gene, type))
+        mutate(v_fam = GetVFamilies(.data$v_gene, assay))
 
     vj.primary <- vj %>%
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
@@ -227,8 +227,8 @@ ReadData <- function(object, type, data, fields, columns = NULL, force = F, sort
         stop("Could not find VJ (light/beta) primary chains in the data!", call. = F)
     }
 
-    object <- AddVDJDataForType(type, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force)
-    DefaultAssayVDJ(object) <- type
+    object <- AddVDJDataForAssay(assay, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force)
+    DefaultAssayVDJ(object) <- assay
 
     return(object)
 }
@@ -302,15 +302,15 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 #' Extract V-family from a vector of v-genes
 #'
 #' @param v_genes Vector of genes
-#' @param type TCR/BCR
+#' @param assay VDJ assay type. Options = TCR; BCR
 #'
 #' @importFrom stringr str_replace_all
 
-GetVFamilies <- function(v_genes, type) {
+GetVFamilies <- function(v_genes, assay) {
     v_families <- c()
 
-    if (type == "TCR") { pattern <- "TR[ABD]" }
-    if (type == "BCR" || is.null(type) ) {  pattern <- "^IG[KLH]V" }
+    if (assay == "TCR") { pattern <- "TR[ABD]" }
+    if (assay == "BCR" || is.null(assay) ) {  pattern <- "^IG[KLH]V" }
 
     for (v_gene in v_genes) {
         if (!grepl(pattern, v_gene)) {
@@ -324,7 +324,7 @@ GetVFamilies <- function(v_genes, type) {
         v_families <- c(v_families, paste0(gene, '-', number))
     }
 
-    if (type == "TCR") {
+    if (assay == "TCR") {
         v_families <- str_replace_all(v_families, "TRAV/DV", "TRADV")
     }
 
@@ -333,7 +333,7 @@ GetVFamilies <- function(v_genes, type) {
 
 #' Add VDJ metadata to misc slot in object
 #'
-#' @param type VDJ assay type
+#' @param assay VDJ assay type
 #' @param object Seurat object
 #' @param vdj.primary Data frame with the metadata columns for the primary heavy/alpha chains
 #' @param vdj.secondary Data frame with the metadata columns for the secondary heavy/alpha chains
@@ -341,7 +341,7 @@ GetVFamilies <- function(v_genes, type) {
 #' @param vj.secondary Data frame with the metadata columns for the secondary light/beta chains
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 
-AddVDJDataForType <- function(type, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force = F) {
+AddVDJDataForAssay <- function(assay, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force = F) {
     if (!force) {
         overlap <- min(length(intersect(colnames(object), rownames(vdj.primary))) / nrow(vdj.primary), length(intersect(colnames(object), rownames(vj.primary))) / nrow(vj.primary))
 
@@ -356,7 +356,7 @@ AddVDJDataForType <- function(type, object, vdj.primary, vdj.secondary, vj.prima
 
     slot(object, 'misc')[['default.chain.VDJ']] <- 'primary'
 
-    slot(object, 'misc')[['VDJ']][[type]] <- list(
+    slot(object, "misc")[["VDJ"]][[assay]] <- list(
         vdj.primary = vdj.primary,
         vdj.secondary = vdj.secondary,
         vj.primary = vj.primary,

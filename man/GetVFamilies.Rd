@@ -4,12 +4,12 @@
 \alias{GetVFamilies}
 \title{Extract V-family from a vector of v-genes}
 \usage{
-GetVFamilies(v_genes, type)
+GetVFamilies(v_genes, assay)
 }
 \arguments{
 \item{v_genes}{Vector of genes}
 
-\item{type}{TCR/BCR}
+\item{assay}{VDJ assay type. Options = TCR; BCR}
 }
 \description{
 Extract V-family from a vector of v-genes

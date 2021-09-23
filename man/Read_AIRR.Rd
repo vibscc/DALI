@@ -7,7 +7,7 @@
 Read_AIRR(
   object,
   files,
-  type,
+  assay,
   fields,
   columns,
   only.productive = T,
@@ -20,7 +20,7 @@ Read_AIRR(
 
 \item{files}{AIRR rearrangement tsv. Can be multiple}
 
-\item{type}{VDJ assay type for loaded data}
+\item{assay}{VDJ assay for loaded data}
 
 \item{fields}{Fields to keep from the AIRR file}
 

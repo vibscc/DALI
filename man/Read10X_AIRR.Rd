@@ -4,14 +4,14 @@
 \alias{Read10X_AIRR}
 \title{Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv}
 \usage{
-Read10X_AIRR(object, file, type, force = F)
+Read10X_AIRR(object, file, assay, force = F)
 }
 \arguments{
 \item{object}{Seurat object}
 
 \item{file}{10X AIRR rearrangement tsv}
 
-\item{type}{VDJ assay type for loaded data}
+\item{assay}{VDJ assay for loaded data}
 
 \item{force}{Add VDJ data without checking overlap in cell-barcodes. Default = FALSE}
 }

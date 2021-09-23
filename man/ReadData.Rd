@@ -6,7 +6,7 @@
 \usage{
 ReadData(
   object,
-  type,
+  assay,
   data,
   fields,
   columns = NULL,
@@ -17,7 +17,7 @@ ReadData(
 \arguments{
 \item{object}{Seurat object}
 
-\item{type}{VDJ assay type for loaded data}
+\item{assay}{VDJ assay for loaded data}
 
 \item{data}{data frame containg all data}
 
