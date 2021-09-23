@@ -34,7 +34,7 @@ fillPage(
                         selectInput("chain.usage.region", label = "Region", choices = c("V", "D", "J", "C")),
                         checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F)
                     ),
-                    column(9, plotOutput("chain.usage.barplot") %>% withSpinner())
+                    column(9, plotOutput("chain.usage.heatmap") %>% withSpinner())
                 )
             ),
             tabPanel("Clone view",
