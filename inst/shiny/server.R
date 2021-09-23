@@ -264,7 +264,7 @@ function(input, output, session) {
 
         if (length(upload$bcr.dir) > 0) {
             data <- tryCatch({
-                Read10X_vdj(data, upload$bcr.dir, type = "BCR")
+                Read10X_vdj(data, upload$bcr.dir, assay = "BCR")
             }, error = function(e) {
                 showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + is of the type vdj_b (BCR)")))
                 return(NULL)
@@ -276,7 +276,7 @@ function(input, output, session) {
 
         if (length(upload$tcr.dir) > 0) {
             data <- tryCatch({
-                Read10X_vdj(data, upload$tcr.dir, type = "TCR")
+                Read10X_vdj(data, upload$tcr.dir, assay = "TCR")
             }, error = function(e) {
                 showModal(dataUploadModal(error = paste0(e, " Make sure the selected VDJ data matches the Seurat object + is of the type vdj_t (TCR)")))
                 return(NULL)
