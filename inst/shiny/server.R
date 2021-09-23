@@ -10,6 +10,8 @@ function(input, output, session) {
     shinyFileChoose(input, "seurat_rds", session = session, roots = volumes)
     shinyDirChoose(input, "bcr_dir", session = session, roots = volumes)
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
+    shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
+
     vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
     upload <- reactiveValues(
         seurat.rds = NULL,
@@ -603,7 +605,7 @@ function(input, output, session) {
             i <- i + 1
         }
 
-        data <- data %>%
+        vals$clonotype.table <- data %>%
             dplyr::group_by(clonotype) %>%
             summarize(
                 n.cells = n(),
@@ -613,7 +615,53 @@ function(input, output, session) {
                 vj.seq.aa = vj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
             )
 
-        DT::datatable(data, escape = F, rownames = F, options = list(scrollX = T)) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
+        DT::datatable(
+            vals$clonotype.table,
+            escape = F,
+            rownames = F,
+            options = list(scrollX = T),
+            selection = "single"
+        ) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
+    })
+
+    observeEvent(input$clonotypes.table_rows_selected, {
+        req(vals$clonotype.table)
+
+        vals$clonotype.table.selected <- vals$clonotype.table[input$clonotypes.table_rows_selected, "clonotype"] %>% pull("clonotype")
+    })
+
+    observeEvent(input$reference_fasta, {
+        vals$reference <- shinyFiles::parseFilePaths(volumes, input$reference_fasta)
+    })
+
+    output$reference.fasta.path.text <- renderText({
+        req(vals$reference)
+
+        gsub("/+", "/", vals$reference$datapath)
+    })
+
+    output$clonotype.lineage.ui <- renderUI({
+        if (!Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
+            return()
+        }
+
+        div(
+            strong("Select VDJ reference fasta:"),
+            shinyFilesButton("reference_fasta", "Browse...", "Choose the VDJ reference fasta for loaded dataset",  multiple = F, filetype = list(data = c("fa", "fasta", "fas"))),
+            textOutput("reference.fasta.path.text", inline = T)
+        )
+    })
+
+    output$clonotype.lineage <- renderPlot({
+        req(vals$reference, vals$data, vals$clonotype.table.selected)
+
+        if (length(vals$reference) == 0 || is.null(vals$reference)) {
+            return()
+        }
+
+        if (Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
+            Diversity::LineageTreeVGene(vals$data, vals$clonotype.table.selected, vals$reference$datapath)
+        }
     })
 
     # ======================================================================= #

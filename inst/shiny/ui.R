@@ -80,7 +80,11 @@ fillPage(
                 )
             ),
             tabPanel("Clonotypes",
-                DT::DTOutput("clonotypes.table")
+                DT::DTOutput("clonotypes.table"),
+                fluidRow(
+                    column(4, uiOutput("clonotype.lineage.ui")),
+                    column(8, plotOutput("clonotype.lineage"))
+                )
             ),
             tabPanel("Transcriptomics",
                 fluidRow(
