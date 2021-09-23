@@ -26,7 +26,7 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     }
 
     data <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
-                            filter(grepl('true', .data$productive, ignore.case = T))
+                            filter(grepl("true", .data$productive, ignore.case = T))
 
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
@@ -100,7 +100,7 @@ Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T
     }
 
     if (only.productive) {
-        data <- data %>% filter(grepl('true', .data[[productive.field]], ignore.case = T))
+        data <- data %>% filter(grepl("true", .data[[productive.field]], ignore.case = T))
     }
 
     required <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "umis", "clonotype")
@@ -241,7 +241,7 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
 
 DefaultAssayVDJ.Seurat <- function(object, ...) {
 
-    return(slot(object, 'misc')[['default.assay.VDJ']])
+    return(slot(object, "misc")[["default.assay.VDJ"]])
 }
 
 #' @method DefaultAssayVDJ<- Seurat
@@ -252,7 +252,7 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 
 "DefaultAssayVDJ<-.Seurat" <- function(object, ..., value) {
 
-    if (!value %in% names(x = slot(object, 'misc')[['VDJ']])) {
+    if (!value %in% names(x = slot(object, "misc")[["VDJ"]])) {
         stop("Cannot find assay ", assay)
     }
 
@@ -261,7 +261,7 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
     object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vj.", chain)))
     object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vdj.", chain)))
 
-    slot(object, 'misc')[['default.assay.VDJ']] <- value
+    slot(object, "misc")[["default.assay.VDJ"]] <- value
 
     return(object)
 }
@@ -274,7 +274,7 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 
 DefaultChainVDJ.Seurat <- function(object, ...) {
 
-    return(slot(object, 'misc')[['default.chain.VDJ']])
+    return(slot(object, "misc")[["default.chain.VDJ"]])
 }
 
 #' @method DefaultChainVDJ<- Seurat
@@ -285,16 +285,16 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 
 "DefaultChainVDJ<-.Seurat" <- function(object, ..., value) {
 
-    if (!value %in% c('primary', 'secondary')) {
+    if (!value %in% c("primary", "secondary")) {
         stop("Chain must either be primary or secondary")
     }
 
     assay <- DefaultAssayVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('vdj.', value)]])
-    object <- Seurat::AddMetaData(object, slot(object, 'misc')[['VDJ']][[assay]][[paste0('vj.', value)]])
+    object <- Seurat::AddMetaData(object, slot(object, "misc")[["VDJ"]][[assay]][[paste0("vdj.", value)]])
+    object <- Seurat::AddMetaData(object, slot(object, "misc")[["VDJ"]][[assay]][[paste0("vj.", value)]])
 
-    slot(object, 'misc')[['default.chain.VDJ']] <- value
+    slot(object, "misc")[["default.chain.VDJ"]] <- value
 
     return(object)
 }
@@ -318,10 +318,10 @@ GetVFamilies <- function(v_genes, assay) {
             next
         }
 
-        family.full <- strsplit(v_gene, '-')[[1]][1]
+        family.full <- strsplit(v_gene, "-")[[1]][1]
         gene <- gsub("[0-9]", "", family.full)
         number <- gsub("[A-Za-z]", "", family.full)
-        v_families <- c(v_families, paste0(gene, '-', number))
+        v_families <- c(v_families, paste0(gene, "-", number))
     }
 
     if (assay == "TCR") {
@@ -350,11 +350,11 @@ AddVDJDataForAssay <- function(assay, object, vdj.primary, vdj.secondary, vj.pri
         }
     }
 
-    if (!'VDJ' %in% names(slot(object, 'misc'))) {
-        slot(object, 'misc')[['VDJ']] <- list()
+    if (!"VDJ" %in% names(slot(object, "misc"))) {
+        slot(object, "misc")[["VDJ"]] <- list()
     }
 
-    slot(object, 'misc')[['default.chain.VDJ']] <- 'primary'
+    slot(object, "misc")[["default.chain.VDJ"]] <- "primary"
 
     slot(object, "misc")[["VDJ"]][[assay]] <- list(
         vdj.primary = vdj.primary,
@@ -413,7 +413,7 @@ IsValidSeuratObject <- function(object) {
 #' @param sequences vector of sequences to translate
 
 TranslateIMGTGappedSequences <- function(sequences) {
-    ret = c()
+    ret <- c()
     for (sequence in sequences) {
         if (is.na(sequence)) {
             ret <- c(ret, NA)
@@ -442,8 +442,8 @@ TranslateIMGTGappedSequence <- function(sequence) {
         stop("Gap sequence not in frame for sequence ", sequence)
     }
 
-    gap.start <- ceiling(gap[1,1]/3)
-    gap.end <- ceiling(gap[nrow(gap), 1]/3)
+    gap.start <- ceiling(gap[1, 1] / 3)
+    gap.end <- ceiling(gap[nrow(gap), 1] / 3)
     gap.length <- gap.end - gap.start + 1
 
     sequence <- gsub("\\.", "", sequence)

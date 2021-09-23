@@ -24,9 +24,9 @@ CalculateFrequency <- function(object, data.column, group.by, show.missing) {
 #' @param sequence.type One of AA or NT. Default = AA
 #' @param collapse Character to use to paste multiple sequence together
 
-ClonotypeToSequence <- function(object, ct, chain = c("VDJ", "VJ"), clonotype.column = 'clonotype', sequence.type = 'AA', collapse = "\n") {
+ClonotypeToSequence <- function(object, ct, chain = c("VDJ", "VJ"), clonotype.column = "clonotype", sequence.type = "AA", collapse = "\n") {
     chain <- match.arg(chain) %>% tolower()
-    sequence.column <- paste0(chain, ".cdr3", if (tolower(sequence.type) == 'nt') '_nt' else '')
+    sequence.column <- paste0(chain, ".cdr3", if (tolower(sequence.type) == "nt") "_nt" else "")
 
     if (!sequence.column %in% colnames(object@meta.data)) {
         stop("Invalid metadata column ", sequence.column, call. = F)
@@ -47,7 +47,7 @@ ClonotypeToSequence <- function(object, ct, chain = c("VDJ", "VJ"), clonotype.co
 #' @param columns List of available columns
 
 FieldForColumn <- function(column, fields, columns) {
-    index = which(columns == column[[1]])
+    index <- which(columns == column[[1]])
 
     return(fields[[index]])
 }
@@ -61,7 +61,7 @@ FieldForColumn <- function(column, fields, columns) {
 
 ggplotColors <- function(n, h = c(15, 375)) {
     if ((diff(h) %% 360) < 1) {
-        h[2] <- h[2] - 360/n
+        h[2] <- h[2] - 360 / n
     }
     hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
 }
@@ -93,12 +93,12 @@ GetDataColumn <- function(chain, region, by.family = F) {
     chain <- tolower(chain)
     region <- tolower(region)
 
-    data.column <- paste0(chain, '.', region, '_')
+    data.column <- paste0(chain, ".", region, "_")
 
-    if (by.family && region == 'v') {
-        data.column <- paste0(data.column, 'fam')
+    if (by.family && region == "v") {
+        data.column <- paste0(data.column, "fam")
     } else {
-        data.column <- paste0(data.column, 'gene')
+        data.column <- paste0(data.column, "gene")
     }
 }
 
@@ -128,7 +128,7 @@ AddMissingVDJFamilies <- function(families) {
         }
 
         if (length(family.numbers) > 0) {
-            families.completed <- c(families.completed, paste0(prefix, '-', seq(1,max(family.numbers))))
+            families.completed <- c(families.completed, paste0(prefix, "-", seq(1, max(family.numbers))))
         }
 
         families.completed <- c(families.completed, families.ignored)

@@ -9,7 +9,7 @@
 #' @export DefaultAssayVDJ
 #'
 DefaultAssayVDJ <- function(object, ...) {
-    UseMethod(generic = 'DefaultAssayVDJ', object = object)
+    UseMethod(generic = "DefaultAssayVDJ", object = object)
 }
 
 #' @param object An object
@@ -22,7 +22,7 @@ DefaultAssayVDJ <- function(object, ...) {
 #' @export DefaultAssayVDJ<-
 #'
 "DefaultAssayVDJ<-" <- function(object, ..., value) {
-    UseMethod(generic = 'DefaultAssayVDJ<-', object = object)
+    UseMethod(generic = "DefaultAssayVDJ<-", object = object)
 }
 
 #' Get and set the default VDJ assay
@@ -36,7 +36,7 @@ DefaultAssayVDJ <- function(object, ...) {
 #' @export DefaultChainVDJ
 #'
 DefaultChainVDJ <- function(object, ...) {
-    UseMethod(generic = 'DefaultChainVDJ', object = object)
+    UseMethod(generic = "DefaultChainVDJ", object = object)
 }
 
 #' @param object An object
@@ -49,5 +49,5 @@ DefaultChainVDJ <- function(object, ...) {
 #' @export DefaultChainVDJ<-
 #'
 "DefaultChainVDJ<-" <- function(object, ..., value) {
-    UseMethod(generic = 'DefaultChainVDJ<-', object = object)
+    UseMethod(generic = "DefaultChainVDJ<-", object = object)
 }

@@ -9,7 +9,7 @@
 #' @importFrom dplyr %>%
 #' @export
 
-VDJDoublets <- function(object, reduction = NULL, do.plot = T , return.object = T, metadata.column = "vdj.doublets") {
+VDJDoublets <- function(object, reduction = NULL, do.plot = T, return.object = T, metadata.column = "vdj.doublets") {
     if (!"TCR" %in% names(object@misc$VDJ) || !"BCR" %in% names(object@misc$VDJ)) {
         stop("Object should contain both TCR and BCR to detect cells with both TCR and BCR information", call. = F)
     }

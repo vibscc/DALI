@@ -75,7 +75,7 @@ BarplotChainRegion <- function(
     families <- AddMissingVDJFamilies(families)
   }
 
-  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl("-", .)) > 0)
 
   data.filtered <- object@meta.data
 
@@ -89,7 +89,7 @@ BarplotChainRegion <- function(
 
       for (ident in list(ident.1, ident.2)) {
           for (group in ident) {
-              data.filtered[[group.by]] <- gsub(paste0("^", group, "$"), paste0(group.by, " (", paste(ident, collapse = ","),")"), data.filtered[[group.by]])
+              data.filtered[[group.by]] <- gsub(paste0("^", group, "$"), paste0(group.by, " (", paste(ident, collapse = ","), ")"), data.filtered[[group.by]])
           }
       }
   }
@@ -211,7 +211,7 @@ HeatmapChainRegion <- function(
     families <- AddMissingVDJFamilies(families)
   }
 
-  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl('-', .)) > 0)
+  families <- families %>% gtools::mixedsort(x = ., decreasing = sum(grepl("-", .)) > 0)
 
   data <- object@meta.data %>%
     count(.data[[data.column]], .data[[group.by]]) %>%
@@ -387,7 +387,7 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
         stop("Invalid group.by column ", group.by)
     }
 
-    if (!is.null(subset) && subset != '') {
+    if (!is.null(subset) && subset != "") {
         cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
         object <- subset(object, cells = cells)
     }
@@ -430,13 +430,13 @@ CDR3Plot.line <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, seq
       mutate(len = nchar(.data[[vdj.cdr3.column]])) %>%
       count(.data$len) %>%
       na.omit() %>%
-      mutate(freq = .data$n/sum(.data$n) * 100) %>%
+      mutate(freq = .data$n / sum(.data$n) * 100) %>%
       select(.data$len, .data$freq)
     plot.data.l <- subset@meta.data %>%
       mutate(len = nchar(.data[[vj.cdr3.column]])) %>%
       count(.data$len) %>%
       na.omit() %>%
-      mutate(freq = .data$n/sum(.data$n) * 100) %>%
+      mutate(freq = .data$n / sum(.data$n) * 100) %>%
       select(.data$len, .data$freq)
 
     plot.data <- full_join(plot.data.h, plot.data.l, by = "len") %>% replace(is.na(.), 0)
@@ -445,7 +445,7 @@ CDR3Plot.line <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, seq
     plots[[group]] <- ggplot(plot.data, aes(x = .data$cdr3.length)) +
       geom_line(aes(y = .data$vdj.chain), color = "black") +
       geom_line(aes(y = .data$vj.chain), color = "red") +
-      labs(x = paste0("CDR3 length (", sequence.type,")"), y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
+      labs(x = paste0("CDR3 length (", sequence.type, ")"), y = "Frequency of cells", title = paste0("CDR3 length - ", group)) +
       theme(
         panel.background = element_rect(fill = "white"), # bg of the panel
         plot.background = element_rect(fill = "white"), # bg of the plot
@@ -484,13 +484,13 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
       mutate(len = nchar(.data[[column]]))
 
     if (column == vdj.cdr3.column) {
-      if (DefaultAssayVDJ(object) == 'TCR') {
+      if (DefaultAssayVDJ(object) == "TCR") {
         title <- "TCR-a"
       } else {
         title <- "Heavy"
       }
     } else {
-      if (DefaultAssayVDJ(object) == 'TCR') {
+      if (DefaultAssayVDJ(object) == "TCR") {
         title <- "TCR-b"
       } else {
         title <- "Light"
@@ -539,12 +539,12 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = c
     stop("Can only select 1 family/gene to highlight", call. = F)
   }
 
-  data.column <- paste0(chain, '.', region, '_')
+  data.column <- paste0(chain, ".", region, "_")
 
-  if (by.family && region == 'v') {
-    data.column <- paste0(data.column, 'fam')
+  if (by.family && region == "v") {
+    data.column <- paste0(data.column, "fam")
   } else {
-    data.column <- paste0(data.column, 'gene')
+    data.column <- paste0(data.column, "gene")
   }
 
   if (is.na(object@meta.data[, data.column]) %>% sum() == nrow(object@meta.data)) {
@@ -563,9 +563,9 @@ DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = c
     split <- NULL
   }
 
-  cells.highlight = NULL
+  cells.highlight <- NULL
   if (!is.null(highlight)) {
-    cells.highlight = rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
+    cells.highlight <- rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
   }
 
   if (is.null(cols)) {
@@ -631,7 +631,7 @@ ClonotypeFrequency <- function(
     stop("Invalid clonotype column ", clonotype.column, call. = F)
   }
 
-  if (!is.null(subset) && subset != '') {
+  if (!is.null(subset) && subset != "") {
     cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
     object <- subset(object, cells = cells)
   }
@@ -806,10 +806,10 @@ ClonotypeFrequency.violin <- function(
 ExpansionPlot <- function(
   object,
   reduction,
-  clonotype.column = 'clonotype',
-  color.low = 'lightgrey',
-  color.mid = 'red',
-  color.high = 'darkred',
+  clonotype.column = "clonotype",
+  color.low = "lightgrey",
+  color.mid = "red",
+  color.high = "darkred",
   threshold = 1,
   positive.size = 0.5,
   negative.size = 0.5,
@@ -825,7 +825,7 @@ ExpansionPlot <- function(
     stop("Invalid reduction ", reduction, call. = F)
   }
 
-  coordinates <- object@reductions[[reduction]]@cell.embeddings[,c(1,2)] %>% as.data.frame()
+  coordinates <- object@reductions[[reduction]]@cell.embeddings[, c(1, 2)] %>% as.data.frame()
   x.name <- colnames(coordinates)[[1]]
   y.name <- colnames(coordinates)[[2]]
 
@@ -838,7 +838,7 @@ ExpansionPlot <- function(
 
   plot.data <- coordinates
   plot.data$clonotype_count <- 0
-  plot.data[rownames(data), 'clonotype_count'] <- data$n %>% as.numeric()
+  plot.data[rownames(data), "clonotype_count"] <- data$n %>% as.numeric()
 
   max_value <- max(plot.data$clonotype_count)
 
@@ -921,7 +921,7 @@ FeaturePlotClonotype <- function(
     stop("Invalid clonotypes: ", paste(invalid.clonotypes, collapse = ", "), call. = F)
   }
 
-  coordinates <- object@reductions[[reduction]]@cell.embeddings[,c(1,2)] %>% as.data.frame()
+  coordinates <- object@reductions[[reduction]]@cell.embeddings[, c(1, 2)] %>% as.data.frame()
   x.name <- colnames(coordinates)[[1]]
   y.name <- colnames(coordinates)[[2]]
 
@@ -929,7 +929,7 @@ FeaturePlotClonotype <- function(
     mutate(clonotypes = ifelse(.data[[clonotype.column]] %in% clonotypes, .data[[clonotype.column]], NA))
 
   plot.data <- coordinates
-  plot.data$clonotypes <- object@meta.data[rownames(plot.data), 'clonotypes']
+  plot.data$clonotypes <- object@meta.data[rownames(plot.data), "clonotypes"]
 
   ggplot() +
     geom_point(
@@ -1013,8 +1013,8 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
   if (!is.null(groups.highlight)) {
     edges$highlight <- F
-    edges[edges$from %in% groups.highlight, 'highlight'] <- T
-    edges[edges$to %in% groups.highlight, 'highlight'] <- T
+    edges[edges$from %in% groups.highlight, "highlight"] <- T
+    edges[edges$to %in% groups.highlight, "highlight"] <- T
   }
 
   getCenters <- function(groups, column) {
