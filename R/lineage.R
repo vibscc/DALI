@@ -26,7 +26,7 @@ LineageTreeVGene <- function(object, clonotype, reference, chain = c("VDJ", "VJ"
     cells <- rownames(data)
 
     if (nrow(data) < 2) {
-        stop("At least 2 cells need to be defined as given clonotype!", call. = F)
+        stop("Clonotype needs at least 2 cells to build a tree!", call. = F)
     }
 
     v_call <- data %>% pull(paste0(chain, ".v_gene")) %>% unique()
