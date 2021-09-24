@@ -8,11 +8,14 @@ HeatmapChainRegion(
   object,
   group.by = NULL,
   chain = c("VDJ", "VJ"),
-  region = c("V", "C"),
+  region = c("V", "J", "C"),
   by.family = T,
   add.missing.families = T,
   percent.total = T,
-  show.missing.values = F
+  show.missing.values = F,
+  cluster.rows = F,
+  cluster.cols = F,
+  ...
 )
 }
 \arguments{
@@ -32,7 +35,11 @@ HeatmapChainRegion(
 
 \item{show.missing.values}{Should missing values be shown in the plot. Default = FALSE}
 
-\item{cols}{Colors to use}
+\item{cluster.rows}{Should rows (genes) be clustered in the heatmap. Default = FALSE}
+
+\item{cluster.cols}{Should columns (groups) be clustered in the heatmap. Default = FALSE}
+
+\item{...}{parameters to pass to pheatmap::pheatmap()}
 }
 \description{
 Heatmap showing to percentage of cells with a specifiek chain/region combination

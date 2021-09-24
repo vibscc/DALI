@@ -29,7 +29,7 @@ BarplotChainRegion <- function(
   ident.1 = NULL,
   ident.2 = NULL,
   group.by = NULL,
-  region = c("V", "C"),
+  region = c("V", "J", "C"),
   chain = c("VDJ", "VJ"),
   by.family = T,
   legend = T,
@@ -171,7 +171,9 @@ BarplotChainRegion <- function(
 #' @param add.missing.families Should missing families be added to the plot. Default = TRUE
 #' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
 #' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
-#' @param cols Colors to use
+#' @param cluster.rows Should rows (genes) be clustered in the heatmap. Default = FALSE
+#' @param cluster.cols Should columns (groups) be clustered in the heatmap. Default = FALSE
+#' @param ... parameters to pass to pheatmap::pheatmap()
 #'
 #' @importFrom dplyr case_when count filter group_by mutate select %>%
 #' @importFrom rlang .data
@@ -185,11 +187,14 @@ HeatmapChainRegion <- function(
   object,
   group.by = NULL,
   chain = c("VDJ", "VJ"),
-  region = c("V", "C"),
+  region = c("V", "J", "C"),
   by.family = T,
   add.missing.families = T,
   percent.total = T,
-  show.missing.values = F
+  show.missing.values = F,
+  cluster.rows = F,
+  cluster.cols = F,
+  ...
 ) {
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -221,8 +226,6 @@ HeatmapChainRegion <- function(
     mutate(freq = prop.table(.data$n) * 100) %>%
     mutate(freq = round(.data$freq, 2)) %>%
     select(.data[[data.column]], .data[[group.by]], .data$freq) %>%
-    filter(case_when(!show.missing.values ~ !is.na(.data[[data.column]]),
-                     T ~ T)) %>%
     spread(.data[[group.by]], .data$freq) %>%
     mutate(family = replace(.data[[data.column]], is.na(.data[[data.column]]), "NA")) %>%
     select(-all_of(data.column)) %>%
@@ -233,7 +236,10 @@ HeatmapChainRegion <- function(
     families <- c(families, "NA")
   }
 
-  pheatmap::pheatmap(data[families, ], cluster_rows = F, cluster_cols = F)
+  plot.data <- data[families, ]
+  rownames(plot.data) <- families
+
+  pheatmap::pheatmap(plot.data, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
 }
 
 #' Barplot with clonotype distribution

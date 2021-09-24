@@ -9,7 +9,7 @@ BarplotChainRegion(
   ident.1 = NULL,
   ident.2 = NULL,
   group.by = NULL,
-  region = c("V", "C"),
+  region = c("V", "J", "C"),
   chain = c("VDJ", "VJ"),
   by.family = T,
   legend = T,
