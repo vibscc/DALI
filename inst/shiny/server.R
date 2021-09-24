@@ -660,7 +660,7 @@ function(input, output, session) {
         }
 
         if (Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
-            Diversity::LineageTreeVGene(vals$data, vals$clonotype.table.selected, vals$reference$datapath)
+            Diversity::LineageTree(vals$data, vals$clonotype.table.selected, vals$reference$datapath)
         }
     })
 
