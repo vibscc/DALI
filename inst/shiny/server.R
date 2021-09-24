@@ -411,7 +411,8 @@ function(input, output, session) {
             chain = input$chain.usage.chain,
             region = input$chain.usage.region,
             add.missing.families = input$chain.usage.add.missing.families,
-            show.missing.values = F
+            show.missing.values = F,
+            cluster.cols = input$chain.usage.cluster.cols
         )
     })
 
@@ -527,14 +528,6 @@ function(input, output, session) {
         updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]])
     })
 
-    # Update available regions on chain change
-
-    observeEvent(input$chain.usage.chain, {
-        req(vals$data, input$chain.usage.chain)
-
-        updateSelectInput(session, "chain.usage.region", choices = Diversity:::AvailableRegions(input$chain.usage.chain))
-    })
-
     # Top clonotypes change
 
     observeEvent(vals$top.clonotypes, {
@@ -560,6 +553,8 @@ function(input, output, session) {
             group.by = input$compare.group.by,
             ident.1 = input$compare.ident.1,
             ident.2 = input$compare.ident.2,
+            region = input$compare.region,
+            chain = input$compare.chain,
             legend = F
         )
     })
