@@ -16,8 +16,9 @@ Imports:
     ape,
     circlize,
     dplyr,
-    ggraph,
+    DT,
     ggplot2,
+    ggraph,
     ggridges,
     gridExtra,
     gtools,
@@ -28,19 +29,17 @@ Imports:
     reldist,
     reshape2,
     rlang,
-    Seurat,
-    stringr,
-    stringdist,
-    tibble,
-    tidyr,
-    tidygraph,
-    vegan
-Suggests:
-    DT,
     sass,
+    Seurat,
     shiny,
     shinycssloaders,
     shinyFiles,
-    plotly,
+    stringdist,
+    stringr,
+    tibble,
+    tidygraph,
+    tidyr,
+    vegan
+Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
