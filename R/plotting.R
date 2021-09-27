@@ -530,13 +530,23 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 #' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
 #' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
 #' @param highlight Family or gene to highlight. Default = NULL
+#' @param cols Colors to use
 #' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
 #'
 #' @export
 
-DimplotChainRegion <- function(object, region = c("V", "D", "J", "C"), chain = c("VDJ", "VJ"), by.family = T, grid = T, highlight = NULL, cols = NULL, ...) {
+DimplotChainRegion <- function(
+  object,
+  region = c("V", "D", "J", "C"),
+  chain = c("VDJ", "VJ"),
+  by.family = T,
+  grid = T,
+  highlight = NULL,
+  cols = NULL,
+  ...
+) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
@@ -653,7 +663,7 @@ ClonotypeFrequency <- function(
   if (plot.type == "bar") {
     plots <- ClonotypeFrequency.bar(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, threshold)
   } else if (plot.type == "violin") {
-    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk, cols)
+    plots <- ClonotypeFrequency.violin(object, chains, group.by, use.sequence, sequence.type, clonotype.column, show.missing, bulk)
   }
 
   gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 2))
@@ -782,7 +792,7 @@ ClonotypeFrequency.violin <- function(
       xlab("Cluster") +
       ggtitle(plot.title) +
       theme(
-        legend.position = if (legend) "right" else "none"
+        legend.position = "none"
       )
   }
 

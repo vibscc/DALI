@@ -28,6 +28,8 @@ DimplotChainRegion(
 
 \item{highlight}{Family or gene to highlight. Default = NULL}
 
+\item{cols}{Colors to use}
+
 \item{...}{Extra parameters passed to Seurat::Dimplot}
 }
 \description{

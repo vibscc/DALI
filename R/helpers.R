@@ -55,7 +55,7 @@ FieldForColumn <- function(column, fields, columns) {
 #' Generate ggplot default colors
 #'
 #' @param n Number of colors needed
-#' @param hue Minimum and maximum hue
+#' @param h Minimum and maximum hue
 #'
 #' @importFrom grDevices hcl
 

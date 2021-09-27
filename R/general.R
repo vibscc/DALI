@@ -253,7 +253,7 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 "DefaultAssayVDJ<-.Seurat" <- function(object, ..., value) {
 
     if (!value %in% names(x = slot(object, "misc")[["VDJ"]])) {
-        stop("Cannot find assay ", assay)
+        stop("Cannot find assay ", value)
     }
 
     chain <- DefaultChainVDJ(object)

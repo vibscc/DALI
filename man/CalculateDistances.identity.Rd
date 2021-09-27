@@ -8,6 +8,9 @@ non-identical: 1}
 \usage{
 CalculateDistances.identity(sequences)
 }
+\arguments{
+\item{sequences}{Vector of sequences}
+}
 \description{
 Create distance matrix where identical sequences get following distances:
 identical: 0

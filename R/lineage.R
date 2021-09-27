@@ -169,7 +169,7 @@ GetGermline <- function(reference, v_call = NULL, d_call = NULL, j_call = NULL, 
 
 Read10XVDJReference <- function(fasta) {
     con <- file(fasta, "r")
-
+    header <- NULL
     sequences <- list()
 
     while (T) {

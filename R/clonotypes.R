@@ -29,7 +29,7 @@ DefineClonotypes <- function(object, sequence = c("aa", "nt"), metric = c("ident
     object@meta.data$tmp_cdr3_concat <- gsub("NA", "_", object@meta.data$tmp_cdr3_concat) %>% na_if(y = "__")
 
     sequences <- object@meta.data %>%
-        pull(tmp_cdr3_concat) %>%
+        pull("tmp_cdr3_concat") %>%
         na.omit() %>%
         unique()
 
@@ -84,6 +84,11 @@ CalculateDistances <- function(sequences, metric) {
 #' Create distance matrix where identical sequences get following distances:
 #' identical: 0
 #' non-identical: 1
+#'
+#' @param sequences Vector of sequences
+#'
+#' @importFrom methods as
+
 CalculateDistances.identity <- function(sequences) {
     # Distances are stored in a sparse matrix. therefor 1 should be added to each distance so we also keep 0 distances.
     # For the identity metric, this results in an identity matrix

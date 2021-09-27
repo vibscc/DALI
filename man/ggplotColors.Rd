@@ -9,7 +9,7 @@ ggplotColors(n, h = c(15, 375))
 \arguments{
 \item{n}{Number of colors needed}
 
-\item{hue}{Minimum and maximum hue}
+\item{h}{Minimum and maximum hue}
 }
 \description{
 Generate ggplot default colors
