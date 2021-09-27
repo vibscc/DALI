@@ -5,13 +5,17 @@
 #' @param regions VDJ regions to use sequence for. Default = V
 #' @param reference Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.
 #' @param chain Which chain to use?
+#' @param color.tip.by Feature or metadata column to color tips of the tree by
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
 #'
 #' @importFrom dplyr %>% filter pull
+#' @importFrom ggplot2 aes scale_color_gradient2
+#' @importFrom ggtree geom_tiplab geom_tippoint ggtree
+#' @importFrom scales muted
 #'
 #' @export
 
-LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), clonotype.column = NULL) {
+LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), color.tip.by = NULL, clonotype.column = NULL) {
     if (DefaultAssayVDJ(object) != "BCR") {
         stop("Lineages can only be computed on BCR data!", call. = F)
     }
@@ -60,7 +64,40 @@ LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("
     names(sequences) <- c(germline.name, cells)
 
     tree <- BuildLineageTree(sequences, outgroup = germline.name, root = T)
-    plot(tree)
+
+    color.tip <- F
+    continues.scale <- F
+
+    if (!is.null(color.tip.by)) {
+        if (color.tip.by %in% rownames(object)) {
+            feature <- color.tip.by
+            metadata <- NULL
+            continues.scale <- T
+        } else if (color.tip.by %in% colnames(object@meta.data)) {
+            feature <- NULL
+            metadata <- color.tip.by
+        } else {
+            stop("Could not find ", color.tip.by, " in either the features or the metadata", call. = F)
+        }
+
+        tree <- AddTreeMetadata(tree, object, metadata = metadata, features = feature)
+        color.tip <- TRUE
+    }
+
+    tree <- ggtree(tree) + geom_tiplab(offset = 0.03)
+
+    if (color.tip) {
+        tree <- tree +
+            geom_tippoint(aes(color = .data[[color.tip.by]]), size = 4)
+
+        if (continues.scale) {
+            vals <- tree$data %>% na.omit() %>% pull(color.tip.by)
+            midpoint <- (max(vals) + min(vals)) / 2
+            tree <- tree + scale_color_gradient2(low = muted("blue"), mid = "#ffffa8", high = muted("red"), midpoint = midpoint, na.value = "#000000")
+        }
+    }
+
+    return(tree)
 }
 
 #' Build a lineage tree for the given sequences
@@ -179,4 +216,40 @@ Parse10XVDJReferenceHeader <- function(header) {
     data[["chain"]] <- parts[[6]]
 
     return(data)
+}
+
+#' Add metadata to phylogenetic tree
+#'
+#' @param tree Tree of class phylo
+#' @param object Seurat object
+#' @param metadata Metadata column(s) to add to the tree
+#' @param features Feature(s) to add to the tree
+#'
+#' @importFrom tibble tibble
+#' @importFrom treeio full_join
+
+AddTreeMetadata <- function(tree, object, metadata = NULL, features = NULL) {
+    if (is.null(metadata) & is.null(feature)) {
+        stop("Specify either group.by or feature", call. = F)
+    }
+
+    tree.tibble <- tibble(label = tree$tip.label)
+
+    if (sum(tree.tibble$label %in% colnames(object)) != nrow(tree.tibble) - 1) {
+        stop("Cells from tree not all found in object", call. = F)
+    }
+
+    if (!is.null(metadata)) {
+        for (column in metadata) {
+            tree.tibble[[column]] <- object@meta.data[tree.tibble$label, column]
+        }
+    }
+
+    if (!is.null(features)) {
+        for (feature in features) {
+            tree.tibble[[feature]] <- object@assays[[Seurat::DefaultAssay(object)]]@data[feature, ][tree.tibble$label]
+        }
+    }
+
+    return(full_join(tree, tree.tibble, by = "label"))
 }

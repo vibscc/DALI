@@ -20,6 +20,7 @@ Imports:
     ggplot2,
     ggraph,
     ggridges,
+    ggtree,
     gridExtra,
     gtools,
     igraph,
@@ -30,6 +31,7 @@ Imports:
     reshape2,
     rlang,
     sass,
+    scales,
     Seurat,
     shiny,
     shinycssloaders,
@@ -39,6 +41,7 @@ Imports:
     tibble,
     tidygraph,
     tidyr,
+    treeio,
     vegan
 Suggests:
     testthat (>= 3.0.0)

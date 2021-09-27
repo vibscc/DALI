@@ -10,6 +10,7 @@ LineageTree(
   regions = "V",
   reference,
   chain = c("VDJ", "VJ"),
+  color.tip.by = NULL,
   clonotype.column = NULL
 )
 }
@@ -23,6 +24,8 @@ LineageTree(
 \item{reference}{Path to reference fasta. This file can either be found in the output of cellranger multi or can be the input reference file on which cellranger multi was ran.}
 
 \item{chain}{Which chain to use?}
+
+\item{color.tip.by}{Feature or metadata column to color tips of the tree by}
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
 }
