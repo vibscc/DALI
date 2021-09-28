@@ -229,7 +229,7 @@ Parse10XVDJReferenceHeader <- function(header) {
 #' @importFrom treeio full_join
 
 AddTreeMetadata <- function(tree, object, metadata = NULL, features = NULL) {
-    if (is.null(metadata) & is.null(feature)) {
+    if (is.null(metadata) & is.null(features)) {
         stop("Specify either group.by or feature", call. = F)
     }
 
