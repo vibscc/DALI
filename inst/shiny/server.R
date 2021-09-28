@@ -12,7 +12,7 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
@@ -46,6 +46,9 @@ function(input, output, session) {
         categorical.metadata <- gtools::mixedsort(categorical.metadata)
         metadata.default <- if ("default.clustering" %in% categorical.metadata) "default.clustering" else NULL
 
+        assays <- names(isolate(vals$data@assays))
+        assays.default <- Seurat::DefaultAssay(isolate(vals$data))
+
         updateSelectInput(session, "group.highlight", choices = groups)
 
         updateSelectInput(session, "compare.group.by", choices = categorical.metadata.comparable, selected = metadata.default)
@@ -60,8 +63,6 @@ function(input, output, session) {
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
-        assays <- names(isolate(vals$data@assays))
-        assays.default <- Seurat::DefaultAssay(isolate(vals$data))
         updateSelectInput(session, "transcriptomics.assay", choices = assays, selected = assays.default)
         updateSelectInput(session, "transcriptomics.reduction", choices = reductions, selected = selected)
 
@@ -70,6 +71,8 @@ function(input, output, session) {
 
         updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
+
+        vals$categorical.metadata <- categorical.metadata
     }
 
     # ======================================================================= #
@@ -640,22 +643,69 @@ function(input, output, session) {
             return()
         }
 
-        div(
+        assays <- names(isolate(vals$data@assays))
+
+        div(class = "well",
+            h3("B-cell lineage"),
             strong("Select VDJ reference fasta:"),
             shinyFilesButton("reference_fasta", "Browse...", "Choose the VDJ reference fasta for loaded dataset",  multiple = F, filetype = list(data = c("fa", "fasta", "fas"))),
-            textOutput("reference.fasta.path.text", inline = T)
+            textOutput("reference.fasta.path.text", inline = T),
+            checkboxInput("lineage.color.tips", label = "Color tips by metadata/feature", value = F),
+            tabsetPanel(id = "lineage_tabs",
+                tabPanel("Metadata",
+                    selectizeInput("lineage.metadata", label = "Metadata", choices = vals$categorical.metadata, multiple = F)
+                ),
+                tabPanel("Feature",
+                    selectInput("lineage.assay", label = "Assay", choices = assays, multiple = F),
+                    selectizeInput("lineage.feature", label = "Feature", choices = NULL, multiple = F)
+                )
+            )
         )
     })
 
     output$clonotype.lineage <- renderPlot({
-        req(vals$reference, vals$data, vals$clonotype.table.selected)
+        req(vals$reference, vals$data, vals$clonotype.table.selected, vals$lineage.tab)
 
-        if (length(vals$reference) == 0 || is.null(vals$reference)) {
+        if (length(vals$reference$datapath) == 0 | is.null(vals$reference)) {
             return()
         }
 
         if (Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
-            Diversity::LineageTree(object = vals$data, clonotype = vals$clonotype.table.selected, reference = vals$reference$datapath)
+            color.tip.by <- NULL
+
+            if (input$lineage.color.tips) {
+                if (vals$lineage.tab == "metadata") {
+                    color.tip.by <- input$lineage.metadata
+                } else if (vals$lineage.tab == "feature" & nchar(input$lineage.feature) > 0) {
+                    color.tip.by <- input$lineage.feature
+                }
+            }
+
+            Diversity::LineageTree(
+                object = vals$data,
+                clonotype = vals$clonotype.table.selected,
+                reference = vals$reference$datapath,
+                color.tip.by = color.tip.by
+            )
+        }
+    })
+
+    observeEvent(input$lineage.assay, {
+        Seurat::DefaultAssay(vals$data) <- input$lineage.assay
+
+        features <- rownames(vals$data) %>% sort()
+        updateSelectizeInput(session, "lineage.feature", choices = features, server = T)
+    })
+
+    observe({
+        if (!is.null(input$lineage_tabs)) {
+            if (input$lineage_tabs == "Metadata") {
+                vals$lineage.tab <- "metadata"
+            } else if (input$lineage_tabs == "Feature") {
+                vals$lineage.tab <- "feature"
+            } else {
+                vals$lineage.tab <- NULL
+            }
         }
     })
 
