@@ -13,8 +13,10 @@
 }
 
 .header-logo {
-    height: $header-height - 10px;
+    height: $header-height - 30px;
     width: auto;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .container-fluid::before, .row::before {
