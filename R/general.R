@@ -36,7 +36,7 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
         colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
         sequence.columns <- grep("sequence", colnames(airr.data), value = T)
         data <- left_join(data, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
-        fields.extra <- sequence.columns
+        fields.extra <- c(fields.extra, sequence.columns)
     } else {
         if (!quiet) {
             warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available")
@@ -49,6 +49,8 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
         }
     }
     columns <- gsub("raw_clonotype_id", "clonotype", fields)
+
+    print(fields)
 
     return(ReadData(object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
