@@ -1,11 +1,10 @@
-Package: Diversity
+Package: DALI
 Type: Package
-Title: Analyse single-cell VDJ data in Seurat ecosystem
+Title: Diversity AnaLysis Interface
 Version: 0.1.0
 Author: Who wrote it
 Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Analyse VDJ data in the Seurat ecosystem
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
