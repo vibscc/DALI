@@ -50,8 +50,6 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     }
     columns <- gsub("raw_clonotype_id", "clonotype", fields)
 
-    print(fields)
-
     return(ReadData(object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
