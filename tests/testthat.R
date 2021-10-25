@@ -1,5 +1,5 @@
-library(Diversity)
+library(DALI)
 library(Seurat)
 library(testthat)
 
-test_check("Diversity")
+test_check("DALI")

@@ -92,7 +92,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = "default.clustering",
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -130,7 +130,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = "default.clustering",
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -177,7 +177,7 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        cols = Diversity:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -351,7 +351,7 @@ function(input, output, session) {
             plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
 
             tabPanel(
-                Diversity:::FormatDimred(reduction),
+                DALI:::FormatDimred(reduction),
                 fluidRow(
                     column(6, plotOutput(plotname.dimred) %>% withSpinner()),
                     column(6, plotOutput(plotname.dimred.vdj) %>% withSpinner())
@@ -373,7 +373,7 @@ function(input, output, session) {
             plotname.graph <- paste0('graph.', reduction)
 
             tabPanel(
-                Diversity:::FormatDimred(reduction),
+                DALI:::FormatDimred(reduction),
                 fluidRow(
                     column(4, plotOutput(plotname.dimred) %>% withSpinner()),
                     column(4, plotOutput(plotname.dimred.expansion) %>% withSpinner()),
@@ -393,7 +393,7 @@ function(input, output, session) {
             plotname <- paste0('dimred.', reduction)
 
             tabPanel(
-                Diversity:::FormatDimred(reduction),
+                DALI:::FormatDimred(reduction),
                 plotOutput(plotname) %>% withSpinner()
             )
         })
@@ -461,7 +461,7 @@ function(input, output, session) {
 
         n.cells <- sum(vals$data@meta.data[input$clonotype.group.by] == input$clonotype.group)
 
-        top.clonotypes <- Diversity:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
+        top.clonotypes <- DALI:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
             filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
             arrange(desc(freq)) %>%
             select(c(clonotype, freq)) %>%
@@ -473,8 +473,8 @@ function(input, output, session) {
         h_seqs <- c()
         l_seqs <- c()
         for (clonotype in top.clonotypes$clonotype) {
-            h_seqs <- c(h_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "VDJ"))
-            l_seqs <- c(l_seqs, Diversity:::ClonotypeToSequence(vals$data, clonotype, "VJ"))
+            h_seqs <- c(h_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VDJ"))
+            l_seqs <- c(l_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VJ"))
         }
 
         top.clonotypes$h_seq <- h_seqs
@@ -639,7 +639,7 @@ function(input, output, session) {
     })
 
     output$clonotype.lineage.ui <- renderUI({
-        if (!Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
+        if (!DALI::DefaultAssayVDJ(vals$data) == "BCR") {
             return()
         }
 
@@ -670,7 +670,7 @@ function(input, output, session) {
             return()
         }
 
-        if (Diversity::DefaultAssayVDJ(vals$data) == "BCR") {
+        if (DALI::DefaultAssayVDJ(vals$data) == "BCR") {
             color.tip.by <- NULL
 
             if (input$lineage.color.tips) {
@@ -681,7 +681,7 @@ function(input, output, session) {
                 }
             }
 
-            Diversity::LineageTree(
+            DALI::LineageTree(
                 object = vals$data,
                 clonotype = vals$clonotype.table.selected,
                 reference = vals$reference$datapath,

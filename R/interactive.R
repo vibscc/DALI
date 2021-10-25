@@ -5,9 +5,9 @@
 #' @export
 
 Interactive_VDJ <- function(object = NULL) {
-    app.directory <- system.file("shiny", package = "Diversity")
+    app.directory <- system.file("shiny", package = "DALI")
     if (app.directory == "") {
-        stop("Could not shiny application directory. Try re-installing `Diversity`.", call. = FALSE)
+        stop("Could not shiny application directory. Try re-installing `DALI`.", call. = FALSE)
     }
 
     # Load object in global environment so shiny app can use it
@@ -15,7 +15,7 @@ Interactive_VDJ <- function(object = NULL) {
         if (IsValidSeuratObject(object)) {
             .GlobalEnv$.data.object.VDJ <- object
         } else {
-            stop("The given object is not valid. Please make sure it contains VDJ information, loaded by Diversity::Read10X_vdj()", call. = F)
+            stop("The given object is not valid. Please make sure it contains VDJ information, loaded by DALI::Read10X_vdj()", call. = F)
         }
     } else {
         .GlobalEnv$.data.object.VDJ <- NULL
