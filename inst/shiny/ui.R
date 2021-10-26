@@ -1,4 +1,4 @@
-suppressPackageStartupMessages(library(Diversity))
+suppressPackageStartupMessages(library(DALI))
 suppressPackageStartupMessages(library(htmlwidgets))
 suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(shiny))
