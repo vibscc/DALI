@@ -72,6 +72,13 @@ Read10X_AIRR <- function(object, file, assay, force = F) {
     fields <- c("cell_id", "v_call", "d_call", "j_call", "c_call", "junction_aa", "junction", "consensus_count", "clone_id")
     columns <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "umis", "clonotype")
 
+    sequence.columns <- grep("sequence", colnames(data), value = T)
+
+    if (length(sequence.columns) > 0) {
+        fields <- c(fields, sequence.columns)
+        columns <- c(columns, sequence.columns)
+    }
+
     return(ReadData(object, assay, data, fields, columns, force, sort.by = "umis"))
 }
 
