@@ -32,6 +32,10 @@ seuratObj <- Read10X_vdj(seuratObj, "<path/to/cellranger/bcr_or_tcr_out>", assay
 # <assay> can either be BCR or TCR
 ```
 
+# Example data
+
+Example data to use with this tool can be downloaded here: https://cloud.irc.ugent.be/public/index.php/s/9ys5czsaNtNQtSd
+
 ## FAQ
 
 **Q**: What cellranger folder do I need to provide to load the vdj data?
