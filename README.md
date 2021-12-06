@@ -34,7 +34,8 @@ seuratObj <- Read10X_vdj(seuratObj, "<path/to/cellranger/bcr_or_tcr_out>", assay
 
 # Example data
 
-Example data to use with this tool can be downloaded here: https://cloud.irc.ugent.be/public/index.php/s/9ys5czsaNtNQtSd
+Example data to use with this tool can be downloaded here: \
+https://cloud.irc.ugent.be/public/index.php/s/9ys5czsaNtNQtSd
 
 ## FAQ
 
