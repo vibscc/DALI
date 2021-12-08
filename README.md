@@ -1,5 +1,9 @@
 # DALI
 
+## How to cite
+
+Please cite as: Verstaen K, Lammens I, Roels J, Saeys Y, Lambrecht BN, Vandamme N, Vanhee S. DALI (Diversity AnaLysis Interface): a novel tool for the integrated analysis of multimodal single cell RNAseq data and immune receptor profiling. bioRxiv 2021.12.07.471549; doi: https://doi.org/10.1101/2021.12.07.471549
+
 ## Installation
 To install the latest version of DALI, open R an install using `devtools`:
 
