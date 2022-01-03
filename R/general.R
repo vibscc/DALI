@@ -171,8 +171,8 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
     vdj.prefix <- "vdj"
     vj.prefix <- "vj"
 
-    vdj.regex <- if (assay == "TCR") "^TRA" else "^IGH"
-    vj.regex <- if (assay == "TCR") "^TRB" else "^IG[KL]"
+    vdj.regex <- if (assay == "TCR") "^TRB" else "^IGH"
+    vj.regex <- if (assay == "TCR") "^TRA" else "^IG[KL]"
 
     data <- data %>% mutate_all(~ na_if(.x, ""))
 
