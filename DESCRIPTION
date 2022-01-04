@@ -1,7 +1,7 @@
 Package: DALI
 Type: Package
 Title: Diversity AnaLysis Interface
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
     person(
         "Kevin",

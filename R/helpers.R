@@ -6,6 +6,10 @@
 #' @param show.missing Should missing values be included or not
 
 CalculateFrequency <- function(object, data.column, group.by, show.missing) {
+    if (data.column == group.by) {
+        stop("Can not calculate frequence when data column and group by are identical")
+    }
+
     out <- object@meta.data %>%
         group_by(.data[[data.column]], .data[[group.by]]) %>%
         summarise(freq = n()) %>%

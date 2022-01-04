@@ -641,6 +641,10 @@ ClonotypeFrequency <- function(
     clonotype.column <- "clonotype"
   }
 
+  if (clonotype.column == group.by) {
+      stop("Cannot group the data by the clonotype column")
+  }
+
   plot.type <- match.arg(plot.type)
 
   if (!use.sequence && !clonotype.column %in% colnames(object@meta.data)) {

@@ -52,7 +52,8 @@ function(input, output, session) {
         updateSelectInput(session, "group.highlight", choices = groups)
 
         updateSelectInput(session, "compare.group.by", choices = categorical.metadata.comparable, selected = metadata.default)
-        updateSelectInput(session, "clonotype.group.by", choices = categorical.metadata, selected = metadata.default)
+        categorical.metadata.no.clonotype <- categorical.metadata[categorical.metadata != "clonotype"]
+        updateSelectInput(session, "clonotype.group.by", choices = categorical.metadata.no.clonotype, selected = metadata.default)
 
         assays.vdj <- names(isolate(vals$data@misc$VDJ))
         updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
@@ -528,7 +529,7 @@ function(input, output, session) {
         req(vals$data, input$clonotype.group.by)
 
         groups <- vals$data@meta.data[, input$clonotype.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
-        updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]])
+        updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]], server = T)
     })
 
     # Top clonotypes change
