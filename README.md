@@ -54,3 +54,9 @@ https://cloud.irc.ugent.be/public/index.php/s/9ys5czsaNtNQtSd
 
 **A**: If you used `cellranger vdj`, use the folder `outs` from the output. \
 For `cellranger multi`, use the folder `vdj_b` (BCR) or `vdj_t` (TCR). This folder can be located in `outs/per_sample_outs/<sample>`.
+
+**Q**: How can I use DALI on merged samples?
+
+**A**: Merging of the VDJ data (TCR and/or BCR) from multiple samples is currently not supported in DALI, but will come shortly! \
+For now you will need to run `cellranger aggr` to generate 1 matrix for all your samples and create a Seurat object from this matrix. \
+TCR and BCR data can just be concattenated and then loaded in the newly created Seurat object using the normal DALI workflow.
