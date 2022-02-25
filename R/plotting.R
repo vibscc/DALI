@@ -135,7 +135,7 @@ BarplotChainRegion <- function(
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
       ylim(0, NA) +
-      labs(y = "Percentage cells", x = "Family", title = .data$group) +
+      labs(y = "Percentage cells", x = "Family") +
       theme(
           panel.background = element_rect(fill = "white"),
           plot.background = element_rect(fill = "white"),
