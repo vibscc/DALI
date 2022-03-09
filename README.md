@@ -58,5 +58,12 @@ For `cellranger multi`, use the folder `vdj_b` (BCR) or `vdj_t` (TCR). This fold
 **Q**: How can I use DALI on merged samples?
 
 **A**: Merging of the VDJ data (TCR and/or BCR) from multiple samples is currently not supported in DALI, but will come shortly! \
-For now you will need to run `cellranger aggr` to generate 1 matrix for all your samples and create a Seurat object from this matrix. \
-TCR and BCR data can just be concattenated and then loaded in the newly created Seurat object using the normal DALI workflow.
+For now, this will require you to follow any of the following workflows:
+
+1. If you used `cellranger multi` for the counts of the individual samples, you could aggregate the data into 1 datset using `cellranger aggr`. This will result in 1 count matrix and 1 set of VDJ related files which you can load into Seurat and DALI.
+2. Manually concatenate the `filtered_contig_annotation.csv` or `all_contig_annotation.csv`. Make sure the clonotypes for each sample have a unique name! This can be done by simply appending `_<SAMPLE>` (replace `<SAMPLE>` with the actual name of your sample) to each clonotype definition (column `raw_clonotype_id`). This is necessary because clonotype 1 of sample 1 has no relation to clonotype 1 of sample 2. You could also define the clonotypes again on the combined dataset to find some common clonotypes between different samples. This could be done with tools like [immcantation](https://immcantation.readthedocs.io/en/stable/index.html)
+
+**Q**: How can I process gamma/delta TCR data (gdTCR) using cellranger
+
+**A**: Cellranger doesn't officially support this type of data (yet). There are however some instructions [here](https://kb.10xgenomics.com/hc/en-us/articles/360015793931-Can-I-detect-T-cells-with-delta-gamma-chains-in-my-V-D-J-data-) on how to work around the cellranger limitations.\
+**NOTE**: Be careful if you want to load data into DALI processed thsi way if you already have 'normal' TCR (alpha + beta) data in your object. Make sure to change the naming of the V,D,J and C region back to its original name in the output files used by DALI: `airr_rearrangement.tsv` and `filtered/all_contig_annotations.csv`
