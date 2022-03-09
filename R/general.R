@@ -39,7 +39,7 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
         fields.extra <- c(fields.extra, sequence.columns)
     } else {
         if (!quiet) {
-            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available")
+            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
         }
     }
 
@@ -132,13 +132,13 @@ Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #'
 #' @importFrom dplyr %>% add_count all_of arrange desc filter mutate mutate_all na_if rename_all select
-#' @importFrom tibble column_to_rownames
+#' @importFrom tibble column_to_rownames rownames_to_column
 #' @importFrom rlang .data
 
 ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sort.by = c("umis", "reads")) {
 
     if (is.null(assay)) {
-        if (sum(grepl("^TR[AB]", data$c_gene)) > 0) {
+        if (sum(grepl("^TR[ABDG]", data$c_gene)) > 0) {
             assay <- "TCR"
         } else if (sum(grepl("^IG[HKL]", data$c_gene)) > 0) {
             assay <- "BCR"
@@ -171,8 +171,8 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
     vdj.prefix <- "vdj"
     vj.prefix <- "vj"
 
-    vdj.regex <- if (assay == "TCR") "^TRB" else "^IGH"
-    vj.regex <- if (assay == "TCR") "^TRA" else "^IG[KL]"
+    vdj.regex <- if (assay == "TCR") "^TR[BD]" else "^IGH"
+    vj.regex <- if (assay == "TCR") "^TR[AG]" else "^IG[KL]"
 
     data <- data %>% mutate_all(~ na_if(.x, ""))
 
@@ -189,14 +189,16 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(vdj.prefix, ".", .))
+        rename_all(~ paste0(vdj.prefix, ".", .)) %>%
+        rownames_to_column(var = "barcode")
 
     vdj.secondary <- vdj %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(vdj.prefix, ".", .))
+        rename_all(~ paste0(vdj.prefix, ".", .)) %>%
+        rownames_to_column(var = "barcode")
 
     colnames(vdj.primary) <- gsub(".*\\.clonotype", "clonotype", colnames(vdj.primary))
     colnames(vdj.secondary) <- gsub(".*\\.clonotype", "clonotype", colnames(vdj.secondary))
@@ -214,14 +216,16 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
         arrange(desc(.data[[sort.by]]), .data$v_gene) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(vj.prefix, ".", .))
+        rename_all(~ paste0(vj.prefix, ".", .)) %>%
+        rownames_to_column(var = "barcode")
 
     vj.secondary <- vj %>%
         filter(.data$dual_IR) %>%
         arrange(.data[[sort.by]], desc(.data$v_gene)) %>%
         filter(!duplicated(.data$barcode)) %>%
         column_to_rownames("barcode") %>%
-        rename_all(~ paste0(vj.prefix, ".", .))
+        rename_all(~ paste0(vj.prefix, ".", .)) %>%
+        rownames_to_column(var = "barcode")
 
     colnames(vj.primary) <- gsub(".*\\.clonotype", "clonotype", colnames(vj.primary))
     colnames(vj.secondary) <- gsub(".*\\.clonotype", "clonotype", colnames(vj.secondary))
@@ -347,10 +351,12 @@ GetVFamilies <- function(v_genes, assay) {
 #' @param vj.primary Data frame with metadata columns for the primary light/beta chains
 #' @param vj.secondary Data frame with the metadata columns for the secondary light/beta chains
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#'
+#' @importFrom dplyr %>%
 
 AddVDJDataForAssay <- function(assay, object, vdj.primary, vdj.secondary, vj.primary, vj.secondary, force = F) {
     if (!force) {
-        overlap <- min(length(intersect(colnames(object), rownames(vdj.primary))) / nrow(vdj.primary), length(intersect(colnames(object), rownames(vj.primary))) / nrow(vj.primary))
+        overlap <- min(length(intersect(colnames(object), vdj.primary$barcode)) / nrow(vdj.primary), length(intersect(colnames(object), vj.primary$barcode)) / nrow(vj.primary))
 
         if (overlap < 0.50) {
             stop("Overlap in cell-barcodes is low. Please check if the barcodes in the Seurat object match the barcodes in the VDJ data.\n", call. = F)
@@ -361,14 +367,36 @@ AddVDJDataForAssay <- function(assay, object, vdj.primary, vdj.secondary, vj.pri
         slot(object, "misc")[["VDJ"]] <- list()
     }
 
+    if (assay %in% names(slot(object, "misc")[["VDJ"]])) {
+        data <- list(
+            vdj.primary = CreateVDJData(vdj.primary, slot(object, "misc")[["VDJ"]][[assay]][["vdj.primary"]]),
+            vdj.secondary = CreateVDJData(vdj.secondary, slot(object, "misc")[["VDJ"]][[assay]][["vdj.secondary"]]),
+            vj.primary = CreateVDJData(vj.primary, slot(object, "misc")[["VDJ"]][[assay]][["vj.primary"]]),
+            vj.secondary = CreateVDJData(vj.secondary, slot(object, "misc")[["VDJ"]][[assay]][["vj.secondary"]])
+        )
+
+        intersect1 <- intersect(slot(object, "misc")[["VDJ"]][[assay]][["vdj.primary"]]$barcode, vdj.primary$barcode)
+        intersect2 <- intersect(slot(object, "misc")[["VDJ"]][[assay]][["vdj.secondary"]]$barcode, vdj.secondary$barcode)
+        intersect3 <- intersect(slot(object, "misc")[["VDJ"]][[assay]][["vj.primary"]]$barcode, vj.primary$barcode)
+        intersect4 <- intersect(slot(object, "misc")[["VDJ"]][[assay]][["vj.secondary"]]$barcode, vj.secondary$barcode)
+
+        overwritten <- unique(c(intersect1, intersect2, intersect3, intersect4)) %>% length()
+
+        if (overwritten > 0) {
+            warning("A total of ", overwritten, " cells have lost some original data for the VDJ assay '", assay, "'.", call. = F)
+        }
+    } else {
+        data <- list(
+            vdj.primary = CreateVDJData(vdj.primary),
+            vdj.secondary = CreateVDJData(vdj.secondary),
+            vj.primary = CreateVDJData(vj.primary),
+            vj.secondary = CreateVDJData(vj.secondary)
+        )
+    }
+
     slot(object, "misc")[["default.chain.VDJ"]] <- "primary"
 
-    slot(object, "misc")[["VDJ"]][[assay]] <- list(
-        vdj.primary = vdj.primary,
-        vdj.secondary = vdj.secondary,
-        vj.primary = vj.primary,
-        vj.secondary = vj.secondary
-    )
+    slot(object, "misc")[["VDJ"]][[assay]] <- data
 
     return(object)
 }
@@ -415,53 +443,16 @@ IsValidSeuratObject <- function(object) {
     return(T)
 }
 
-#' Translate sequences which may contain gaps, indicated by .
+#' Get metadata for the given assay/chain combination
 #'
-#' @param sequences vector of sequences to translate
-
-TranslateIMGTGappedSequences <- function(sequences) {
-    ret <- c()
-    for (sequence in sequences) {
-        if (is.na(sequence)) {
-            ret <- c(ret, NA)
-        } else {
-            ret <- c(ret, TranslateIMGTGappedSequence(sequence))
-        }
-    }
-
-    return(ret)
-}
-
-#' Translate sequence which may contain gaps, indicate by .
+#' @param object Seurat object
+#' @param assay VDJ assay
+#' @param chain vdj or vj chain
 #'
-#' @param sequence sequence to translate
-
-TranslateIMGTGappedSequence <- function(sequence) {
-
-    if (!grepl("\\.", sequence)) {
-        return(Biostrings::DNAString(sequence) %>% Biostrings::translate() %>% as.character())
-    }
-
-    # TODO: make this work for multiple gaps
-    gap <- stringr::str_locate_all(sequence, "\\.")[[1]]
-
-    if (nrow(gap) %% 3 != 0) {
-        stop("Gap sequence not in frame for sequence ", sequence)
-    }
-
-    gap.start <- ceiling(gap[1, 1] / 3)
-    gap.end <- ceiling(gap[nrow(gap), 1] / 3)
-    gap.length <- gap.end - gap.start + 1
-
-    sequence <- gsub("\\.", "", sequence)
-    aa <- Biostrings::DNAString(sequence) %>% Biostrings::translate() %>% as.character()
-    aa <- paste(substring(aa, c(1, gap.start), c(gap.start - 1, nchar(aa))), collapse = paste(rep(".", gap.length), collapse = ""))
-
-    return(aa)
-}
+#' @importFrom tibble column_to_rownames
 
 GetInfoForMetadata <- function(object, assay, chain) {
-    data <- slot(object, "misc")[["VDJ"]][[assay]][[chain]]
+    data <- slot(object, "misc")[["VDJ"]][[assay]][[chain]] %>% column_to_rownames("barcode")
     columns.to.ignore <- grep("sequence", colnames(data))
 
     if (length(columns.to.ignore) > 0) {

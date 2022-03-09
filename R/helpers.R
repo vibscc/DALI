@@ -209,3 +209,54 @@ GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), regi
 
     return(sequence)
 }
+
+#' Merge 2 data frames and overwrite common columns with values from the second df
+#'
+#' @param x first data frame
+#' @param y second data frame
+#' @param by column to join both data frames on
+
+MergeAndOverwrite <- function(x, y, by) {
+
+    x[, setdiff(colnames(y), colnames(x))] <- NA
+    y[, setdiff(colnames(x), colnames(y))] <- NA
+
+    for (i in 1:nrow(x)) {
+        if (!x[i, by] %in% y[, by]) {
+            y <- rbind(y, x[i,])
+        }
+    }
+
+    rownames(y) <- NULL
+
+    return(y)
+}
+
+#' Create new VDJ data from by merging original and new content together
+#'
+#' @param new New VDJ data
+#' @param orig Original VDJ data
+#'
+#' @importFrom dplyr %>% na_if
+#' @importFrom stringr str_match
+
+CreateVDJData <- function(new, orig = NULL) {
+    new$clonotype <- new$clonotype %>% na_if("None")
+
+    if (is.null(orig)) {
+        return(new)
+    }
+
+    clonotype.suffixes <- str_match(orig$clonotype, "_S[0-9]$")[,1] %>% na.omit() %>% unique()
+
+    if (length(clonotype.suffixes) > 0) {
+        clonotype.suffix <- paste0("_", clonotype.suffixes %>% gsub(pattern = "_S", replacement = "") %>% as.numeric() %>% max() + 1)
+    } else {
+        clonotype.suffix <- "_2"
+        orig$clonotype <- vapply(orig$clonotype, function(x) { ifelse(is.na(x), x, paste0(x, "_1"))}, character(1))
+    }
+
+    new$clonotype <- vapply(new$clonotype, function(x) { ifelse(is.na(x), x, paste0(x, clonotype.suffix))}, character(1))
+
+    return(MergeAndOverwrite(orig, new, by = "barcode"))
+}

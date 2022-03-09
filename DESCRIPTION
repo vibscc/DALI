@@ -1,7 +1,7 @@
 Package: DALI
 Type: Package
 Title: Diversity AnaLysis Interface
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: c(
     person(
         "Kevin",
@@ -28,7 +28,7 @@ Authors@R: c(
         role = c("ctb")
     )
   )
-Description: Analyse VDJ data in the Seurat ecosystem
+Description: Analyse VDJ data in the Seurat ecosystem.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
