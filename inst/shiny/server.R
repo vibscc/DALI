@@ -12,12 +12,13 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL,opt_bcr = FALSE, opt_tcr=FALSE,optional=FALSE)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
         tcr.dir = NULL
     )
+    vals$optional <- reactive(if (vals$opt_bcr & vals$opt_tcr) TRUE else FALSE)
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -48,6 +49,8 @@ function(input, output, session) {
 
         assays <- names(isolate(vals$data@assays))
         assays.default <- Seurat::DefaultAssay(isolate(vals$data))
+        assays.vdj <- names(isolate(vals$data@misc$VDJ))
+        i_selection <- DefaultAssayVDJ(isolate(vals$data))
 
         updateSelectInput(session, "group.highlight", choices = groups)
 
@@ -55,8 +58,7 @@ function(input, output, session) {
         categorical.metadata.no.clonotype <- categorical.metadata[categorical.metadata != "clonotype"]
         updateSelectInput(session, "clonotype.group.by", choices = categorical.metadata.no.clonotype, selected = metadata.default)
 
-        assays.vdj <- names(isolate(vals$data@misc$VDJ))
-        updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
+        updateSelectInput(session, "active.assay", choices = assays.vdj, selected = i_selection)
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
@@ -102,21 +104,22 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
-                output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                    DimplotChainRegion(
-                        object,
-                        grid = F,
-                        reduction = r,
-                        chain = input$chain.usage.chain,
-                        region = input$chain.usage.region
-                    ) + theme(
-                        axis.line = element_blank(),
-                        axis.title = element_blank(),
-                        axis.ticks = element_blank(),
-                        axis.text = element_blank(),
-                        panel.grid.major = element_blank()
-                    ) + ggtitle("Chain usage")
-                })
+                if (!vals$optional()) {
+                    output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
+                        DimplotChainRegion(
+                            object,
+                            grid = F,
+                            reduction = r,
+                            chain = input$chain.usage.chain,
+                            region = input$chain.usage.region
+                        ) + theme(
+                            axis.line = element_blank(),
+                            axis.title = element_blank(),
+                            axis.ticks = element_blank(),
+                            axis.text = element_blank(),
+                            panel.grid.major = element_blank()
+                        ) + ggtitle("Chain usage")
+                })}
             })
         }
     }
@@ -140,31 +143,39 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
-                output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
-                    ExpansionPlot(
-                        object,
-                        reduction = r,
-                        threshold = 2,
-                        negative.alpha = 0.7
-                    ) + theme(
-                        axis.line = element_blank(),
-                        axis.title = element_blank(),
-                        axis.ticks = element_blank(),
-                        axis.text = element_blank(),
-                        plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
-                    ) + ggtitle("Clonal expansion")
+                observe({
+                    if (vals$optional()) {
+                        output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({NULL})
+                        output[[paste0('graph.', r)]] <- renderPlot({NULL})
+                    } else {
+                        output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
+                            ExpansionPlot(
+                                object,
+                                reduction = r,
+                                threshold = 2,
+                                negative.alpha = 0.7
+                            ) + theme(
+                                axis.line = element_blank(),
+                                axis.title = element_blank(),
+                                axis.ticks = element_blank(),
+                                axis.text = element_blank(),
+                                plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
+                            ) + ggtitle("Clonal expansion")
+                        })
+                        output[[paste0('graph.', r)]] <- renderPlot({
+                            CloneConnGraph(
+                                object = object,
+                                reduction = r
+                            ) + theme(
+                                legend.position = "none",
+                                plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
+                            ) + ggtitle("Clonal connection plot")
+
+                        })
+
+                    }
                 })
 
-                output[[paste0('graph.', r)]] <- renderPlot({
-                    CloneConnGraph(
-                        object = object,
-                        reduction = r
-                    ) + theme(
-                        legend.position = "none",
-                        plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
-                    ) + ggtitle("Clonal connection plot")
-
-                })
             })
         }
     }
@@ -279,6 +290,11 @@ function(input, output, session) {
                 return()
             }
         }
+        else {
+            #if no bcr input was given, bcr gets marked as optional
+            vals$opt_bcr <- TRUE
+        }
+
 
         if (length(upload$tcr.dir) > 0) {
             data <- tryCatch({
@@ -291,8 +307,12 @@ function(input, output, session) {
                 return()
             }
         }
+        else {
+            #if no tcr input was given, tcr gets marked as optional
+            vals$opt_tcr <- TRUE
+        }
 
-        if (IsValidSeuratObject(data)) {
+        if (IsValidSeuratObject(data)  | vals$optional()) {
             vals$data <- data
             removeModal()
             app.initialize()
@@ -327,11 +347,15 @@ function(input, output, session) {
     # ======================================================================= #
     # Reduction plots UI tabs
     # ======================================================================= #
-
     output$dataset.metrics <- renderUI({
         req(vals$data)
 
-        cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$vdj.v_gene) | !is.na(.data$vj.v_gene) ) %>% nrow()
+
+        if (vals$optional()) {
+            cells.with.VDJ <- "Not applicable"
+            .data$vdj.v_gene <- NULL
+        }
+        else {cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$vdj.v_gene) | !is.na(.data$vj.v_gene) ) %>% nrow()}
 
         list(
             div("# cells: ", strong(ncol(vals$data))),
@@ -349,7 +373,12 @@ function(input, output, session) {
 
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname.dimred <- paste0('reduction.plot.', reduction)
-            plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
+            if (!vals$optional()){
+                plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
+            }
+            else {
+                plotname.dimred.vdj <- NULL
+            }
 
             tabPanel(
                 DALI:::FormatDimred(reduction),
@@ -407,100 +436,125 @@ function(input, output, session) {
     # Chain usage
     # ======================================================================= #
 
-    output$chain.usage.heatmap <- renderPlot({
-        req(vals$data, input$chain.usage.chain, input$chain.usage.region)
+    observe({
+        if (vals$optional()) {output$chain.usage.heatmap <- renderPlot(NULL)}
+        else {
+            output$chain.usage.heatmap <- renderPlot({
+                req(vals$data, input$chain.usage.chain, input$chain.usage.region)
 
-        HeatmapChainRegion(
-            vals$data,
-            chain = input$chain.usage.chain,
-            region = input$chain.usage.region,
-            add.missing.families = input$chain.usage.add.missing.families,
-            show.missing.values = F,
-            cluster.cols = input$chain.usage.cluster.cols
-        )
+                HeatmapChainRegion(
+                    vals$data,
+                    chain = input$chain.usage.chain,
+                    region = input$chain.usage.region,
+                    add.missing.families = input$chain.usage.add.missing.families,
+                    show.missing.values = F,
+                    cluster.cols = input$chain.usage.cluster.cols
+                )
+            })
+        }
     })
+
+
+
 
     # ======================================================================= #
     # Ridge CDR3-length
     # ======================================================================= #
+    observe({
+        if (vals$optional()) {output$spectratypeplot <- renderPlot(NULL)}
+        else {
+            output$spectratypeplot <- renderPlot({
+                req(vals$data, input$compare.group.by)
 
-    output$spectratypeplot <- renderPlot({
-        req(vals$data, input$compare.group.by)
-
-        CDR3Plot(
-            vals$data,
-            group.by = input$compare.group.by,
-            sequence.type = "AA",
-            plot.type = "ridge"
-        )
-    })
+                CDR3Plot(
+                    vals$data,
+                    group.by = input$compare.group.by,
+                    sequence.type = "AA",
+                    plot.type = "ridge"
+                )
+            })
+        }
+     })
 
     # ======================================================================= #
     # Frequency CDR3 AA sequences
     # ======================================================================= #
 
-    output$cdr3.frequency <- renderPlot({
-        req(vals$data, input$clonotype.group.by, input$clonotype.group, input$cdr3.frequency.threshold)
+    observe({
+        if (vals$optional()) {
+            output$cdr3.frequency <- renderPlot({NULL})
+            output$top.clonotypes <- renderTable({NULL})
+            } else {
+            output$cdr3.frequency <- renderPlot({
+                req(vals$data, input$clonotype.group.by, input$clonotype.group, input$cdr3.frequency.threshold)
 
-        if (!input$clonotype.group %in% vals$data@meta.data[, input$clonotype.group.by]) {
-            return()
+                if (!input$clonotype.group %in% vals$data@meta.data[, input$clonotype.group.by]) {
+                    return()
+                }
+
+                ClonotypeFrequency(
+                    vals$data,
+                    chain = NULL,
+                    use.sequence = F,
+                    group.by = input$clonotype.group.by,
+                    subset = input$clonotype.group,
+                    threshold = input$cdr3.frequency.threshold,
+                    show.missing = input$cdr3.frequency.show.missing
+                )
+            })
+
+            output$top.clonotypes <- renderTable({
+                req(vals$data, input$clonotype.group.by, input$clonotype.group)
+
+                n.cells <- sum(vals$data@meta.data[input$clonotype.group.by] == input$clonotype.group)
+
+                top.clonotypes <- DALI:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
+                    filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
+                    arrange(desc(freq)) %>%
+                    select(c(clonotype, freq)) %>%
+                    head(n = 25) %>%
+                    mutate(perc = round((freq/n.cells) * 100, digits = 1))
+
+                vals$top.clonotypes <- top.clonotypes
+
+                h_seqs <- c()
+                l_seqs <- c()
+                for (clonotype in top.clonotypes$clonotype) {
+                    h_seqs <- c(h_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VDJ"))
+                    l_seqs <- c(l_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VJ"))
+                }
+
+                top.clonotypes$h_seq <- h_seqs
+                top.clonotypes$l_seq <- l_seqs
+
+                colnames(top.clonotypes) <- c("Clonotype", "Cells", "pct.group", "VDJ CDR3 AA seq", "VJ CDR3 AA seq")
+                top.clonotypes
+            })
         }
-
-        ClonotypeFrequency(
-            vals$data,
-            chain = NULL,
-            use.sequence = F,
-            group.by = input$clonotype.group.by,
-            subset = input$clonotype.group,
-            threshold = input$cdr3.frequency.threshold,
-            show.missing = input$cdr3.frequency.show.missing
-        )
     })
 
-    output$top.clonotypes <- renderTable({
-        req(vals$data, input$clonotype.group.by, input$clonotype.group)
-
-        n.cells <- sum(vals$data@meta.data[input$clonotype.group.by] == input$clonotype.group)
-
-        top.clonotypes <- DALI:::CalculateFrequency(vals$data, 'clonotype', input$clonotype.group.by, F) %>%
-            filter(.data[[input$clonotype.group.by]] == input$clonotype.group) %>%
-            arrange(desc(freq)) %>%
-            select(c(clonotype, freq)) %>%
-            head(n = 25) %>%
-            mutate(perc = round((freq/n.cells) * 100, digits = 1))
-
-        vals$top.clonotypes <- top.clonotypes
-
-        h_seqs <- c()
-        l_seqs <- c()
-        for (clonotype in top.clonotypes$clonotype) {
-            h_seqs <- c(h_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VDJ"))
-            l_seqs <- c(l_seqs, DALI:::ClonotypeToSequence(vals$data, clonotype, "VJ"))
-        }
-
-        top.clonotypes$h_seq <- h_seqs
-        top.clonotypes$l_seq <- l_seqs
-
-        colnames(top.clonotypes) <- c("Clonotype", "Cells", "pct.group", "VDJ CDR3 AA seq", "VJ CDR3 AA seq")
-        top.clonotypes
-    })
 
     # ======================================================================= #
     # Featureplot clonotype
     # ======================================================================= #
+    observe({
+        if (vals$optional()) {
+            output$featureplot.clonotype <- renderPlot({NULL})
+        } else {
+            output$featureplot.clonotype <- renderPlot({
+                req(vals$data, input$featureplot.clonotype, input$featureplot.reduction)
 
-    output$featureplot.clonotype <- renderPlot({
-        req(vals$data, input$featureplot.clonotype, input$featureplot.reduction)
-
-        FeaturePlotClonotype(vals$data, input$featureplot.reduction, input$featureplot.clonotype, size = 0.8, missing.alpha = 0.4) + theme(
-            legend.position = "none",
-            axis.line = element_blank(),
-            axis.ticks = element_blank(),
-            axis.title = element_blank(),
-            axis.text = element_blank(),
-            plot.title = element_blank()
-        )
+                FeaturePlotClonotype(vals$data, input$featureplot.reduction, input$featureplot.clonotype, size = 0.8, missing.alpha = 0.4) + theme(
+                    legend.position = "none",
+                    axis.line = element_blank(),
+                    axis.ticks = element_blank(),
+                    axis.title = element_blank(),
+                    axis.text = element_blank(),
+                    plot.title = element_blank()
+                )
+            })}
     })
+
 
     # ======================================================================= #
     # Observers
@@ -541,6 +595,7 @@ function(input, output, session) {
     # VDJ assay change
 
     observeEvent(input$active.assay, {
+        req(vals$data)
         DefaultAssayVDJ(vals$data) <- input$active.assay
         app.initialize()
     })
@@ -549,166 +604,181 @@ function(input, output, session) {
     # Barplot to compare groups
     # ======================================================================= #
 
-    output$barplot.comparison <- renderPlot({
-        req(vals$data, input$compare.ident.1, input$compare.ident.2)
+    observe({
+        if (vals$optional()) {
+            output$barplot.comparison <- renderPlot({NULL})
+        } else {
+            output$barplot.comparison <- renderPlot({
+                req(vals$data, input$compare.ident.1, input$compare.ident.2)
 
-        BarplotChainRegion(
-            vals$data,
-            group.by = input$compare.group.by,
-            ident.1 = input$compare.ident.1,
-            ident.2 = input$compare.ident.2,
-            region = input$compare.region,
-            chain = input$compare.chain,
-            legend = F
-        )
+                BarplotChainRegion(
+                    vals$data,
+                    group.by = input$compare.group.by,
+                    ident.1 = input$compare.ident.1,
+                    ident.2 = input$compare.ident.2,
+                    region = input$compare.region,
+                    chain = input$compare.chain,
+                    legend = F
+                )
+            })
+        }
     })
 
     # ======================================================================= #
     # Clonotypes table
     # ======================================================================= #
-
-    output$clonotypes.table <- DT::renderDT({
-        req(vals$data)
-
-        data <- vals$data@meta.data %>% filter(!is.na(clonotype))
-
-        cols.for.nt.sequence <- c("fwr1_nt", "cdr1_nt", "fwr2_nt", "cdr2_nt", "fwr3_nt", "cdr3_nt", "fwr4_nt")
-        cols.for.aa.sequence <- c("fwr1", "cdr1", "fwr2", "cdr2", "fwr3", "cdr3", "fwr4")
-
-        vdj.prefix <- "vdj"
-        vj.prefix <- "vj"
-
-        vdj.seq.nt.cols <- paste0(vdj.prefix, ".", cols.for.nt.sequence)
-        vdj.seq.aa.cols <- paste0(vdj.prefix, ".", cols.for.aa.sequence)
-        vj.seq.nt.cols <- paste0(vj.prefix, ".", cols.for.nt.sequence)
-        vj.seq.aa.cols <- paste0(vj.prefix, ".", cols.for.aa.sequence)
-
-        vars <- list("vdj.seq.nt" = vdj.seq.nt.cols, "vdj.seq.aa" = vdj.seq.aa.cols, "vj.seq.nt" = vj.seq.nt.cols, "vj.seq.aa" = vj.seq.aa.cols)
-        i <- 1
-        for (cols in vars) {
-            for (col in cols) {
-                colname <- names(vars)[i]
-                style.classname <- (strsplit((strsplit(col, "\\.") %>% unlist())[2], "_") %>% unlist())[1]
-
-                if (!colname %in% colnames(data)) {
-                    data[, colname] <- ""
-                }
-                if (!col %in% colnames(data)) {
-                    data[, col] <- "-"
-                }
-
-                data[is.na(data[,col]), col] <- "-"
-
-                data[,colname] <- paste0(data[,colname], paste0("<span class='", style.classname, "' title='", style.classname, "'>", data[,col], "</span>"))
-            }
-            i <- i + 1
-        }
-
-        vals$clonotype.table <- data %>%
-            dplyr::group_by(clonotype) %>%
-            summarize(
-                n.cells = n(),
-                vdj.seq.nt = vdj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
-                vdj.seq.aa = vdj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
-                vj.seq.nt = vj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
-                vj.seq.aa = vj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
-            )
-
-        DT::datatable(
-            vals$clonotype.table,
-            escape = F,
-            rownames = F,
-            options = list(scrollX = T),
-            selection = "single"
-        ) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
-    })
-
-    observeEvent(input$clonotypes.table_rows_selected, {
-        req(vals$clonotype.table)
-
-        vals$clonotype.table.selected <- vals$clonotype.table[input$clonotypes.table_rows_selected, "clonotype"] %>% pull("clonotype")
-    })
-
-    observeEvent(input$reference_fasta, {
-        vals$reference <- shinyFiles::parseFilePaths(volumes, input$reference_fasta)
-    })
-
-    output$reference.fasta.path.text <- renderText({
-        req(vals$reference)
-
-        gsub("/+", "/", vals$reference$datapath)
-    })
-
-    output$clonotype.lineage.ui <- renderUI({
-        if (!DALI::DefaultAssayVDJ(vals$data) == "BCR") {
-            return()
-        }
-
-        assays <- names(isolate(vals$data@assays))
-
-        div(class = "well",
-            h3("B-cell lineage"),
-            strong("Select VDJ reference fasta:"),
-            shinyFilesButton("reference_fasta", "Browse...", "Choose the VDJ reference fasta for loaded dataset",  multiple = F, filetype = list(data = c("fa", "fasta", "fas"))),
-            textOutput("reference.fasta.path.text", inline = T),
-            checkboxInput("lineage.color.tips", label = "Color tips by metadata/feature", value = F),
-            tabsetPanel(id = "lineage_tabs",
-                tabPanel("Metadata",
-                    selectizeInput("lineage.metadata", label = "Metadata", choices = vals$categorical.metadata, multiple = F)
-                ),
-                tabPanel("Feature",
-                    selectInput("lineage.assay", label = "Assay", choices = assays, multiple = F),
-                    selectizeInput("lineage.feature", label = "Feature", choices = NULL, multiple = F)
-                )
-            )
-        )
-    })
-
-    output$clonotype.lineage <- renderPlot({
-        req(vals$reference, vals$data, vals$clonotype.table.selected, vals$lineage.tab)
-
-        if (length(vals$reference$datapath) == 0 | is.null(vals$reference)) {
-            return()
-        }
-
-        if (DALI::DefaultAssayVDJ(vals$data) == "BCR") {
-            color.tip.by <- NULL
-
-            if (input$lineage.color.tips) {
-                if (vals$lineage.tab == "metadata") {
-                    color.tip.by <- input$lineage.metadata
-                } else if (vals$lineage.tab == "feature" & nchar(input$lineage.feature) > 0) {
-                    color.tip.by <- input$lineage.feature
-                }
-            }
-
-            DALI::LineageTree(
-                object = vals$data,
-                clonotype = vals$clonotype.table.selected,
-                reference = vals$reference$datapath,
-                color.tip.by = color.tip.by
-            )
-        }
-    })
-
-    observeEvent(input$lineage.assay, {
-        Seurat::DefaultAssay(vals$data) <- input$lineage.assay
-
-        features <- rownames(vals$data) %>% sort()
-        updateSelectizeInput(session, "lineage.feature", choices = features, server = T)
-    })
-
     observe({
-        if (!is.null(input$lineage_tabs)) {
-            if (input$lineage_tabs == "Metadata") {
-                vals$lineage.tab <- "metadata"
-            } else if (input$lineage_tabs == "Feature") {
-                vals$lineage.tab <- "feature"
-            } else {
-                vals$lineage.tab <- NULL
+        if (vals$optional()){
+            output$clonotypes.table <- DT::renderDT(NULL)
+            output$clonotype.lineage <- renderPlot({NULL})
+            output$clonotype.lineage.ui <- renderUI({NULL})
             }
+        else{
+            output$clonotypes.table <- DT::renderDT({
+                req(vals$data)
+
+                data <- vals$data@meta.data %>% filter(!is.na(clonotype))
+
+                cols.for.nt.sequence <- c("fwr1_nt", "cdr1_nt", "fwr2_nt", "cdr2_nt", "fwr3_nt", "cdr3_nt", "fwr4_nt")
+                cols.for.aa.sequence <- c("fwr1", "cdr1", "fwr2", "cdr2", "fwr3", "cdr3", "fwr4")
+
+                vdj.prefix <- "vdj"
+                vj.prefix <- "vj"
+
+                vdj.seq.nt.cols <- paste0(vdj.prefix, ".", cols.for.nt.sequence)
+                vdj.seq.aa.cols <- paste0(vdj.prefix, ".", cols.for.aa.sequence)
+                vj.seq.nt.cols <- paste0(vj.prefix, ".", cols.for.nt.sequence)
+                vj.seq.aa.cols <- paste0(vj.prefix, ".", cols.for.aa.sequence)
+
+                vars <- list("vdj.seq.nt" = vdj.seq.nt.cols, "vdj.seq.aa" = vdj.seq.aa.cols, "vj.seq.nt" = vj.seq.nt.cols, "vj.seq.aa" = vj.seq.aa.cols)
+                i <- 1
+                for (cols in vars) {
+                    for (col in cols) {
+                        colname <- names(vars)[i]
+                        style.classname <- (strsplit((strsplit(col, "\\.") %>% unlist())[2], "_") %>% unlist())[1]
+
+                        if (!colname %in% colnames(data)) {
+                            data[, colname] <- ""
+                        }
+                        if (!col %in% colnames(data)) {
+                            data[, col] <- "-"
+                        }
+
+                        data[is.na(data[,col]), col] <- "-"
+
+                        data[,colname] <- paste0(data[,colname], paste0("<span class='", style.classname, "' title='", style.classname, "'>", data[,col], "</span>"))
+                    }
+                    i <- i + 1
+                }
+
+                vals$clonotype.table <- data %>%
+                    dplyr::group_by(clonotype) %>%
+                    summarize(
+                        n.cells = n(),
+                        vdj.seq.nt = vdj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                        vdj.seq.aa = vdj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+                        vj.seq.nt = vj.seq.nt %>% unique() %>% paste(collapse = "<br>"),
+                        vj.seq.aa = vj.seq.aa %>% unique() %>% paste(collapse = "<br>"),
+                    )
+
+                DT::datatable(
+                    vals$clonotype.table,
+                    escape = F,
+                    rownames = F,
+                    options = list(scrollX = T),
+                    selection = "single"
+                ) %>% DT::formatStyle(names(vars), `font-family` = "monospace")
+            })
+
+            observeEvent(input$clonotypes.table_rows_selected, {
+                req(vals$clonotype.table)
+
+                vals$clonotype.table.selected <- vals$clonotype.table[input$clonotypes.table_rows_selected, "clonotype"] %>% pull("clonotype")
+            })
+
+            observeEvent(input$reference_fasta, {
+                vals$reference <- shinyFiles::parseFilePaths(volumes, input$reference_fasta)
+            })
+
+            output$reference.fasta.path.text <- renderText({
+                req(vals$reference)
+
+                gsub("/+", "/", vals$reference$datapath)
+            })
+
+            output$clonotype.lineage.ui <- renderUI({
+                if (!DALI::DefaultAssayVDJ(vals$data) == "BCR") {
+                    return()
+                }
+
+                assays <- names(isolate(vals$data@assays))
+
+                div(class = "well",
+                    h3("B-cell lineage"),
+                    strong("Select VDJ reference fasta:"),
+                    shinyFilesButton("reference_fasta", "Browse...", "Choose the VDJ reference fasta for loaded dataset",  multiple = F, filetype = list(data = c("fa", "fasta", "fas"))),
+                    textOutput("reference.fasta.path.text", inline = T),
+                    checkboxInput("lineage.color.tips", label = "Color tips by metadata/feature", value = F),
+                    tabsetPanel(id = "lineage_tabs",
+                        tabPanel("Metadata",
+                            selectizeInput("lineage.metadata", label = "Metadata", choices = vals$categorical.metadata, multiple = F)
+                        ),
+                        tabPanel("Feature",
+                            selectInput("lineage.assay", label = "Assay", choices = assays, multiple = F),
+                            selectizeInput("lineage.feature", label = "Feature", choices = NULL, multiple = F)
+                        )
+                    )
+                )
+            })
+
+            output$clonotype.lineage <- renderPlot({
+                req(vals$reference, vals$data, vals$clonotype.table.selected, vals$lineage.tab)
+
+                if (length(vals$reference$datapath) == 0 | is.null(vals$reference)) {
+                    return()
+                }
+
+                if (DALI::DefaultAssayVDJ(vals$data) == "BCR") {
+                    color.tip.by <- NULL
+
+                    if (input$lineage.color.tips) {
+                        if (vals$lineage.tab == "metadata") {
+                            color.tip.by <- input$lineage.metadata
+                        } else if (vals$lineage.tab == "feature" & nchar(input$lineage.feature) > 0) {
+                            color.tip.by <- input$lineage.feature
+                        }
+                    }
+
+                    DALI::LineageTree(
+                        object = vals$data,
+                        clonotype = vals$clonotype.table.selected,
+                        reference = vals$reference$datapath,
+                        color.tip.by = color.tip.by
+                    )
+                }
+            })
+
+            observeEvent(input$lineage.assay, {
+                Seurat::DefaultAssay(vals$data) <- input$lineage.assay
+
+                features <- rownames(vals$data) %>% sort()
+                updateSelectizeInput(session, "lineage.feature", choices = features, server = T)
+            })
+
+            observe({
+                if (!is.null(input$lineage_tabs)) {
+                    if (input$lineage_tabs == "Metadata") {
+                        vals$lineage.tab <- "metadata"
+                    } else if (input$lineage_tabs == "Feature") {
+                        vals$lineage.tab <- "feature"
+                    } else {
+                        vals$lineage.tab <- NULL
+                    }
+                }
+            })
         }
     })
+
 
     # ======================================================================= #
     # Transcriptomics
