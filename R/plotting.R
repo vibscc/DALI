@@ -164,6 +164,7 @@ BarplotChainRegion <- function(
 #' Heatmap showing to percentage of cells with a specifiek chain/region combination
 #'
 #' @param object Seurat object
+#' @param color colorscheme to use for the heatmap. options: 'viridis','coolwarm'. Default='coolwarm'
 #' @param group.by Metadata column to group the family data by.
 #' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
@@ -185,6 +186,7 @@ BarplotChainRegion <- function(
 
 HeatmapChainRegion <- function(
   object,
+  color = c('coolwarm','viridis'),
   group.by = NULL,
   chain = c("VDJ", "VJ"),
   region = c("V", "J", "C"),
@@ -196,8 +198,15 @@ HeatmapChainRegion <- function(
   cluster.cols = F,
   ...
 ) {
+
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
+
+  if (is.null(color) | color == 'coolwarm') {
+      c.sch <- colorRampPalette(c("#4575B4","#91BFDB","#E0F3F8","#FFFFBF","#FEE090","#FC8D59", "#D73027"))
+  } else if (color=='viridis') {
+      c.sch <-  colorRampPalette(c("#440154","#443A83","#31688E","#21908C","#35B779","#8FD744","#FDE725"))
+  } else {stop("invalid colorscheme", color)}
 
   if (is.null(group.by)) {
     object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -239,7 +248,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  pheatmap::pheatmap(plot.data, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
+  pheatmap::pheatmap(plot.data, color=c.sch(100) ,cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
 }
 
 #' Barplot with clonotype distribution

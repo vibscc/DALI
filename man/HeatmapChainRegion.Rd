@@ -6,6 +6,7 @@
 \usage{
 HeatmapChainRegion(
   object,
+  color = c("coolwarm", "viridis"),
   group.by = NULL,
   chain = c("VDJ", "VJ"),
   region = c("V", "J", "C"),
@@ -20,6 +21,8 @@ HeatmapChainRegion(
 }
 \arguments{
 \item{object}{Seurat object}
+
+\item{color}{colorscheme to use for the heatmap. options: 'viridis','coolwarm'. Default='coolwarm'}
 
 \item{group.by}{Metadata column to group the family data by.}
 
