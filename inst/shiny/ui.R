@@ -29,69 +29,73 @@ fillPage(
                     column(12, uiOutput("reduction.tabs.chain.usage") %>% withSpinner())
                 ),
                 fluidRow(
-                    sidebarPanel(width = 3,
-                        selectInput("chain.usage.chain", label = "Chain", choices = c("VDJ", "VJ")),
-                        selectInput("chain.usage.region", label = "Region", choices = c("V", "J", "C")),
-                        selectInput("chain.usage.color", label = "Colorscheme", choices = c("coolwarm","viridis")),
-                        checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F),
-                        checkboxInput("chain.usage.cluster.cols", label = "Cluster groups based on VDJ genes", value = F)
-                    ),
-                    column(9, plotOutput("chain.usage.heatmap") %>% withSpinner())
-                )
+                    div(id="optional",
+                        sidebarPanel(width = 3,
+                            selectInput("chain.usage.chain", label = "Chain", choices = c("VDJ", "VJ")),
+                            selectInput("chain.usage.region", label = "Region", choices = c("V", "J", "C")),
+			    selectInput("chain.usage.color", label = "Colorscheme", choices = c("coolwarm","viridis")),                            
+			    checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F),
+                            checkboxInput("chain.usage.cluster.cols", label = "Cluster groups based on VDJ genes", value = F)
+                        )),
+                    column(9, plotOutput("chain.usage.heatmap") %>% withSpinner()))
+
             ),
             tabPanel("Clone view",
-                fluidRow(
-                    column(12, uiOutput("reduction.tabs.expansion") %>% withSpinner())
-                ),
-                fluidRow(
-                    column(8,
-                        fluidRow(
-                            sidebarPanel(width = 2,
-                               selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
-                               selectizeInput("clonotype.group", label = "Group", choices = NULL),
-                               sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
-                               checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
-                            )
-                        ),
-                        fluidRow(
-                            column(3, plotOutput("cdr3.frequency")),
-                            column(5, tableOutput("top.clonotypes"))
-                        )
+                div(id="optional",
+                    fluidRow(
+                        column(12, uiOutput("reduction.tabs.expansion") %>% withSpinner())
                     ),
-                    column(4,
-                        sidebarPanel(width = 12,
+                    fluidRow(
+                        column(8,
+                               fluidRow(
+                                        sidebarPanel(width = 2,
+                                            selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
+                                            selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                                            sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
+                                            checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
+                                        )
+                                    ),
+                                 fluidRow(
+                                    column(3, plotOutput("cdr3.frequency")),
+                                    column(5, tableOutput("top.clonotypes"))
+                                )),
+                        column(4,
+                            sidebarPanel(width = 12,
                             selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
                             selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),
-                        ),
-                        plotOutput("featureplot.clonotype") %>% withSpinner()
-                    )
-                )
-            ),
-            tabPanel("Population comparison",
-                fluidRow(
-                    column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
-                    column(8,
-                        fluidRow(
-                            column(8, plotOutput("barplot.comparison") %>% withSpinner()),
-                            sidebarPanel(width = 4,
-                                selectInput("compare.group.by", label = "Group data by", choices = NULL),
-                                selectizeInput("compare.ident.1", label = "Ident 1 (yellow)", choices = NULL, multiple = T),
-                                selectizeInput("compare.ident.2", label = "Ident 2 (red)", choices = NULL, multiple = T),
-                                selectInput("compare.chain", label = "Chain", choices = c("VDJ", "VJ"), multiple = F),
-                                selectInput("compare.region", label = "Region", choices = c("V", "J", "C"), multiple = F)
+                            ),
+                            plotOutput("featureplot.clonotype") %>% withSpinner()
                             )
-                        ),
-                        plotOutput("spectratypeplot") %>% withSpinner()
                     )
-                )
-            ),
+
+                )),
+            tabPanel("Population comparison",
+                div(id="optional",
+                    fluidRow(
+                        column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
+                        column(8,
+                            fluidRow(
+                                column(8, plotOutput("barplot.comparison") %>% withSpinner()),
+                                sidebarPanel(width = 4,
+                                    selectInput("compare.group.by", label = "Group data by", choices = NULL),
+                                    selectizeInput("compare.ident.1", label = "Ident 1 (yellow)", choices = NULL, multiple = T),
+                                    selectizeInput("compare.ident.2", label = "Ident 2 (red)", choices = NULL, multiple = T),
+                                    selectInput("compare.chain", label = "Chain", choices = c("VDJ", "VJ"), multiple = F),
+                                    selectInput("compare.region", label = "Region", choices = c("V", "J", "C"), multiple = F)
+                                )
+                            ),
+                            plotOutput("spectratypeplot") %>% withSpinner()
+                        )
+                    )
+            )),
             tabPanel("Clonotypes",
-                DT::DTOutput("clonotypes.table"),
-                fluidRow(
-                    column(4, uiOutput("clonotype.lineage.ui")),
-                    column(8, plotOutput("clonotype.lineage"))
-                )
-            ),
+                div(id="optional",
+                    DT::DTOutput("clonotypes.table"),
+                    fluidRow(
+                        column(4, uiOutput("clonotype.lineage.ui")),
+                        column(8, plotOutput("clonotype.lineage"))
+                    )
+            )),
             tabPanel("Transcriptomics",
                 fluidRow(
                     column(12,

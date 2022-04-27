@@ -555,7 +555,6 @@ function(input, output, session) {
             })}
     })
 
-
     # ======================================================================= #
     # Observers
     # ======================================================================= #
@@ -599,6 +598,12 @@ function(input, output, session) {
         DefaultAssayVDJ(vals$data) <- input$active.assay
         app.initialize()
     })
+
+    # Remove UI elements (when no optional files present)
+    observe({
+        if (vals$optional()) {removeUI(selector = "div:has(>#optional)", multiple = T)}
+    })
+
 
     # ======================================================================= #
     # Barplot to compare groups
