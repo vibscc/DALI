@@ -412,12 +412,13 @@ function(input, output, session) {
 
         HeatmapChainRegion(
             vals$data,
+            color = input$chain.usage.color,
             chain = input$chain.usage.chain,
             region = input$chain.usage.region,
             add.missing.families = input$chain.usage.add.missing.families,
             show.missing.values = F,
             cluster.cols = input$chain.usage.cluster.cols
-        )
+            )
     })
 
     # ======================================================================= #
