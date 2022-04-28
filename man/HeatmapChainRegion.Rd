@@ -22,7 +22,7 @@ HeatmapChainRegion(
 \arguments{
 \item{object}{Seurat object}
 
-\item{color}{colorscheme to use for the heatmap. options: 'viridis','coolwarm'. Default='coolwarm'}
+\item{color}{colorscheme to use for the heatmap. options: "viridis","coolwarm". Default="coolwarm"}
 
 \item{group.by}{Metadata column to group the family data by.}
 
