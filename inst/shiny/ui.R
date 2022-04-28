@@ -32,6 +32,7 @@ fillPage(
                     sidebarPanel(width = 3,
                         selectInput("chain.usage.chain", label = "Chain", choices = c("VDJ", "VJ")),
                         selectInput("chain.usage.region", label = "Region", choices = c("V", "J", "C")),
+                        selectInput("chain.usage.color", label = "Colorscheme", choices = c("coolwarm","viridis")),
                         checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F),
                         checkboxInput("chain.usage.cluster.cols", label = "Cluster groups based on VDJ genes", value = F)
                     ),
