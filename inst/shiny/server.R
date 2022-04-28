@@ -12,13 +12,14 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL,opt_bcr = FALSE, opt_tcr=FALSE,optional=FALSE)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL,upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
         tcr.dir = NULL
     )
-    vals$optional <- reactive(if (vals$opt_bcr & vals$opt_tcr) TRUE else FALSE)
+    # Check the upload flags to decide the DALI interface
+    vals$no_vdj <- reactive(if (!vals$upload_tcr & !vals$upload_bcr) TRUE else FALSE)
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -75,6 +76,12 @@ function(input, output, session) {
         updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
 
+        updateSelectInput(session, "transcriptomics.assay.novdj", choices = assays, selected = assays.default)
+        updateSelectInput(session, "transcriptomics.reduction.novdj", choices = reductions, selected = selected)
+
+        updateSelectizeInput(session, "deg.group.by.novdj", choices = categorical.metadata, selected = metadata.default, server = T)
+        updateSelectInput(session, "deg.assay.novdj", choices = assays, selected = assays.default)
+
         vals$categorical.metadata <- categorical.metadata
     }
 
@@ -104,7 +111,7 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
-                if (!vals$optional()) {
+                if (!vals$no_vdj()) {
                     output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
                         DimplotChainRegion(
                             object,
@@ -144,7 +151,7 @@ function(input, output, session) {
                 })
 
                 observe({
-                    if (vals$optional()) {
+                    if (vals$no_vdj()) {
                         output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({NULL})
                         output[[paste0('graph.', r)]] <- renderPlot({NULL})
                     } else {
@@ -287,12 +294,13 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
+                vals$upload_bcr <- FALSE
                 return()
             }
+            vals$upload_bcr <- TRUE
         }
         else {
-            #if no bcr input was given, bcr gets marked as optional
-            vals$opt_bcr <- TRUE
+            vals$upload_bcr <- FALSE
         }
 
 
@@ -304,15 +312,16 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
+                vals$upload_tcr <- FALSE
                 return()
             }
+            vals$upload_tcr <- TRUE
         }
         else {
-            #if no tcr input was given, tcr gets marked as optional
-            vals$opt_tcr <- TRUE
+            vals$upload_tcr <- FALSE
         }
 
-        if (IsValidSeuratObject(data)  | vals$optional()) {
+        if (vals$no_vdj() | IsValidSeuratObject(data)) {
             vals$data <- data
             removeModal()
             app.initialize()
@@ -351,7 +360,7 @@ function(input, output, session) {
         req(vals$data)
 
 
-        if (vals$optional()) {
+        if (vals$no_vdj()) {
             cells.with.VDJ <- "Not applicable"
             .data$vdj.v_gene <- NULL
         }
@@ -373,7 +382,7 @@ function(input, output, session) {
 
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname.dimred <- paste0('reduction.plot.', reduction)
-            if (!vals$optional()) {
+            if (!vals$no_vdj()) {
                 plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
             }
             else {
@@ -432,12 +441,29 @@ function(input, output, session) {
         do.call(tabsetPanel, tabs)
     })
 
+
+    output$dim.reduction.tabs <- renderUI({
+        req(vals$data)
+
+        tabs <- lapply(names(vals$data@reductions), function(reduction) {
+            plotname <- paste0('dimred.', reduction)
+
+            tabPanel(
+                DALI:::FormatDimred(reduction),
+                plotOutput(plotname) %>% withSpinner()
+            )
+        })
+
+        tabs[['selected']] <- if ('umap' %in% names(vals$data@reductions)) 'UMAP' else if ('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
+        do.call(tabsetPanel, tabs)
+    })
+
     # ======================================================================= #
     # Chain usage
     # ======================================================================= #
 
     observe({
-        if (vals$optional()) {output$chain.usage.heatmap <- renderPlot(NULL)}
+        if (vals$no_vdj()) {output$chain.usage.heatmap <- renderPlot(NULL)}
         else {
             output$chain.usage.heatmap <- renderPlot({
                 req(vals$data, input$chain.usage.chain, input$chain.usage.region)
@@ -461,7 +487,7 @@ function(input, output, session) {
     # Ridge CDR3-length
     # ======================================================================= #
     observe({
-        if (vals$optional()) {output$spectratypeplot <- renderPlot(NULL)}
+        if (vals$no_vdj()) {output$spectratypeplot <- renderPlot(NULL)}
         else {
             output$spectratypeplot <- renderPlot({
                 req(vals$data, input$compare.group.by)
@@ -481,7 +507,7 @@ function(input, output, session) {
     # ======================================================================= #
 
     observe({
-        if (vals$optional()) {
+        if (vals$no_vdj()) {
             output$cdr3.frequency <- renderPlot({NULL})
             output$top.clonotypes <- renderTable({NULL})
             } else {
@@ -538,7 +564,7 @@ function(input, output, session) {
     # Featureplot clonotype
     # ======================================================================= #
     observe({
-        if (vals$optional()) {
+        if (vals$no_vdj()) {
             output$featureplot.clonotype <- renderPlot({NULL})
         } else {
             output$featureplot.clonotype <- renderPlot({
@@ -600,8 +626,25 @@ function(input, output, session) {
     })
 
     # Remove UI elements (when no optional files present)
+    # add them again when we upload a new file
     observe({
-        if (vals$optional()) {removeUI(selector = "div:has(>#optional)", multiple = T)}
+        if (vals$no_vdj()) {
+            hideTab("DALI", "General view")
+            hideTab("DALI", "Population comparison")
+            hideTab("DALI", "Clonotypes")
+            hideTab("DALI", "Transcriptomics")
+            hideTab("DALI", "DEG")
+            hideTab("DALI", "Clone view")
+            showTab("DALI", "Seurat Analysis")
+        } else {
+            hideTab("DALI", "Seurat Analysis")
+            showTab("DALI", "General view")
+            showTab("DALI", "Population comparison")
+            showTab("DALI", "Clonotypes")
+            showTab("DALI", "Transcriptomics")
+            showTab("DALI", "DEG")
+            showTab("DALI", "Clone view")
+        }
     })
 
 
@@ -609,36 +652,28 @@ function(input, output, session) {
     # Barplot to compare groups
     # ======================================================================= #
 
-    observe({
-        if (vals$optional()) {
-            output$barplot.comparison <- renderPlot({NULL})
-        } else {
-            output$barplot.comparison <- renderPlot({
-                req(vals$data, input$compare.ident.1, input$compare.ident.2)
-
-                BarplotChainRegion(
-                    vals$data,
-                    group.by = input$compare.group.by,
-                    ident.1 = input$compare.ident.1,
-                    ident.2 = input$compare.ident.2,
-                    region = input$compare.region,
-                    chain = input$compare.chain,
-                    legend = F
-                )
-            })
-        }
+    output$barplot.comparison <- renderPlot({
+        BarplotChainRegion(
+            vals$data,
+            group.by = input$compare.group.by,
+            ident.1 = input$compare.ident.1,
+            ident.2 = input$compare.ident.2,
+            region = input$compare.region,
+            chain = input$compare.chain,
+            legend = F
+        )
     })
+
 
     # ======================================================================= #
     # Clonotypes table
     # ======================================================================= #
     observe({
-        if (vals$optional()){
+        if (vals$no_vdj()) {
             output$clonotypes.table <- DT::renderDT(NULL)
             output$clonotype.lineage <- renderPlot({NULL})
             output$clonotype.lineage.ui <- renderUI({NULL})
-            }
-        else{
+        } else {
             output$clonotypes.table <- DT::renderDT({
                 req(vals$data)
 
@@ -865,4 +900,73 @@ function(input, output, session) {
 
         vals$deg.results
     })
+
+    # ####################################################################### #
+    # Seurat Analysis
+    # ####################################################################### #
+
+    # Transcriptomics subtab
+
+    observeEvent(input$transcriptomics.assay.novdj, {
+        req(vals$data, input$transcriptomics.assay.novdj)
+
+        Seurat::DefaultAssay(vals$data) <- input$transcriptomics.assay.novdj
+
+        features <- rownames(vals$data) %>% sort()
+        updateSelectizeInput(session, "transcriptomics.feature.novdj", choices = features, selected = features[1], server = T)
+    })
+
+    output$transcriptomics.featureplot.novdj <- renderPlot({
+        req(vals$data, input$transcriptomics.feature.novdj, input$transcriptomics.reduction.novdj, input$transcriptomics.assay.novdj)
+
+        Seurat::FeaturePlot(vals$data, input$transcriptomics.feature.novdj, reduction = input$transcriptomics.reduction.novdj) + theme(
+            legend.position = "none",
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+        ) + ggtitle(paste0("Featureplot (", input$transcriptomics.feature.novdj ,")"))
+    })
+
+    # DEG analyses subtab
+
+    observeEvent(input$deg.group.by.novdj, {
+        req(vals$data)
+
+        choices <- vals$data@meta.data[[input$deg.group.by.novdj]] %>% unique() %>% gtools::mixedsort()
+
+        updateSelectizeInput(session, "deg.ident.1.novdj", choices = choices, selected = NULL, server = T)
+        updateSelectizeInput(session, "deg.ident.2.novdj", choices = choices, selected = NULL, server = T)
+    })
+
+    observeEvent(input$deg.calculate.novdj, {
+        req(vals$data, input$deg.assay.novdj)
+
+        vals$deg.results.novdj <- NULL
+
+        ident.1.novdj <- input$deg.ident.1.novdj
+
+        if (input$deg.ident.2.choice.novdj == 1) {
+            ident.2.novdj <- NULL
+        } else {
+            ident.2.novdj <- input$deg.ident.2.novdj
+        }
+
+        if (is.null(input$deg.ident.1.novdj)) {
+            showNotification("Group 1 can't be empty", type = c("error"), session = session)
+        } else if (intersect(ident.1.novdj, ident.2.novdj) %>% length() > 0) {
+            showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
+        } else {
+            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
+                vals$deg.results.novdj <- Seurat::FindMarkers(vals$data, ident.1 = ident.1.novdj, ident.2 = ident.2.novdj, group.by = input$deg.group.by.novdj, assay = input$deg.assay.novdj)
+            })
+        }
+    })
+
+    output$deg.output.novdj <- DT::renderDT({
+        req(vals$data, vals$deg.results.novdj)
+
+        vals$deg.results.novdj
+    })
+
 }
