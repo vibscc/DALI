@@ -22,7 +22,7 @@ fillPage(
         )
     ),
     fluidPage(
-        tabsetPanel(id  = "DALI",
+        tabsetPanel(id  = "VDJ",
             type = "pills",
             tabPanel("General view",
                 fluidRow(
@@ -141,56 +141,56 @@ fillPage(
                     ),
                     tabPanel("Results", DT::DTOutput("deg.output"))
                 )
-            ),
-			tabPanel("Seurat Analysis",
-			     tabsetPanel(
-			         tabPanel("Clustering & Transcriptomics",
-			                  fluidRow(
-			                      column(12,
-			                             column(width = 6,
-			                                    plotOutput("transcriptomics.featureplot.novdj") %>% withSpinner()
-			                             ),
-			                             sidebarPanel(width = 6,
-			                                          fluidRow(
-			                                              column(6, selectInput("transcriptomics.assay.novdj", label = "Assay", choices = NULL)),
-			                                              column(6, selectInput("transcriptomics.reduction.novdj", label = "Reduction", choices = NULL))
-			                                          ),
-			                                          selectizeInput("transcriptomics.feature.novdj", label = "Feature", choices = NULL)
-			                             )
-			                      )
-			                  ),
-			                  fluidRow(
-			                      column(6,
-			                             uiOutput("dim.reduction.tabs") %>% withSpinner()
-			                      )
-			                  )
-			         ),
-			         tabPanel("DEG Selector",
-		                  div(class = "d-flex justify-content-around",
-		                      div(class = "col-sm-5 well",
-		                          h4("Specify group 1"),
-		                          fluidRow(
-		                              column(4, selectizeInput("deg.group.by.novdj", label = "Metadata column", choices = NULL)),
-		                              column(8, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
-		                          ),
-		                          fluidRow(
-		                              column(4, selectInput("deg.assay.novdj", label = "Assay for results", choices = NULL)),
-		                              column(4, actionButton("deg.calculate.novdj", "Calculate DEG"))
-		                          )
-		                      ),
-		                      div(class = "col-sm-5 well",
-		                          h4("Specify group 2"),
-		                          fluidRow(
-		                              column(4, radioButtons("deg.ident.2.choice.novdj", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
-		                              column(4, selectizeInput("deg.ident.2.novdj", label = "Values", multiple = T, choices = NULL))
-		                          )
-		                      )
-		                  )
-			         ),
-			         tabPanel("DEG Results",
-			                  DT::DTOutput("deg.output.novdj"))
-			     )
-			)
+            )
+        ),
+        tabsetPanel(id = "Seurat",
+            type = "pills",
+            tabPanel("Clustering & Transcriptomics",
+                  fluidRow(
+                      column(12,
+                             column(width = 6,
+                                    plotOutput("transcriptomics.featureplot.novdj") %>% withSpinner()
+                             ),
+                             sidebarPanel(width = 6,
+                                          fluidRow(
+                                              column(6, selectInput("transcriptomics.assay.novdj", label = "Assay", choices = NULL)),
+                                              column(6, selectInput("transcriptomics.reduction.novdj", label = "Reduction", choices = NULL))
+                                          ),
+                                          selectizeInput("transcriptomics.feature.novdj", label = "Feature", choices = NULL)
+                             )
+                      )
+                  ),
+                  fluidRow(
+                      column(6,
+                             uiOutput("dim.reduction.tabs") %>% withSpinner()
+                      )
+                  )
+             ),
+             tabPanel("DEG Selector",
+                  div(class = "d-flex justify-content-around",
+                      div(class = "col-sm-5 well",
+                          h4("Specify group 1"),
+                          fluidRow(
+                              column(4, selectizeInput("deg.group.by.novdj", label = "Metadata column", choices = NULL)),
+                              column(8, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
+                          ),
+                          fluidRow(
+                              column(4, selectInput("deg.assay.novdj", label = "Assay for results", choices = NULL)),
+                              column(4, actionButton("deg.calculate.novdj", "Calculate DEG"))
+                          )
+                      ),
+                      div(class = "col-sm-5 well",
+                          h4("Specify group 2"),
+                          fluidRow(
+                              column(4, radioButtons("deg.ident.2.choice.novdj", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
+                              column(4, selectizeInput("deg.ident.2.novdj", label = "Values", multiple = T, choices = NULL))
+                          )
+                      )
+                  )
+             ),
+             tabPanel("DEG Results",
+                      DT::DTOutput("deg.output.novdj")
+            )
         )
     )
 )
