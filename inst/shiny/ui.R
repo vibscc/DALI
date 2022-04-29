@@ -14,9 +14,12 @@ fillPage(
         tags$div(class = "col-sm-3",
             tags$div(class = "form-group row col-sm-12",
                 tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
-                tags$div(class = "col-sm-9",
-                    tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90")
+                tags$div(class = "col-sm-6",
+                    tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
                 ),
+                div(class = "col-sm-3 upload-button",
+                    actionButton("more.files", label = "Upload File")
+                )
             ),
             htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
         )

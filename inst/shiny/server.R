@@ -12,7 +12,7 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL,upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL, upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE, sload = FALSE)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
@@ -229,7 +229,8 @@ function(input, output, session) {
             },
             title = "Load data",
             footer = tagList(
-                actionButton("load", "Load")
+                actionButton("load", "Load"),
+                actionButton("close","Close")
             ),
             easyClose = F,
             size = "l"
@@ -261,6 +262,15 @@ function(input, output, session) {
 
     observeEvent(input$tcr_dir, {
         upload$tcr.dir <- shinyFiles::parseDirPath(volumes, input$tcr_dir)
+    })
+
+    observeEvent(input$close, {
+        if (vals$sload == TRUE) {
+            removeModal()
+        } else {
+            showModal(dataUploadModal(error = "Load the data first!"))
+            return()
+        }
     })
 
     observeEvent(input$load, {
@@ -316,6 +326,7 @@ function(input, output, session) {
         if (vals$no_vdj() | IsValidSeuratObject(data)) {
             vals$data <- data
             removeModal()
+            vals$sload <- TRUE
             app.initialize()
             return()
         } else {
@@ -618,6 +629,12 @@ function(input, output, session) {
             hideTab("Seurat", "DEG Selector")
             hideTab("Seurat", "DEG Results")
         }
+    })
+
+    # upload new files
+
+    observeEvent(input$more.files, {
+        showModal(dataUploadModal())
     })
 
 
