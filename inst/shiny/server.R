@@ -230,7 +230,7 @@ function(input, output, session) {
             title = "Load data",
             footer = tagList(
                 actionButton("load", "Load"),
-                actionButton("close","Close")
+                actionButton("close", "Close", class = "closer")
             ),
             easyClose = F,
             size = "l"
