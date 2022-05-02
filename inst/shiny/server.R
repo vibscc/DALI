@@ -18,8 +18,14 @@ function(input, output, session) {
         bcr.dir = NULL,
         tcr.dir = NULL
     )
-    # Check the upload flags to decide the DALI interface
-    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr)
+
+    observe({if (IsValidSeuratObject(vals$data)) {
+            vals$no_vdj <- reactive(!(!is.null(isolate(vals$data@misc$VDJ)) | (vals$upload_tcr | vals$upload_bcr)))
+        } else {
+            vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr)
+        }
+    })
+
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -363,7 +369,7 @@ function(input, output, session) {
             vals$upload_tcr <- FALSE
         }
 
-        if (vals$no_vdj() | IsValidSeuratObject(data)) {
+        if (vals$no_vdj() || IsValidSeuratObject(data)) {
             vals$data <- data
             removeModal()
             vals$loaded_data <- TRUE
