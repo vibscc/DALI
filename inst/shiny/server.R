@@ -233,17 +233,21 @@ function(input, output, session) {
         modalDialog(
             div(
                 strong("Select a Seurat Rds file:"),
+                tags$br(),
                 shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
+                actionButton("seurat_rds_remove", "Remove", class = "upload-remove"),
                 textOutput("seurat.rds.path.text", inline = T),
             ),
             div(
                 h4("-- BCR DATA (optional) --"),
                 shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
+                actionButton("bcr_dir_remove", "Remove", class = "upload-remove"),
                 textOutput("bcr.dir.text", inline = T)
             ),
             div(
                 h4("-- TCR DATA (optional) --"),
                 shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
+                actionButton("tcr_dir_remove", "Remove", class = "upload-remove"),
                 textOutput("tcr.dir.text", inline = T)
             ),
             if (!is.null(error)) {
@@ -276,6 +280,18 @@ function(input, output, session) {
     } else {
         app.initialize()
     }
+
+    observeEvent(input$seurat_rds_remove, {
+        upload$seurat.rds <- NULL
+    })
+
+    observeEvent(input$tcr_dir_remove, {
+        upload$tcr.dir <- NULL
+    })
+
+    observeEvent(input$bcr_dir_remove, {
+        upload$bcr.dir <- NULL
+    })
 
     observeEvent(input$seurat_rds, {
         upload$seurat.rds <- shinyFiles::parseFilePaths(volumes, input$seurat_rds)
