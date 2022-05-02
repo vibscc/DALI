@@ -12,16 +12,8 @@ fillPage(
         class = "container-fluid header mb-2 p-0",
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-4",
-            tags$div(class = "form-group row col-sm-15",
-                tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
-                tags$div(class = "col-sm-6",
-                    tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
-                ),
-                div(class = "col-sm-2",
-                    actionButton("more.files", label = "Upload File", class = "uploader")
-                )
-            ),
-            htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
+                 uiOutput("headerUI"),
+                 htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
         )
     ),
     fluidPage(
@@ -165,7 +157,7 @@ fillPage(
                   ),
                   fluidRow(
                       column(6,
-                             uiOutput("dim.reduction.tabs") %>% withSpinner()
+                             plotOutput("dim.reduction") %>% withSpinner()
                       )
                   )
              ),

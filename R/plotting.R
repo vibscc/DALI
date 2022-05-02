@@ -202,13 +202,7 @@ HeatmapChainRegion <- function(
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
 
-  if (is.null(color) | color == "coolwarm") {
-      c.sch <- colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))
-  } else if (color == "viridis") {
-      c.sch <-  colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))
-  } else {
-      stop("invalid colorscheme ", color)
-  }
+  c.sch <- ColorScale(color)
 
   if (is.null(group.by)) {
     object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -250,7 +244,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  pheatmap::pheatmap(plot.data, color = c.sch(100), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
+  pheatmap::pheatmap(plot.data, color = c.sch, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
 }
 
 #' Barplot with clonotype distribution

@@ -260,3 +260,24 @@ CreateVDJData <- function(new, orig = NULL) {
 
     return(MergeAndOverwrite(orig, new, by = "barcode"))
 }
+
+#' Return colorscales for heatmaps from name
+#'
+#' @param name Colorscheme name
+
+ColorScale <- function(name = c("coolwarm", "viridis")) {
+    if (is.null(name) || name == "coolwarm") {
+        return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(100))
+    } else if (name == "viridis") {
+        return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(100))
+    } else {
+        stop("invalid colorscheme ", name)
+    }
+
+
+}
+
+
+
+
+

@@ -29,7 +29,7 @@
 
 .metrics {
     text-align: right;
-    padding-right: 45px;
+    padding-right: 5px;
     margin-top: 2px;
     display: inline-block;
     width: 100%;
@@ -78,3 +78,16 @@ body {
 .justify-content-between {
     justify-content: space-between !important;
 }
+
+.files {
+    background-color: #5D3484;
+    color: white;
+    border: none;
+    border-radius: 16px;
+}
+
+.closer {
+    background-color: crimson;
+    color: white;
+}
+
