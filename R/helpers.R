@@ -178,7 +178,7 @@ GetSequence <- function(object, cell, assay = NULL, chain = c("VDJ", "VJ"), regi
 
     df.name <- paste0(chain, ".", DefaultChainVDJ(object))
     column.name.sequence <- paste0(chain, ".sequence")
-    data.df <- slot(object, "misc")[["VDJ"]][[assay]][[df.name]]
+    data.df <- slot(object, "misc")[["VDJ"]][[assay]][[df.name]] %>% column_to_rownames("barcode")
 
     if (!cell %in% rownames(data.df)) {
         stop("Invalid cell ", cell, call. = F)
