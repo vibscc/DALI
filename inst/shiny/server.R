@@ -12,12 +12,14 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL, upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE, loaded_data = FALSE)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
         tcr.dir = NULL
     )
+
+    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr & !IsValidSeuratObject(vals$data))
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -48,6 +50,8 @@ function(input, output, session) {
 
         assays <- names(isolate(vals$data@assays))
         assays.default <- Seurat::DefaultAssay(isolate(vals$data))
+        assays.vdj <- names(isolate(vals$data@misc$VDJ))
+        assay.selection <- DefaultAssayVDJ(isolate(vals$data))
 
         updateSelectInput(session, "group.highlight", choices = groups)
 
@@ -55,8 +59,7 @@ function(input, output, session) {
         categorical.metadata.no.clonotype <- categorical.metadata[categorical.metadata != "clonotype"]
         updateSelectInput(session, "clonotype.group.by", choices = categorical.metadata.no.clonotype, selected = metadata.default)
 
-        assays.vdj <- names(isolate(vals$data@misc$VDJ))
-        updateSelectInput(session, "active.assay", choices = assays.vdj, selected = DefaultAssayVDJ(isolate(vals$data)))
+        updateSelectInput(session, "active.assay", choices = assays.vdj, selected = assay.selection)
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
@@ -73,8 +76,35 @@ function(input, output, session) {
         updateSelectizeInput(session, "deg.group.by", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay", choices = assays, selected = assays.default)
 
+        updateSelectInput(session, "transcriptomics.assay.novdj", choices = assays, selected = assays.default)
+        updateSelectInput(session, "transcriptomics.reduction.novdj", choices = reductions, selected = selected)
+
+        updateSelectizeInput(session, "deg.group.by.novdj", choices = categorical.metadata, selected = metadata.default, server = T)
+        updateSelectInput(session, "deg.assay.novdj", choices = assays, selected = assays.default)
+
         vals$categorical.metadata <- categorical.metadata
     }
+
+    output$headerUI <- renderUI({
+        if (vals$no_vdj()) {
+            tags$div(class = "form-group row col-sm-12",
+                     tags$div(class = "col-sm-9"),
+                     div(class = "col-sm-3",
+                         actionButton("more.files", label = "File Management", class = "files")
+                     )
+                )
+        } else {
+            tags$div(class = "form-group row col-sm-12",
+              tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
+              tags$div(class = "col-sm-6",
+                       tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
+              ),
+              div(class = "col-sm-3",
+                  actionButton("more.files", label = "File Management", class = "files")
+              )
+            )
+        }
+    })
 
     # ======================================================================= #
     # Function definitions
@@ -102,21 +132,22 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
-                output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                    DimplotChainRegion(
-                        object,
-                        grid = F,
-                        reduction = r,
-                        chain = input$chain.usage.chain,
-                        region = input$chain.usage.region
-                    ) + theme(
-                        axis.line = element_blank(),
-                        axis.title = element_blank(),
-                        axis.ticks = element_blank(),
-                        axis.text = element_blank(),
-                        panel.grid.major = element_blank()
-                    ) + ggtitle("Chain usage")
-                })
+                if (!vals$no_vdj()) {
+                    output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
+                        DimplotChainRegion(
+                            object,
+                            grid = F,
+                            reduction = r,
+                            chain = input$chain.usage.chain,
+                            region = input$chain.usage.region
+                        ) + theme(
+                            axis.line = element_blank(),
+                            axis.title = element_blank(),
+                            axis.ticks = element_blank(),
+                            axis.text = element_blank(),
+                            panel.grid.major = element_blank()
+                        ) + ggtitle("Chain usage")
+                })}
             })
         }
     }
@@ -140,6 +171,7 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
+
                 output[[paste0('expansion.reduction.plot.', r, '.exp')]] <- renderPlot({
                     ExpansionPlot(
                         object,
@@ -154,7 +186,6 @@ function(input, output, session) {
                         plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
                     ) + ggtitle("Clonal expansion")
                 })
-
                 output[[paste0('graph.', r)]] <- renderPlot({
                     CloneConnGraph(
                         object = object,
@@ -198,17 +229,21 @@ function(input, output, session) {
         modalDialog(
             div(
                 strong("Select a Seurat Rds file:"),
+                tags$br(),
                 shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
+                actionButton("seurat_rds_remove", "Remove", class = "upload-remove"),
                 textOutput("seurat.rds.path.text", inline = T),
             ),
             div(
                 h4("-- BCR DATA (optional) --"),
                 shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
+                actionButton("bcr_dir_remove", "Remove", class = "upload-remove"),
                 textOutput("bcr.dir.text", inline = T)
             ),
             div(
                 h4("-- TCR DATA (optional) --"),
                 shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
+                actionButton("tcr_dir_remove", "Remove", class = "upload-remove"),
                 textOutput("tcr.dir.text", inline = T)
             ),
             if (!is.null(error)) {
@@ -219,7 +254,8 @@ function(input, output, session) {
             },
             title = "Load data",
             footer = tagList(
-                actionButton("load", "Load")
+                actionButton("load", "Load"),
+                actionButton("close", "Close", class = "closer")
             ),
             easyClose = F,
             size = "l"
@@ -241,6 +277,19 @@ function(input, output, session) {
         app.initialize()
     }
 
+    observeEvent(input$seurat_rds_remove, {
+        upload$seurat.rds <- NULL
+        vals$loaded_data <- FALSE
+    })
+
+    observeEvent(input$tcr_dir_remove, {
+        upload$tcr.dir <- NULL
+    })
+
+    observeEvent(input$bcr_dir_remove, {
+        upload$bcr.dir <- NULL
+    })
+
     observeEvent(input$seurat_rds, {
         upload$seurat.rds <- shinyFiles::parseFilePaths(volumes, input$seurat_rds)
     })
@@ -253,7 +302,17 @@ function(input, output, session) {
         upload$tcr.dir <- shinyFiles::parseDirPath(volumes, input$tcr_dir)
     })
 
+    observeEvent(input$close, {
+        if (vals$loaded_data == TRUE) {
+            removeModal()
+        } else {
+            showModal(dataUploadModal(error = "Load the data first!"))
+            return()
+        }
+    })
+
     observeEvent(input$load, {
+        vals$data <- NULL
         if (length(upload$seurat.rds) == 0 || is.null(upload$seurat.rds)) {
             showModal(dataUploadModal(error = "Missing Seurat Rds file!"))
             return()
@@ -263,9 +322,9 @@ function(input, output, session) {
             showModal(dataUploadModal(error = paste0("Could not find file '", upload$seurat.rds$datapath, "'")))
         }
 
+
         removeModal()
         showModal(loadingModal())
-
         data <- readRDS(upload$seurat.rds$datapath)
 
         if (length(upload$bcr.dir) > 0) {
@@ -276,9 +335,14 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
+                vals$upload_bcr <- FALSE
                 return()
             }
+            vals$upload_bcr <- TRUE
+        } else {
+            vals$upload_bcr <- FALSE
         }
+
 
         if (length(upload$tcr.dir) > 0) {
             data <- tryCatch({
@@ -288,13 +352,21 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
+                vals$upload_tcr <- FALSE
                 return()
             }
+            vals$upload_tcr <- TRUE
+        }
+        else {
+            vals$upload_tcr <- FALSE
         }
 
-        if (IsValidSeuratObject(data)) {
+
+
+        if (vals$no_vdj() || IsValidSeuratObject(data)) {
             vals$data <- data
             removeModal()
+            vals$loaded_data <- TRUE
             app.initialize()
             return()
         } else {
@@ -327,11 +399,16 @@ function(input, output, session) {
     # ======================================================================= #
     # Reduction plots UI tabs
     # ======================================================================= #
-
     output$dataset.metrics <- renderUI({
         req(vals$data)
 
-        cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$vdj.v_gene) | !is.na(.data$vj.v_gene) ) %>% nrow()
+
+        if (vals$no_vdj()) {
+            cells.with.VDJ <- "Not applicable"
+            .data$vdj.v_gene <- NULL
+        } else {
+            cells.with.VDJ <- vals$data@meta.data %>% filter(!is.na(.data$vdj.v_gene) | !is.na(.data$vj.v_gene) ) %>% nrow()
+        }
 
         list(
             div("# cells: ", strong(ncol(vals$data))),
@@ -349,7 +426,11 @@ function(input, output, session) {
 
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname.dimred <- paste0('reduction.plot.', reduction)
-            plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
+            if (!vals$no_vdj()) {
+                plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
+            } else {
+                plotname.dimred.vdj <- NULL
+            }
 
             tabPanel(
                 DALI:::FormatDimred(reduction),
@@ -403,13 +484,30 @@ function(input, output, session) {
         do.call(tabsetPanel, tabs)
     })
 
+
+    output$dim.reduction.tabs <- renderUI({
+        req(vals$data)
+
+        tabs <- lapply(names(vals$data@reductions), function(reduction) {
+            plotname <- paste0('dimred.', reduction)
+
+            tabPanel(
+                DALI:::FormatDimred(reduction),
+                plotOutput(plotname) %>% withSpinner()
+            )
+        })
+
+        tabs[['selected']] <- if ('umap' %in% names(vals$data@reductions)) 'UMAP' else if ('tsne' %in% names(vals$data@reductions)) 'tSNE' else NULL
+        do.call(tabsetPanel, tabs)
+    })
+
     # ======================================================================= #
     # Chain usage
     # ======================================================================= #
 
-    output$chain.usage.heatmap <- renderPlot({
-        req(vals$data, input$chain.usage.chain, input$chain.usage.region)
 
+    output$chain.usage.heatmap <- renderPlot({
+        req(vals$data,vals$data@meta.data$vdj.v_fam, input$chain.usage.chain, input$chain.usage.region)
         HeatmapChainRegion(
             vals$data,
             color = input$chain.usage.color,
@@ -418,13 +516,12 @@ function(input, output, session) {
             add.missing.families = input$chain.usage.add.missing.families,
             show.missing.values = F,
             cluster.cols = input$chain.usage.cluster.cols
-            )
+        )
     })
 
     # ======================================================================= #
     # Ridge CDR3-length
     # ======================================================================= #
-
     output$spectratypeplot <- renderPlot({
         req(vals$data, input$compare.group.by)
 
@@ -486,6 +583,7 @@ function(input, output, session) {
         top.clonotypes
     })
 
+
     # ======================================================================= #
     # Featureplot clonotype
     # ======================================================================= #
@@ -542,9 +640,45 @@ function(input, output, session) {
     # VDJ assay change
 
     observeEvent(input$active.assay, {
+        req(vals$data)
         DefaultAssayVDJ(vals$data) <- input$active.assay
         app.initialize()
     })
+
+    # Remove UI elements (when no optional files present)
+    # add them again when we upload a new file
+    observe({
+        if (vals$no_vdj()) {
+            hideTab("VDJ", "General view")
+            hideTab("VDJ", "Population comparison")
+            hideTab("VDJ", "Clonotypes")
+            hideTab("VDJ", "Transcriptomics")
+            hideTab("VDJ", "DEG")
+            hideTab("VDJ", "Clone view")
+            showTab("Seurat", "Clustering & Transcriptomics")
+            showTab("Seurat", "DEG Selector")
+            showTab("Seurat", "DEG Results")
+
+        } else {
+            showTab("VDJ", "General view")
+            showTab("VDJ", "Population comparison")
+            showTab("VDJ", "Clonotypes")
+            showTab("VDJ", "Transcriptomics")
+            showTab("VDJ", "DEG")
+            showTab("VDJ", "Clone view")
+            hideTab("Seurat", "Clustering & Transcriptomics")
+            hideTab("Seurat", "DEG Selector")
+            hideTab("Seurat", "DEG Results")
+        }
+
+    })
+
+    # upload new files
+
+    observeEvent(input$more.files, {
+        showModal(dataUploadModal())
+    })
+
 
     # ======================================================================= #
     # Barplot to compare groups
@@ -552,7 +686,6 @@ function(input, output, session) {
 
     output$barplot.comparison <- renderPlot({
         req(vals$data, input$compare.ident.1, input$compare.ident.2)
-
         BarplotChainRegion(
             vals$data,
             group.by = input$compare.group.by,
@@ -563,6 +696,7 @@ function(input, output, session) {
             legend = F
         )
     })
+
 
     # ======================================================================= #
     # Clonotypes table
@@ -711,6 +845,7 @@ function(input, output, session) {
         }
     })
 
+
     # ======================================================================= #
     # Transcriptomics
     # ======================================================================= #
@@ -791,4 +926,93 @@ function(input, output, session) {
 
         vals$deg.results
     })
+
+    # ####################################################################### #
+    # Seurat Analysis
+    # ####################################################################### #
+
+    # Transcriptomics subtab
+
+    output$dim.reduction <- renderPlot({
+        req(vals$data, input$transcriptomics.reduction.novdj)
+        Seurat::DimPlot(
+            vals$data,
+            group.by = "default.clustering",
+            reduction = input$transcriptomics.reduction.novdj,
+            cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering)
+        ) + theme(
+            axis.line = element_blank(),
+            axis.title = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_blank()
+        ) + ggtitle("Clustering")
+    })
+
+
+    observeEvent(input$transcriptomics.assay.novdj, {
+        req(vals$data, input$transcriptomics.assay.novdj)
+
+        Seurat::DefaultAssay(vals$data) <- input$transcriptomics.assay.novdj
+
+        features <- rownames(vals$data) %>% sort()
+        updateSelectizeInput(session, "transcriptomics.feature.novdj", choices = features, selected = features[1], server = T)
+    })
+
+    output$transcriptomics.featureplot.novdj <- renderPlot({
+        req(vals$data, input$transcriptomics.feature.novdj, input$transcriptomics.reduction.novdj, input$transcriptomics.assay.novdj)
+
+        Seurat::FeaturePlot(vals$data, input$transcriptomics.feature.novdj, reduction = input$transcriptomics.reduction.novdj) + theme(
+            legend.position = "none",
+            axis.line = element_blank(),
+            axis.ticks = element_blank(),
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+        ) + ggtitle(paste0("Featureplot (", input$transcriptomics.feature.novdj ,")"))
+    })
+
+    # DEG analyses subtab
+
+    observeEvent(input$deg.group.by.novdj, {
+        req(vals$data)
+
+        choices <- vals$data@meta.data[[input$deg.group.by.novdj]] %>% unique() %>% gtools::mixedsort()
+
+        updateSelectizeInput(session, "deg.ident.1.novdj", choices = choices, selected = NULL, server = T)
+        updateSelectizeInput(session, "deg.ident.2.novdj", choices = choices, selected = NULL, server = T)
+    })
+
+    observeEvent(input$deg.calculate.novdj, {
+        req(vals$data, input$deg.assay.novdj)
+
+        vals$deg.results.novdj <- NULL
+
+        ident.1.novdj <- input$deg.ident.1.novdj
+
+        if (input$deg.ident.2.choice.novdj == 1) {
+            ident.2.novdj <- NULL
+        } else {
+            ident.2.novdj <- input$deg.ident.2.novdj
+        }
+
+        if (is.null(input$deg.ident.1.novdj)) {
+            showNotification("Group 1 can't be empty", type = c("error"), session = session)
+        } else if (intersect(ident.1.novdj, ident.2.novdj) %>% length() > 0) {
+            showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
+        } else {
+            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
+                vals$deg.results.novdj <- Seurat::FindMarkers(vals$data, ident.1 = ident.1.novdj, ident.2 = ident.2.novdj, group.by = input$deg.group.by.novdj, assay = input$deg.assay.novdj)
+            })
+        }
+    })
+
+    output$deg.output.novdj <- DT::renderDT({
+        req(vals$data, vals$deg.results.novdj)
+
+        vals$deg.results.novdj
+    })
+
+
+
+
+
 }

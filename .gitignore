@@ -2,4 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+.RDataTmp
 inst/shiny/www/css
