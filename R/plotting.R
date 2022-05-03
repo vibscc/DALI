@@ -177,6 +177,7 @@ BarplotChainRegion <- function(
 #' @param ... parameters to pass to pheatmap::pheatmap()
 #'
 #' @importFrom dplyr case_when count filter group_by mutate select %>%
+#' @importFrom grDevices colorRampPalette
 #' @importFrom rlang .data
 #' @importFrom stats na.omit
 #' @importFrom tibble column_to_rownames
