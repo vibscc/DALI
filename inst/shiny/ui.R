@@ -12,8 +12,8 @@ fillPage(
         class = "container-fluid header mb-2 p-0",
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-4",
-                 uiOutput("headerUI"),
-                 htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
+             uiOutput("headerUI"),
+             htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
         )
     ),
     fluidPage(

@@ -264,20 +264,14 @@ CreateVDJData <- function(new, orig = NULL) {
 #' Return colorscales for heatmaps from name
 #'
 #' @param name Colorscheme name
+#' @param n Colors in spectrum. Default = 100
 
-ColorScale <- function(name = c("coolwarm", "viridis")) {
+ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
     if (is.null(name) || name == "coolwarm") {
-        return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(100))
+        return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(n))
     } else if (name == "viridis") {
-        return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(100))
+        return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(n))
     } else {
         stop("invalid colorscheme ", name)
     }
-
-
 }
-
-
-
-
-
