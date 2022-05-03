@@ -19,13 +19,7 @@ function(input, output, session) {
         tcr.dir = NULL
     )
 
-    observe({if (IsValidSeuratObject(vals$data)) {
-            vals$no_vdj <- reactive(!(!is.null(isolate(vals$data@misc$VDJ)) | (vals$upload_tcr | vals$upload_bcr)))
-        } else {
-            vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr)
-        }
-    })
-
+    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr & !IsValidSeuratObject(vals$data))
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -289,6 +283,7 @@ function(input, output, session) {
 
     observeEvent(input$seurat_rds_remove, {
         upload$seurat.rds <- NULL
+        vals$loaded_data <- FALSE
     })
 
     observeEvent(input$tcr_dir_remove, {
@@ -321,6 +316,7 @@ function(input, output, session) {
     })
 
     observeEvent(input$load, {
+        vals$data <- NULL
         if (length(upload$seurat.rds) == 0 || is.null(upload$seurat.rds)) {
             showModal(dataUploadModal(error = "Missing Seurat Rds file!"))
             return()
@@ -330,9 +326,9 @@ function(input, output, session) {
             showModal(dataUploadModal(error = paste0("Could not find file '", upload$seurat.rds$datapath, "'")))
         }
 
+
         removeModal()
         showModal(loadingModal())
-
         data <- readRDS(upload$seurat.rds$datapath)
 
         if (length(upload$bcr.dir) > 0) {
@@ -368,6 +364,8 @@ function(input, output, session) {
         else {
             vals$upload_tcr <- FALSE
         }
+
+
 
         if (vals$no_vdj() || IsValidSeuratObject(data)) {
             vals$data <- data
