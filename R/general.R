@@ -302,8 +302,8 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 
     assay <- DefaultAssayVDJ(object)
 
-    object <- Seurat::AddMetaData(object, slot(object, "misc")[["VDJ"]][[assay]][[paste0("vdj.", value)]])
-    object <- Seurat::AddMetaData(object, slot(object, "misc")[["VDJ"]][[assay]][[paste0("vj.", value)]])
+    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vj.", value)))
+    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vdj.", value)))
 
     slot(object, "misc")[["default.chain.VDJ"]] <- value
 
