@@ -1,18 +1,20 @@
 #' Explore VDJ data in an interactive way
 #'
 #' @param object Seurat object
+#' @param vdj Boolean to specify if object contains VDJ data. Default = True
 #'
 #' @export
 
-Interactive_VDJ <- function(object = NULL) {
+Interactive_VDJ <- function(object = NULL, vdj = T) {
     app.directory <- system.file("shiny", package = "DALI")
+
     if (app.directory == "") {
         stop("Could not shiny application directory. Try re-installing `DALI`.", call. = FALSE)
     }
 
     # Load object in global environment so shiny app can use it
     if (!is.null(object)) {
-        if (IsValidSeuratObject(object)) {
+        if (IsValidSeuratObject(object) | vdj) {
             .GlobalEnv$.data.object.VDJ <- object
         } else {
             stop("The given object is not valid. Please make sure it contains VDJ information, loaded by DALI::Read10X_vdj()", call. = F)
@@ -20,8 +22,12 @@ Interactive_VDJ <- function(object = NULL) {
     } else {
         .GlobalEnv$.data.object.VDJ <- NULL
     }
-    on.exit(rm('.data.object.VDJ', envir = .GlobalEnv))
+    .GlobalEnv$.no.vdj <- vdj
+    .GlobalEnv$.loaded_data = TRUE
 
+    on.exit(rm('.data.object.VDJ', envir = .GlobalEnv))
+    on.exit(rm('.no.vdj', envir = .GlobalEnv))
+    on.exit(rm('.loaded_data', envir = .GlobalEnv))
     shiny::runApp(app.directory, display.mode = "normal")
 }
 

@@ -12,14 +12,24 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL, upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE, loaded_data = FALSE)
+    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL, upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE, loaded_vdj = .GlobalEnv$.no.vdj, loaded_data = .GlobalEnv$.loaded_data)
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
         tcr.dir = NULL
     )
 
-    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr & !IsValidSeuratObject(vals$data))
+    observe({
+        if (is.null(vals$loaded_vdj)) {
+            vals$loaded_vdj <- T
+            vals$loaded_data <- F
+        } else {
+            vals$loaded_vdj <- vals$loaded_vdj
+            vals$loaded_data <- vals$loaded_data
+        }
+    })
+
+    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr & !IsValidSeuratObject(vals$data) | !vals$loaded_vdj)
 
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
@@ -131,23 +141,26 @@ function(input, output, session) {
                         axis.text = element_blank()
                     ) + ggtitle("Clustering")
                 })
+                observe({
+                    if (!vals$no_vdj()) {
+                        output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
+                            DimplotChainRegion(
+                                object,
+                                grid = F,
+                                reduction = r,
+                                chain = input$chain.usage.chain,
+                                region = input$chain.usage.region
+                            ) + theme(
+                                axis.line = element_blank(),
+                                axis.title = element_blank(),
+                                axis.ticks = element_blank(),
+                                axis.text = element_blank(),
+                                panel.grid.major = element_blank()
+                            ) + ggtitle("Chain usage")
+                        })
+                    }
+                })
 
-                if (!vals$no_vdj()) {
-                    output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                        DimplotChainRegion(
-                            object,
-                            grid = F,
-                            reduction = r,
-                            chain = input$chain.usage.chain,
-                            region = input$chain.usage.region
-                        ) + theme(
-                            axis.line = element_blank(),
-                            axis.title = element_blank(),
-                            axis.ticks = element_blank(),
-                            axis.text = element_blank(),
-                            panel.grid.major = element_blank()
-                        ) + ggtitle("Chain usage")
-                })}
             })
         }
     }
@@ -271,7 +284,7 @@ function(input, output, session) {
         )
     }
 
-    if (is.null(isolate(vals$data)) || !IsValidSeuratObject(isolate(vals$data))) {
+    if (is.null(isolate(vals$data))) {
         showModal(dataUploadModal())
     } else {
         app.initialize()
