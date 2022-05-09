@@ -1,6 +1,7 @@
 #' Interactive shiny application to explore a Seurat object (both with and without VDJ data)
 #'
 #' @param object Seurat object
+#' @param vdj Boolean to specify if object contains VDJ data. Default = True
 #'
 #' @export
 
