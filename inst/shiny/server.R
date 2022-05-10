@@ -12,17 +12,22 @@ function(input, output, session) {
     shinyDirChoose(input, "tcr_dir", session = session, roots = volumes)
     shinyFileChoose(input, "reference_fasta", session = session, roots = volumes)
 
-    vals <- reactiveValues(data = .GlobalEnv$.data.object.VDJ, lineage.tab = NULL, upload_bcr = TRUE, upload_tcr = TRUE, no_vdj = FALSE, loaded_data = FALSE)
+    vals <- reactiveValues(
+        data = .GlobalEnv$.data.object.VDJ,
+        lineage.tab = NULL,
+        has_vdj = FALSE,
+        loaded_data = !is.null(.GlobalEnv$.data.object.VDJ)
+    )
+
     upload <- reactiveValues(
         seurat.rds = NULL,
         bcr.dir = NULL,
         tcr.dir = NULL
     )
 
-    vals$no_vdj <- reactive(!vals$upload_tcr & !vals$upload_bcr & !IsValidSeuratObject(vals$data))
-
     app.initialize <- function() {
         vals$data <- Seurat::AddMetaData(isolate(vals$data), metadata = Seurat::Idents(isolate(vals$data)), col.name = "default.clustering")
+        vals$has_vdj <- IsValidSeuratObject(isolate(vals$data))
 
         renderReductionPlotsChainUsage(isolate(vals$data))
         renderReductionPlotsExpansion(isolate(vals$data))
@@ -86,7 +91,7 @@ function(input, output, session) {
     }
 
     output$headerUI <- renderUI({
-        if (vals$no_vdj()) {
+        if (!vals$has_vdj) {
             tags$div(class = "form-group row col-sm-12",
                      tags$div(class = "col-sm-9"),
                      div(class = "col-sm-3",
@@ -132,8 +137,12 @@ function(input, output, session) {
                     ) + ggtitle("Clustering")
                 })
 
-                if (!vals$no_vdj()) {
+
                     output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
+                        if (!vals$has_vdj) {
+                            return()
+                        }
+
                         DimplotChainRegion(
                             object,
                             grid = F,
@@ -147,7 +156,7 @@ function(input, output, session) {
                             axis.text = element_blank(),
                             panel.grid.major = element_blank()
                         ) + ggtitle("Chain usage")
-                })}
+                    })
             })
         }
     }
@@ -271,7 +280,7 @@ function(input, output, session) {
         )
     }
 
-    if (is.null(isolate(vals$data)) || !IsValidSeuratObject(isolate(vals$data))) {
+    if (is.null(isolate(vals$data))) {
         showModal(dataUploadModal())
     } else {
         app.initialize()
@@ -312,20 +321,25 @@ function(input, output, session) {
     })
 
     observeEvent(input$load, {
-        vals$data <- NULL
-        if (length(upload$seurat.rds) == 0 || is.null(upload$seurat.rds)) {
+        has_new_seurat_rds <- length(upload$seurat.rds) > 0 && !is.null(upload$seurat.rds)
+
+        if (is.null(vals$data) && !has_new_seurat_rds) {
             showModal(dataUploadModal(error = "Missing Seurat Rds file!"))
             return()
         }
 
-        if (!file.exists(upload$seurat.rds$datapath)) {
+        if (has_new_seurat_rds && !file.exists(upload$seurat.rds$datapath)) {
             showModal(dataUploadModal(error = paste0("Could not find file '", upload$seurat.rds$datapath, "'")))
         }
 
 
         removeModal()
         showModal(loadingModal())
-        data <- readRDS(upload$seurat.rds$datapath)
+        if (has_new_seurat_rds) {
+            data <- readRDS(upload$seurat.rds$datapath)
+        } else {
+            data <- vals$data
+        }
 
         if (length(upload$bcr.dir) > 0) {
             data <- tryCatch({
@@ -335,14 +349,9 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
-                vals$upload_bcr <- FALSE
                 return()
             }
-            vals$upload_bcr <- TRUE
-        } else {
-            vals$upload_bcr <- FALSE
         }
-
 
         if (length(upload$tcr.dir) > 0) {
             data <- tryCatch({
@@ -352,30 +361,15 @@ function(input, output, session) {
                 return(NULL)
             })
             if (!isS4(data) & is.null(data)) {
-                vals$upload_tcr <- FALSE
                 return()
             }
-            vals$upload_tcr <- TRUE
-        }
-        else {
-            vals$upload_tcr <- FALSE
         }
 
-
-
-        if (vals$no_vdj() || IsValidSeuratObject(data)) {
-            vals$data <- data
-            removeModal()
-            vals$loaded_data <- TRUE
-            app.initialize()
-            return()
-        } else {
-            showModal(
-                dataUploadModal(
-                    error = "Selected Seurat-object does not contain VDJ (correct) information. Please select a cellranger output folder for the given Seurat object AND make sure the VDJ type is set correctly."
-                )
-            )
-        }
+        vals$data <- data
+        removeModal()
+        vals$loaded_data <- TRUE
+        app.initialize()
+        return()
     })
 
     output$seurat.rds.path.text <- renderText({
@@ -403,7 +397,7 @@ function(input, output, session) {
         req(vals$data)
 
 
-        if (vals$no_vdj()) {
+        if (!vals$has_vdj) {
             cells.with.VDJ <- "Not applicable"
             .data$vdj.v_gene <- NULL
         } else {
@@ -426,7 +420,7 @@ function(input, output, session) {
 
         tabs <- lapply(names(vals$data@reductions), function(reduction) {
             plotname.dimred <- paste0('reduction.plot.', reduction)
-            if (!vals$no_vdj()) {
+            if (vals$has_vdj) {
                 plotname.dimred.vdj <- paste0('reduction.plot.vdj.', reduction)
             } else {
                 plotname.dimred.vdj <- NULL
@@ -648,18 +642,7 @@ function(input, output, session) {
     # Remove UI elements (when no optional files present)
     # add them again when we upload a new file
     observe({
-        if (vals$no_vdj()) {
-            hideTab("VDJ", "General view")
-            hideTab("VDJ", "Population comparison")
-            hideTab("VDJ", "Clonotypes")
-            hideTab("VDJ", "Transcriptomics")
-            hideTab("VDJ", "DEG")
-            hideTab("VDJ", "Clone view")
-            showTab("Seurat", "Clustering & Transcriptomics")
-            showTab("Seurat", "DEG Selector")
-            showTab("Seurat", "DEG Results")
-
-        } else {
+        if (vals$has_vdj) {
             showTab("VDJ", "General view")
             showTab("VDJ", "Population comparison")
             showTab("VDJ", "Clonotypes")
@@ -669,8 +652,17 @@ function(input, output, session) {
             hideTab("Seurat", "Clustering & Transcriptomics")
             hideTab("Seurat", "DEG Selector")
             hideTab("Seurat", "DEG Results")
+        } else {
+            hideTab("VDJ", "General view")
+            hideTab("VDJ", "Population comparison")
+            hideTab("VDJ", "Clonotypes")
+            hideTab("VDJ", "Transcriptomics")
+            hideTab("VDJ", "DEG")
+            hideTab("VDJ", "Clone view")
+            showTab("Seurat", "Clustering & Transcriptomics")
+            showTab("Seurat", "DEG Selector")
+            showTab("Seurat", "DEG Results")
         }
-
     })
 
     # upload new files
