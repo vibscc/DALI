@@ -4,12 +4,10 @@
 \alias{Interactive_VDJ}
 \title{Explore VDJ data in an interactive way}
 \usage{
-Interactive_VDJ(object = NULL, vdj = T)
+Interactive_VDJ(object = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
-
-\item{vdj}{Boolean to specify if object contains VDJ data. Default = True}
 }
 \description{
 Explore VDJ data in an interactive way
