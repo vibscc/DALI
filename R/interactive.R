@@ -1,10 +1,10 @@
-#' Explore VDJ data in an interactive way
+#' Interactive shiny application to explore a Seurat object (both with and without VDJ data)
 #'
 #' @param object Seurat object
 #'
 #' @export
 
-Interactive_VDJ <- function(object = NULL) {
+Interactive_DALI <- function(object = NULL) {
     app.directory <- system.file("shiny", package = "DALI")
 
     if (app.directory == "") {

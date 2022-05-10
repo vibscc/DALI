@@ -23,13 +23,12 @@ library("DALI")
 ## Without a seurat object
 ## The application will allow you to upload all necessary data via the web browser
 
-Interactive_VDJ()
+Interactive_DALI()
 
 ## With a seurat object (1)
 
 seuratObj <- readRDS("<path/to/seurat_object.Rds>")
-
-Interactive_VDJ(seuratObj)
+Interactive_DALI(seuratObj)
 ```
 (1) If this seurat object does not have the VDJ data loaded yet using `Read10X_vdj()`, `Read10X_AIRR()` or `Read_AIRR()`, the application will prompt you to load in the data. Select the 10X cellranger output for either the BCR and/or TCR data linked to the same gene-expression data present in your seurat object. The app will then load in the data and start up.
 
