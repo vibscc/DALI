@@ -1,3 +1,24 @@
+#' Interactive shiny application to explore a Seurat object (both with and without VDJ data)
+#'
+#' @param object Seurat object
+#'
+#' @export
+
+Interactive_DALI <- function(object = NULL) {
+    app.directory <- system.file("shiny", package = "DALI")
+
+    if (app.directory == "") {
+        stop("Could not shiny application directory. Try re-installing `DALI`.", call. = FALSE)
+    }
+
+    # Load object in global environment so shiny app can use it
+    .GlobalEnv$.data.object.VDJ <- object
+
+    on.exit(rm('.data.object.VDJ', envir = .GlobalEnv))
+
+    shiny::runApp(app.directory, display.mode = "normal")
+}
+
 #' Nicer formatting for the most common dimensionality reductions
 #'
 #' @param reduction Dimensionality reduction
