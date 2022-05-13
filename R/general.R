@@ -114,7 +114,7 @@ Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T
 
     for (required.field in required) {
         if (!required.field %in% columns) {
-            stop("Missing required field ", required, call. = F)
+            stop("Missing required field ", required.field, call. = F)
         }
     }
 
@@ -462,13 +462,13 @@ GetInfoForMetadata <- function(object, assay, chain) {
     return(data)
 }
 
-#' Merge 2 seuratobjects with their included VDJ data
+#' Merge seuratobjects with including their VDJ data
 #'
-#' @param ... seurat object(s)
+#' @param ... seurat objects separated by comma
 #'
-#' @importFrom Seurat merge
+#' @export
 
-mergeVDJ <- function(...) {
+MergeVDJ <- function(...) {
     objects <- list(...)
     merged_seurat <- merge(...)
 
@@ -489,12 +489,12 @@ mergeVDJ <- function(...) {
         # If BCR data is present: convert it
         if (!is.null(object@misc$VDJ$BCR)) {
             assay_bcr <- T
-            BCR <- uniqify_VDJ(object, BCR, "BCR", obj_idx)
+            BCR <- Uniqify_VDJ(object, BCR, "BCR", obj_idx)
         }
         # If TCR data is present: convert it
         if (!is.null(object@misc$VDJ$TCR)) {
             assay_tcr <- T
-            TCR <- uniqify_VDJ(object, TCR, "TCR", obj_idx)
+            TCR <- Uniqify_VDJ(object, TCR, "TCR", obj_idx)
         }
         # Move to next object
         obj_idx <- obj_idx + 1

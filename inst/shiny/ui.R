@@ -51,7 +51,7 @@ fillPage(
                                     column(3, plotOutput("cdr3.frequency")),
                                     column(5, tableOutput("top.clonotypes"))
                                 )),
-                        column(4,
+                        column(3,
                             sidebarPanel(width = 12,
                             selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
                             selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),

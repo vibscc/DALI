@@ -73,14 +73,11 @@ ggplotColors <- function(n, h = c(15, 375)) {
 #' Get a colorpalette for given categorical data
 #'
 #' @param data Categorical data
-#' @param colscheme Colorscheme to use
 #'
 #' @importFrom dplyr %>%
 #' @importFrom Polychrome sky.colors
-#' @importFrom Polychrome kelly.colors
-#' @importFrom Polychrome alphabet.colors
 
-GetCategoricalColorPalette <- function(data,colscheme = c("Default","Colorblind","DALI")) {
+GetCategoricalColorPalette <- function(data) {
     n.categories <- unique(data) %>% length()
 
     if (n.categories <= 24) {
@@ -286,7 +283,7 @@ ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
 #' @param assay specify assay
 #' @param index object name/id
 
-uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
+Uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
     counter <- 1
     new_data <- list()
     if (assay == "BCR") {
