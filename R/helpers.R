@@ -73,11 +73,14 @@ ggplotColors <- function(n, h = c(15, 375)) {
 #' Get a colorpalette for given categorical data
 #'
 #' @param data Categorical data
+#' @param colscheme Colorscheme to use
 #'
 #' @importFrom dplyr %>%
 #' @importFrom Polychrome sky.colors
+#' @importFrom Polychrome kelly.colors
+#' @importFrom Polychrome alphabet.colors
 
-GetCategoricalColorPalette <- function(data) {
+GetCategoricalColorPalette <- function(data,colscheme = c("Default","Colorblind","DALI")) {
     n.categories <- unique(data) %>% length()
 
     if (n.categories <= 24) {
@@ -274,4 +277,45 @@ ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
     } else {
         stop("invalid colorscheme ", name)
     }
+}
+
+#' Give cellbarcodes and clonotypes from VDJ data an identifier
+#'
+#' @param object Seurat object
+#' @param data list of vdj datadrames
+#' @param assay specify assay
+#' @param index object name/id
+
+uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
+    counter <- 1
+    new_data <- list()
+    if (assay == "BCR") {
+        assay_data <- object@misc$VDJ$BCR
+    } else {
+        assay_data <- object@misc$VDJ$TCR
+    }
+    for (vdj in assay_data) {
+        if (length(vdj$barcode) > 0) {
+
+            vdj$clonotype <- paste0(vdj$clonotype, "_", as.character(index))
+            vdj$barcode <- paste0(vdj$barcode, "_", as.character(index))
+        }
+        if (counter == 1) {
+            converted_data <- list( "vdjp" = vdj)
+        } else if  (counter == 2) {
+            converted_data <- list( "vdjs" = vdj)
+        } else if (counter == 3) {
+            converted_data <- list( "vjp" = vdj)
+        } else {
+            converted_data <- list( "vjs" = vdj)
+        }
+        new_data <- append(new_data, converted_data)
+        counter <- counter + 1
+    }
+    data$vdj.primary <- rbind(new_data$vdjp, data$vdj.primary)
+    data$vdj.secondary <- rbind(new_data$vdjs, data$vdj.secondary)
+    data$vj.primary <- rbind(new_data$vjp, data$vj.primary)
+    data$vj.secondary <- rbind(new_data$vjs, data$vj.secondary)
+
+    return(data)
 }
