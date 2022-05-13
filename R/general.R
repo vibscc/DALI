@@ -461,3 +461,64 @@ GetInfoForMetadata <- function(object, assay, chain) {
 
     return(data)
 }
+
+#' Merge 2 seuratobjects with their included VDJ data
+#'
+#' @param ... seurat object(s)
+#'
+#' @importFrom Seurat merge
+
+mergeVDJ <- function(...) {
+    objects <- list(...)
+    merged_seurat <- merge(...)
+
+    # Use an index to append to the barcodes & clonotypes
+    obj_idx <- 1
+    assay_bcr <- F
+    assay_tcr <- F
+
+    # Empty list to contain converted vdj data
+    init <- list("vdj.primary" = data.frame(),
+                 "vdj.secondary" = data.frame(),
+                 "vj.primary" = data.frame(),
+                 "vj.secondary" = data.frame())
+    BCR <- init
+    TCR <- init
+
+    for (object in objects) {
+        # If BCR data is present: convert it
+        if (!is.null(object@misc$VDJ$BCR)) {
+            assay_bcr <- T
+            BCR <- uniqify_VDJ(object, BCR, "BCR", obj_idx)
+        }
+        # If TCR data is present: convert it
+        if (!is.null(object@misc$VDJ$TCR)) {
+            assay_tcr <- T
+            TCR <- uniqify_VDJ(object, TCR, "TCR", obj_idx)
+        }
+        # Move to next object
+        obj_idx <- obj_idx + 1
+    }
+    # Add TCR & BCR data to the misc slot of the merged seurat object
+    # Set default chain and assay
+    # Update meta-data
+    if (assay_bcr & assay_tcr) {
+        Misc(object = merged_seurat, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
+        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "TCR"
+        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(merged_seurat) <- "TCR"
+    } else if (assay_tcr) {
+        Misc(object = merged_seurat, slot = "VDJ") <- list("TCR" = TCR)
+        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "TCR"
+        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(merged_seurat) <- "TCR"
+    } else if (assay_bcr) {
+        Misc(object = merged_seurat, slot = "VDJ") <- list("BCR" = BCR)
+        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "BCR"
+        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(merged_seurat) <- "BCR"
+    } else {
+        stop("No TCR or BCR assay present, use merge() function from the Seurat Package")
+    }
+    return(merged_seurat)
+}
