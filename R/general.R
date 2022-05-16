@@ -53,6 +53,89 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     return(ReadData(object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
+#' Load 10x VDJ data from multiple directories into a Seurat object containing multiple samples
+#'
+#' @param object Seurat object
+#' @param data.dir directory containing Cellranger output directories for every sample
+#' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
+#' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
+#' @param use.filtered Load filtered contig annotation. Default = TRUE
+#' @param quiet Ignore warnings. Default = FALSE
+#'
+#' @importFrom dplyr %>% filter left_join
+#' @importFrom rlang .data
+#' @importFrom utils read.csv
+#'
+#' @export
+
+Read10X_MultiVDJ <- function(object, data.dir, assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+    # Define samples using suffix & split barcodes into seperate elements in a list
+    samples <- as.factor(substr(colnames(object),19,nchar(colnames(object)[1])))
+    cellbarcodes <- substr(colnames(object),1,18)
+    cellbarcodes <- split(cellbarcodes,samples)
+
+    # Obtain list of VDJ dirs
+    directories <- list.dirs(data.dir, recursive = F)
+
+    data <- list()
+    fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
+    fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
+
+    # Create a matrix with the overlap rates
+    overlap_matrix <- matrix(data = NA, nrow = length(cellbarcodes), ncol = length(directories))
+    nsample <- 1
+    for (sample in cellbarcodes) {
+        ndata <- 1
+        for  (vdjdir in directories) {
+            # Convert vdjfiles to df
+            location.annotation.contig <- file.path(vdjdir, paste0(if (T) "filtered" else "all", "_contig_annotations.csv"))
+            location.airr.rearrangement <- file.path(vdjdir, "airr_rearrangement.tsv")
+
+            if (!file.exists(location.annotation.contig)) {
+                stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
+            }
+
+            vdj_df <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
+                filter(grepl("true", .data$productive, ignore.case = T))
+
+            if (file.exists(location.airr.rearrangement)) {
+                airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
+                colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
+                sequence.columns <- grep("sequence", colnames(airr.data), value = T)
+                vdj_df <- left_join(vdj_df, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
+                fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+            } else {
+                if (!quiet) {
+                    warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
+                }
+            }
+
+            # Check overlap of barcodes and store in overlapmatrix
+            overlap_matrix[nsample,ndata] <- length(intersect(sample, vdj_df$barcode)) / nrow(vdj_df)
+            vdj_df$ID <- ndata
+            data <- rbind(data, vdj_df)
+            ndata <- ndata + 1
+        }
+        nsample <- nsample + 1
+    }
+
+    for (field in fields.extra) {
+        if (field %in% colnames(data)) {
+            fields <- c(fields, field)
+        }
+    }
+    columns <- gsub("raw_clonotype_id", "clonotype", fields)
+
+    # Now to check which vdj data belongs to which sample & Change the cellbarcode accordingly
+    for (i in 1:nrow(overlap_matrix)) {
+        sample_id <- which.max(overlap_matrix[i,])
+        data[data$ID == sample_id,]$barcode <- paste0(data[data$ID == sample_id,]$barcode,names(cellbarcodes[i]))
+    }
+
+    return(ReadData(object = object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
+}
+
 #' Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv
 #'
 #' @param object Seurat object
