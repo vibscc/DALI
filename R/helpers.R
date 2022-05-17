@@ -316,3 +316,41 @@ Uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
 
     return(data)
 }
+
+#' Create a subset of VDJ data using given cellbarcodes
+#'
+#' @param object Seurat object to be split
+#' @param barcodes barcodes of data to be retained
+#' @param assay BCR or TCR data
+
+subsetVDJ <- function(object, barcodes, assay = c("TCR","BCR")) {
+    if (is.null(object@misc$VDJ[assay])) {
+        return(NULL)
+    }
+    data <- object@misc$VDJ[[assay]]
+    VDJ <- list("vdj.primary" = data.frame(),
+                "vdj.secondary" = data.frame(),
+                "vj.primary" = data.frame(),
+                "vj.secondary" = data.frame())
+    index <- 1
+    for (df in data) {
+        transfers <- intersect(df$barcode,barcodes)
+
+        if (index == 1) {
+            VDJ$vdj.primary <- df[df$barcode %in% transfers,]
+            rownames(VDJ$vdj.primary) <- NULL
+        } else if (index == 2) {
+            VDJ$vdj.secondary <-  df[df$barcode %in% transfers,]
+            rownames(VDJ$vdj.secondary) <- NULL
+        } else if (index == 3) {
+            VDJ$vj.primary <-  df[df$barcode %in% transfers,]
+            rownames(VDJ$vj.primary) <- NULL
+        } else {
+            VDJ$vj.secondary <-  df[df$barcode %in% transfers,]
+            rownames(VDJ$vj.secondary) <- NULL
+        }
+        index <- index + 1
+    }
+    return(VDJ)
+}
+
