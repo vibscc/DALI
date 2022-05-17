@@ -354,3 +354,60 @@ subsetVDJ <- function(object, barcodes, assay = c("TCR","BCR")) {
     return(VDJ)
 }
 
+#' Returns colorvector based on chosen theme and amount of categories
+#'
+#' @param theme coloscheme to use
+#' @param n number of categories
+
+GetDimRedColors <- function(theme = "DALI", n) {
+    if (theme == "DALI") {
+        # Colscheme 1: DALI I
+        # The colorscheme being used # Polychrome sky.colors
+        if (n <= 24) {
+            return(sky.colors(max(c(3, n))) %>% rev() %>% unname())
+        }
+        return(ggplotColors(n = n))
+
+    } else if (theme == "DALII") {
+        # Colscheme 2: DALI II
+        # Colorscheme using DALI colors and some others
+        if (n <= 15) {
+            DALII <- c("#5D3484","#3CB0B5","#F06B34",
+                       "#222183","#FFCE54","#FF007A",
+                       "#C83831","#48CFAD","#967ADC",
+                       "#0072B2","#D770AD","#FF7C00",
+                       "#B85100","#5EC418","#4A89D6")
+            DALII[1:max(3,n)]
+        }
+        n.5 <- n/2
+        cols <- ggplotColors(n.5,c(290,180))
+        cols <- c(cols, ggplotColors(n.5,c(170,45))) %>% sample()
+        return(cols)
+
+    } else if (theme == "Pastel") {
+        # Colscheme 3: Pastel
+        # Coloscheme using a paset color palette
+        if (n <= 24) {
+            return(sky.colors(max(c(3, n))) %>% unname())
+        }
+        return(ggplotColors(n = n))
+
+    } else if (theme == "Colorblind") {
+        # Colscheme 4: Colorblind
+        # literary reseach and then we'll see
+        if (n <= 24) {
+            return(sky.colors(max(c(3, n))) %>% unname())
+        }
+        return(ggplotColors(n = n))
+
+    } else if (theme == "Spectrum") {
+        # Colscheme 5: Spectrum/Rainbow
+        # return a spectrum betwene 2 colors using what we did for viridis
+        # For spectrum
+        if (n <= 24) {
+            return(sky.colors(max(c(3, n))) %>% unname())
+        }
+        return(ggplotColors(n = n))
+    }
+    return(col.vector)
+}
