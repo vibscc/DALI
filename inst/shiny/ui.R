@@ -134,7 +134,11 @@ fillPage(
                             )
                         )
                     ),
-                    tabPanel("Results", DT::DTOutput("deg.output"))
+                    tabPanel("Results",
+                             DT::DTOutput("deg.output"),
+                             tags$br(),
+                             plotOutput("deg.volcano.plot")
+                    )
                 )
             )
         ),
@@ -184,7 +188,9 @@ fillPage(
                   )
              ),
              tabPanel("DEG Results",
-                      DT::DTOutput("deg.output.novdj")
+                      DT::DTOutput("deg.output.novdj"),
+                      tags$br(),
+                      plotOutput("deg.volcano.plot.novdj")
             )
         )
     )

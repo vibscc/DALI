@@ -1,6 +1,6 @@
 library(shinyFiles)
 library(dplyr)
-
+library(ggrepel)
 function(input, output, session) {
 
     # ======================================================================= #
@@ -909,6 +909,12 @@ function(input, output, session) {
         } else {
             withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
                 vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.group.by, assay = input$deg.assay)
+                # Volcano Plot function
+                output$deg.volcano.plot <- renderPlot({req(vals$data, vals$deg.results)
+                                                 VolcanoPlotDEG(vals$deg.results)})
+            })
+            withProgress(message = "FINISHED CALCULATING", detail = "Check the Results tab", min = 1, max = 1, value = 1, {
+                Sys.sleep(1.5)
             })
         }
     })
@@ -993,6 +999,12 @@ function(input, output, session) {
         } else {
             withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
                 vals$deg.results.novdj <- Seurat::FindMarkers(vals$data, ident.1 = ident.1.novdj, ident.2 = ident.2.novdj, group.by = input$deg.group.by.novdj, assay = input$deg.assay.novdj)
+                output$deg.volcano.plot.novdj <- renderPlot({req(vals$data, vals$deg.results.novdj)
+                    VolcanoPlotDEG(vals$deg.results.novdj)})
+            })
+            withProgress(message = "FINSHED CALCULATING", detail = "Check the Results tab", min = 1, max = 1, value = 1, {
+                Sys.sleep(1.5)
+
             })
         }
     })

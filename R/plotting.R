@@ -1087,3 +1087,41 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
   plot + geom_node_point()
 }
+
+#' Use Seurat's DEG Table to plot a volcano plot
+#'
+#' @param data Table with DEG data from Seurat::Findmarkers()
+#' @param c.scheme colorscheme to use
+#'
+#' @export
+
+VolcanoPlotDEG <- function(data, c.scheme = c("coolwarm", "viridis")) {
+    # For coloring: adding a colomn to indicate diff expression
+    data$expression <- "zero"
+    data$expression[data$avg_log2FC > 0.6 & data$p_val_adj < 0.05] <- "up"
+    data$expression[data$avg_log2FC < -0.6 & data$p_val_adj < 0.05] <- "down"
+
+    if (is.null(c.scheme) || c.scheme == "coolwarm") {
+        colors <- c("red", "blue", "black")
+    } else if (c.scheme == "viridis") {
+        colors <- c("")
+    } else {
+        stop("invalid colorscheme name")
+    }
+
+    ymax <- max(-log10(data$p_val_adj)) + 20
+    names(colors) <- c("up", "down", "zero")
+
+    #get names of diff expressed genes
+    data$genes <- NA
+    data$genes[data$expression != "zero"] <- rownames(data[data$expression != "zero",])
+
+    return(ggplot(data = data, aes(x = avg_log2FC, y = -log10(p_val_adj), col = expression, label = genes)) +
+               geom_point(show.legend = F) +
+               theme_minimal() +
+               ylim(-5,ymax) +
+               geom_text_repel(show.legend = F) +
+               scale_color_manual(values = colors) +
+               labs(x = expression(Log[2](FC)), y = expression(-log[10](Adj-P-value)))
+    )
+}
