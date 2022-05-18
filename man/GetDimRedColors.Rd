@@ -7,7 +7,7 @@
 GetDimRedColors(theme = "DALI", n)
 }
 \arguments{
-\item{theme}{coloscheme to use}
+\item{theme}{coloscheme to use. Default = DALI}
 
 \item{n}{number of categories}
 }

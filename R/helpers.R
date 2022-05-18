@@ -444,8 +444,10 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered = T) {
 
 #' Returns colorvector based on chosen theme and amount of categories
 #'
-#' @param theme coloscheme to use
+#' @param theme coloscheme to use. Default = DALI
 #' @param n number of categories
+#'
+#' @export
 
 GetDimRedColors <- function(theme = "DALI", n) {
     if (theme == "DALI") {
@@ -456,13 +458,12 @@ GetDimRedColors <- function(theme = "DALI", n) {
 
     } else if (theme == "DALII") {
         if (n <= 15) {
-            return(
-                c("#5D3484","#3CB0B5","#F06B34",
-                   "#222183","#FFCE54","#FF007A",
-                   "#C83831","#48CFAD","#967ADC",
-                   "#0072B2","#D770AD","#FF7C00",
-                   "#B85100","#5EC418","#4A89D6")
-            )
+            cols <- c("#5D3484","#3CB0B5","#F06B34",
+                       "#222183","#FFCE54","#FF007A",
+                       "#C83831","#48CFAD","#967ADC",
+                       "#0072B2","#D770AD","#FF7C00",
+                       "#B85100","#5EC418","#4A89D6")
+            return(cols[1:max(3,n)])
         }
         n.5 <- n/2
         cols <- ggplotColors(n.5,c(290,180))
@@ -471,13 +472,21 @@ GetDimRedColors <- function(theme = "DALI", n) {
 
     } else if (theme == "Pastel") {
         if (n <= 24) {
-            return(sky.colors(max(c(3, n))) %>% unname())
+            cols <- c("#78FFF1", "#FEB6DB", "#79CAFF",
+                      "#F6F7A3", "#DAB6FE", "#C1DEC8",
+                      "#F7D3BB", "#76D7D6",  "#D4F9E5",
+                      "#F7E368")
+            return(cols[1:max(3,n)])
         }
-        return(ggplotColors(n = n))
+        return(hcl(h = (seq(0,360, length = n)), c = 55, l = 70) %>% sample())
 
     } else if (theme == "Colorblind") {
-        if (n <= 24) {
-            return(sky.colors(max(c(3, n))) %>% unname())
+        if (n <= 12) {
+            cols <- c("#AA44AA", "#D55E00", "#44AAAA",
+                      "#24FF24", "#FFB6DB", "#0072B2",
+                      "#E69F00", "#FFFF99", "56B4E9",
+                      "#000000", "#FFF600", "#FF007A")
+            return(cols[1:max(3,n)])
         }
         return(ggplotColors(n = n))
 
@@ -485,6 +494,7 @@ GetDimRedColors <- function(theme = "DALI", n) {
         if (n <= 24) {
             return(sky.colors(max(c(3, n))) %>% unname())
         }
+
         return(ggplotColors(n = n))
     } else {
         stop("Invalid theme: ", theme)

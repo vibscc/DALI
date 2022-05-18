@@ -100,6 +100,7 @@ function(input, output, session) {
                 )
         } else {
             tags$div(class = "form-group row col-sm-12",
+
               tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
               tags$div(class = "col-sm-6",
                        tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
