@@ -51,7 +51,7 @@ fillPage(
                                     column(3, plotOutput("cdr3.frequency")),
                                     column(5, tableOutput("top.clonotypes"))
                                 )),
-                        column(3,
+                        column(4,
                             sidebarPanel(width = 12,
                             selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
                             selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),
@@ -64,7 +64,7 @@ fillPage(
             tabPanel("Population comparison",
                 fluidRow(
                     column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
-                    column(8,
+                    column(8
                         fluidRow(
                             column(8, plotOutput("barplot.comparison") %>% withSpinner()),
                             sidebarPanel(width = 4,

@@ -56,7 +56,7 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #' Load 10x VDJ data from multiple directories into a Seurat object containing multiple samples
 #'
 #' @param object Seurat object
-#' @param column (Optional:) Metadata column that contains the information to distinguish samples.
+#' @param id_column (Optional:) Metadata column that contains the information to distinguish samples.
 #' @param data.dir directory containing Cellranger output directories for every sample. If column is specified this will be a named list
 #' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
@@ -70,24 +70,24 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #'
 #' @export
 
-Read10X_MultiVDJ <- function(object, data.dir, column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
-    if (!is.null(column)) {
+Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+    if (!is.null(id_column)) {
         # check if the sample names are unique
-        if (length(unique(names(data.dir))) != length(names(data.dir))) {
-            stop("Sample names are not unique:", names(data.dir))
+        if (length(unique(names(object@meta.data[[id_column]]))) != length(names(object@meta.data[[id_column]]))) {
+            stop("Sample names are not unique:", unique(names(object@meta.data[[id_column]])))
         }
 
-        samples <- as.factor(object@meta.data[[column]])
+        samples <- as.factor(object@meta.data[[id_column]])
         directories <- data.dir
-        overlap_matrix <- matrix(data = NA, nrow = length(directories), ncol = length(directories))
+        overlap_matrix <- matrix(data = NA, nrow = length(levels(samples)), ncol = length(directories))
     } else {
         # Define samples using suffix & split barcodes into seperate elements in a list
         if (is.null(names(data.dir))) {
             stop("Please use a named vector for your directories")
         }
-        samples <- as.factor(substr(colnames(object),19,nchar(colnames(object)[1])))
+        samples <- strsplit(colnames(object), "_") %>% sapply("[", 2) %>% as.factor()
         directories <- list.dirs(data.dir, recursive = F)
-        cellbarcodes <- substr(colnames(object),1,18) %>% split(samples)
+        cellbarcodes <- strsplit(colnames(object), "_") %>% sapply("[", 1) %>% split(samples)
 
         # Check if there aren't too many VDJ directories
         if (length(cellbarcodes) < length(directories)) {
@@ -127,13 +127,13 @@ Read10X_MultiVDJ <- function(object, data.dir, column = NULL , assay = NULL, for
             }
         }
 
-        if (!is.null(column)) {
+        if (!is.null(id_column)) {
             # Change cellbarcode according to specified metadata column
             sample_id <- names(directories)[ndata]
-            cellbarcodes <- grepl(sample_id,object@meta.data[[column]])
+            cellbarcodes <- grepl(sample_id,object@meta.data[[id_column]])
             cellbarcodes <- colnames(object)[cellbarcodes]
-            suffix <- substr(cellbarcodes[1],19,nchar(cellbarcodes[1]))
-            vdj_df$barcodes <- paste0(vdj_df$barcodes,suffix)
+            suffix <- strsplit(colnames(object), "_") %>% sapply("[", 2)
+            vdj_df$barcodes <- paste0(vdj_df$barcodes,"_",suffix)
         } else {
             vdj_df$ID <- ndata
         }
@@ -142,7 +142,7 @@ Read10X_MultiVDJ <- function(object, data.dir, column = NULL , assay = NULL, for
         ndata <- ndata + 1
     }
 
-    if (is.null(column)) {
+    if (is.null(id_column)) {
         for (row in 1:length(cellbarcodes)) {
             for (col in 1:length(directories)) {
                 # Check overlap of barcodes and store in overlapmatrix
@@ -575,7 +575,7 @@ GetInfoForMetadata <- function(object, assay, chain) {
     return(data)
 }
 
-#' Merge seuratobjects with including their VDJ data
+#' Merge seuratobjects and include their VDJ data
 #'
 #' @param ... seurat objects separated by comma
 #'
@@ -583,57 +583,12 @@ GetInfoForMetadata <- function(object, assay, chain) {
 
 MergeVDJ <- function(...) {
     objects <- list(...)
-    merged_seurat <- merge(...)
+    mergedobj <- merge(...)
 
-    # Use an index to append to the barcodes & clonotypes
-    obj_idx <- 1
-    assay_bcr <- F
-    assay_tcr <- F
+    mergedobj <- AddVDJForAssay(mergedobj = mergedobj, objectlist = objects, assay = "BCR")
+    mergedobj <- AddVDJForAssay(mergedobj = mergedobj, objectlist = objects, assay = "TCR")
 
-    # Empty list to contain converted vdj data
-    init <- list("vdj.primary" = data.frame(),
-                 "vdj.secondary" = data.frame(),
-                 "vj.primary" = data.frame(),
-                 "vj.secondary" = data.frame())
-    BCR <- init
-    TCR <- init
-
-    for (object in objects) {
-        # If BCR data is present: convert it
-        if (!is.null(object@misc$VDJ$BCR)) {
-            assay_bcr <- T
-            BCR <- Uniqify_VDJ(object, BCR, "BCR", obj_idx)
-        }
-        # If TCR data is present: convert it
-        if (!is.null(object@misc$VDJ$TCR)) {
-            assay_tcr <- T
-            TCR <- Uniqify_VDJ(object, TCR, "TCR", obj_idx)
-        }
-        # Move to next object
-        obj_idx <- obj_idx + 1
-    }
-    # Add TCR & BCR data to the misc slot of the merged seurat object
-    # Set default chain and assay
-    # Update meta-data
-    if (assay_bcr & assay_tcr) {
-        Misc(object = merged_seurat, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
-        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "TCR"
-        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(merged_seurat) <- "TCR"
-    } else if (assay_tcr) {
-        Misc(object = merged_seurat, slot = "VDJ") <- list("TCR" = TCR)
-        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "TCR"
-        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(merged_seurat) <- "TCR"
-    } else if (assay_bcr) {
-        Misc(object = merged_seurat, slot = "VDJ") <- list("BCR" = BCR)
-        Misc(object = merged_seurat, slot = "default.assay.VDJ") <- "BCR"
-        Misc(object = merged_seurat, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(merged_seurat) <- "BCR"
-    } else {
-        stop("No TCR or BCR assay present, use merge() function from the Seurat Package")
-    }
-    return(merged_seurat)
+    return(mergedobj)
 }
 
 #' Splits a Seurat object into a list of objects with their respective VDJ data in the misc slot
