@@ -356,13 +356,14 @@ subsetVDJ <- function(object, barcodes, assay = c("TCR","BCR")) {
 
 #' Returns colorvector based on chosen theme and amount of categories
 #'
-#' @param theme coloscheme to use
+#' @param theme coloscheme to use. Default = DALI
 #' @param n number of categories
+#'
+#' @export
 
 GetDimRedColors <- function(theme = "DALI", n) {
     if (theme == "DALI") {
         # Colscheme 1: DALI I
-        # The colorscheme being used # Polychrome sky.colors
         if (n <= 24) {
             return(sky.colors(max(c(3, n))) %>% rev() %>% unname())
         }
@@ -370,14 +371,13 @@ GetDimRedColors <- function(theme = "DALI", n) {
 
     } else if (theme == "DALII") {
         # Colscheme 2: DALI II
-        # Colorscheme using DALI colors and some others
         if (n <= 15) {
-            DALII <- c("#5D3484","#3CB0B5","#F06B34",
+            cols <- c("#5D3484","#3CB0B5","#F06B34",
                        "#222183","#FFCE54","#FF007A",
                        "#C83831","#48CFAD","#967ADC",
                        "#0072B2","#D770AD","#FF7C00",
                        "#B85100","#5EC418","#4A89D6")
-            DALII[1:max(3,n)]
+            return(cols[1:max(3,n)])
         }
         n.5 <- n/2
         cols <- ggplotColors(n.5,c(290,180))
@@ -386,28 +386,29 @@ GetDimRedColors <- function(theme = "DALI", n) {
 
     } else if (theme == "Pastel") {
         # Colscheme 3: Pastel
-        # Coloscheme using a paset color palette
         if (n <= 24) {
-            return(sky.colors(max(c(3, n))) %>% unname())
+            cols <- c("#78FFF1", "#FEB6DB", "#79CAFF",
+                      "#F6F7A3", "#DAB6FE", "#C1DEC8",
+                      "#F7D3BB", "#76D7D6",  "#D4F9E5",
+                      "#F7E368")
+            return(cols[1:max(3,n)])
         }
-        return(ggplotColors(n = n))
+        return(hcl(h = (seq(0,360, length = n)), c = 55, l = 70) %>% sample())
 
     } else if (theme == "Colorblind") {
         # Colscheme 4: Colorblind
-        # literary reseach and then we'll see
-        if (n <= 24) {
-            return(sky.colors(max(c(3, n))) %>% unname())
+        if (n <= 12) {
+            cols <- c("#AA44AA", "#D55E00", "#44AAAA",
+                      "#24FF24", "#FFB6DB", "#0072B2",
+                      "#E69F00", "#FFFF99", "56B4E9",
+                      "#000000", "#FFF600", "#FF007A")
+            return(cols[1:max(3,n)])
         }
         return(ggplotColors(n = n))
 
     } else if (theme == "Spectrum") {
         # Colscheme 5: Spectrum/Rainbow
-        # return a spectrum betwene 2 colors using what we did for viridis
-        # For spectrum
-        if (n <= 24) {
-            return(sky.colors(max(c(3, n))) %>% unname())
-        }
         return(ggplotColors(n = n))
     }
-    return(col.vector)
+    stop("Invalid color-theme ",theme)
 }
