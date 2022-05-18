@@ -536,7 +536,7 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 #' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
 #' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
 #' @param highlight Family or gene to highlight. Default = NULL
-#' @param cols Colors to use
+#' @param cols Colors to use. Default DALI Colorpalette
 #' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
@@ -589,10 +589,14 @@ DimplotChainRegion <- function(
   if (!is.null(highlight)) {
     cells.highlight <- rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
   }
-
-  if (is.null(cols)) {
-    cols <- GetCategoricalColorPalette(object@meta.data[[data.column]])
+  if (!is.null(cols)) {
+      if (cols %in% c("DALI", "Pastel", "DALII", "Spectrum", "Colorblind")) {
+          cols <- GetCategoricalColorPalette(object@meta.data[[data.column]], cols)
+      }
   }
+
+
+
 
   Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), cols = cols, ...) +
     theme(
