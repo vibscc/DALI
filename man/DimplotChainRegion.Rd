@@ -28,7 +28,7 @@ DimplotChainRegion(
 
 \item{highlight}{Family or gene to highlight. Default = NULL}
 
-\item{cols}{Colors to use}
+\item{cols}{Colors to use. Default DALI Colorpalette}
 
 \item{...}{Extra parameters passed to Seurat::Dimplot}
 }

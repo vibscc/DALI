@@ -129,7 +129,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = "default.clustering",
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -167,6 +167,7 @@ function(input, output, session) {
                             object,
                             grid = F,
                             reduction = r,
+                            cols = input$coltheme,
                             chain = input$chain.usage.chain,
                             region = input$chain.usage.region
                         ) + theme(
@@ -191,7 +192,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = "default.clustering",
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -218,7 +219,8 @@ function(input, output, session) {
                 output[[paste0('graph.', r)]] <- renderPlot({
                     CloneConnGraph(
                         object = object,
-                        reduction = r
+                        reduction = r,
+                        cols = input$coltheme
                     ) + theme(
                         legend.position = "none",
                         plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
@@ -238,7 +240,7 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -543,7 +545,8 @@ function(input, output, session) {
             vals$data,
             group.by = input$compare.group.by,
             sequence.type = "AA",
-            plot.type = "ridge"
+            plot.type = "ridge",
+            cols = input$coltheme
         )
     })
 
@@ -705,6 +708,7 @@ function(input, output, session) {
             ident.2 = input$compare.ident.2,
             region = input$compare.region,
             chain = input$compare.chain,
+            cols = input$coltheme,
             legend = F
         )
     })
@@ -957,7 +961,7 @@ function(input, output, session) {
             vals$data,
             group.by = "default.clustering",
             reduction = input$transcriptomics.reduction.novdj,
-            cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering)
+            cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering, input$coltheme)
         ) + theme(
             axis.line = element_blank(),
             axis.title = element_blank(),

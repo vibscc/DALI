@@ -2,13 +2,15 @@
 % Please edit documentation in R/helpers.R
 \name{GetCategoricalColorPalette}
 \alias{GetCategoricalColorPalette}
-\title{Get a colorpalette for given categorical data}
+\title{Returns colorvector based on chosen theme and amount of categories}
 \usage{
-GetCategoricalColorPalette(data)
+GetCategoricalColorPalette(data, theme = "DALI")
 }
 \arguments{
-\item{data}{Categorical data}
+\item{data}{data to get categories from}
+
+\item{theme}{coloscheme to use. Default = DALI}
 }
 \description{
-Get a colorpalette for given categorical data
+Returns colorvector based on chosen theme and amount of categories
 }
