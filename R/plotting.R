@@ -128,7 +128,12 @@ BarplotChainRegion <- function(
 
   plot.data[[data.column]] <- factor(plot.data$family, levels = families)
 
-  cols <- GetCategoricalColorPalette(plot.data$group, cols) # VIRIDIS TYPE
+  if (!is.null(cols)) {
+      if (cols == "Colorblind") {
+          cols <- c("#FDE725","#423C81")
+      }
+  }
+  cols <- GetCategoricalColorPalette(plot.data$group, cols)
 
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
@@ -890,7 +895,7 @@ ExpansionPlot <- function(
     plot <- plot + scale_color_gradient2(low = color.low, mid = color.mid, high = color.high, midpoint = midpoint)
   }
 
-  plot  # viridis TYPE
+  plot
 }
 
 #' Featureplot of clonotypes
