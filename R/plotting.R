@@ -128,9 +128,7 @@ BarplotChainRegion <- function(
 
   plot.data[[data.column]] <- factor(plot.data$family, levels = families)
 
-  if (is.null(cols)) {
-    cols <- GetCategoricalColorPalette(plot.data$group)
-  }
+  cols <- GetCategoricalColorPalette(plot.data$group, cols) # VIRIDIS TYPE
 
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
@@ -306,9 +304,7 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 
   plot.data$clonotype <- factor(plot.data$clonotype, levels = clonotypes)
 
-  if (is.null(cols)) {
-    cols <- GetCategoricalColorPalette(plot.data[[group.by]])
-  }
+  cols <- GetCategoricalColorPalette(plot.data[[group.by]], cols)
 
   ggplot(plot.data, aes(x = .data$clonotype, y = .data$n, fill = .data[[group.by]])) +
     geom_bar(position = position, stat = "identity") +
@@ -414,6 +410,7 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
       plots <- CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
     }
 
+
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
 
@@ -511,9 +508,7 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 
     title <- paste0(title, " chain")
 
-    if (is.null(cols)) {
-      cols <- GetCategoricalColorPalette(plot.data[[group.by]])
-    }
+    cols <- GetCategoricalColorPalette(plot.data[[group.by]], cols)
 
     plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]], fill = .data[[group.by]])) +
       geom_density_ridges() +
@@ -589,14 +584,7 @@ DimplotChainRegion <- function(
   if (!is.null(highlight)) {
     cells.highlight <- rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
   }
-  if (!is.null(cols)) {
-      if (cols %in% c("DALI", "Pastel", "DALII", "Spectrum", "Colorblind")) {
-          cols <- GetCategoricalColorPalette(object@meta.data[[data.column]], cols)
-      }
-  }
-
-
-
+  cols <- GetCategoricalColorPalette(object@meta.data[[data.column]], cols)
 
   Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), cols = cols, ...) +
     theme(
@@ -902,7 +890,7 @@ ExpansionPlot <- function(
     plot <- plot + scale_color_gradient2(low = color.low, mid = color.mid, high = color.high, midpoint = midpoint)
   }
 
-  plot
+  plot  # viridis TYPE
 }
 
 #' Featureplot of clonotypes
@@ -1067,9 +1055,7 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   label.x.axis <- colnames(dimred)[[1]]
   label.y.axis <- colnames(dimred)[[2]]
 
-  if (is.null(cols)) {
-    cols <- GetCategoricalColorPalette(dimred$group)
-  }
+  cols <- GetCategoricalColorPalette(dimred$group, cols)
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group), size = 1) +

@@ -70,23 +70,6 @@ ggplotColors <- function(n, h = c(15, 375)) {
     hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
 }
 
-#' Get a colorpalette for given categorical data
-#'
-#' @param data Categorical data
-#'
-#' @importFrom dplyr %>%
-#' @importFrom Polychrome sky.colors
-
-GetCategoricalColorPalette <- function(data) {
-    n.categories <- unique(data) %>% length()
-
-    if (n.categories <= 24) {
-        return(sky.colors(max(c(3, n.categories))) %>% unname())
-    }
-
-    return(ggplotColors(n = n.categories))
-}
-
 #' Get metadata column for given chain and region
 #'
 #' @param chain VDJ chain
@@ -444,12 +427,17 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered = T) {
 
 #' Returns colorvector based on chosen theme and amount of categories
 #'
+#' @param data data to get categories from
 #' @param theme coloscheme to use. Default = DALI
-#' @param n number of categories
+#'
+#' @importFrom Polychrome sky.colors
 #'
 #' @export
 
-GetDimRedColors <- function(theme = "DALI", n) {
+
+
+GetCategoricalColorPalette <- function(data, theme = "DALI") {
+    n <- unique(data) %>% length()
     if (theme == "DALI") {
         if (n <= 24) {
             return(sky.colors(max(c(3, n))) %>% rev() %>% unname())
@@ -458,11 +446,11 @@ GetDimRedColors <- function(theme = "DALI", n) {
 
     } else if (theme == "DALII") {
         if (n <= 15) {
-            cols <- c("#5D3484","#3CB0B5","#F06B34",
-                       "#222183","#FFCE54","#FF007A",
-                       "#C83831","#48CFAD","#967ADC",
-                       "#0072B2","#D770AD","#FF7C00",
-                       "#B85100","#5EC418","#4A89D6")
+            cols <- c("#FF932A","#3CB0B5","#5D3484",
+                      "#54DAFF","#FFCE54","#E484ED",
+                       "#0AFA1F","#FF0000","#967ADC",
+                       "#0014CF","#FF0CCD","#0072B2",
+                       "#2E8F26","#02FFB9","#B85100")
             return(cols[1:max(3,n)])
         }
         n.5 <- n/2
@@ -471,7 +459,7 @@ GetDimRedColors <- function(theme = "DALI", n) {
         return(cols)
 
     } else if (theme == "Pastel") {
-        if (n <= 24) {
+        if (n <= 10) {
             cols <- c("#78FFF1", "#FEB6DB", "#79CAFF",
                       "#F6F7A3", "#DAB6FE", "#C1DEC8",
                       "#F7D3BB", "#76D7D6",  "#D4F9E5",
