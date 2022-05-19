@@ -13,18 +13,20 @@ fillPage(
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-4",
              uiOutput("headerUI"),
-             htmlOutput("dataset.metrics", container = tags$div, class = "metrics"),
-             div(class = "form-group row",
-                 tags$label("Theme", class = "col-sm-9 text-right col-form-label"),
-                 div(class = "col-sm-3",
-                     tags$select(name = "coltheme", id = "coltheme", class = "form-control rounded-all-90",
-                             tags$option("DALI"),
-                             tags$option("Colorblind"),
-                             tags$option("DALII"),
-                             tags$option("Pastel"),
-                             tags$option("Spectrum")
-                        )
-                 )
+             div(class = "row"
+                 htmlOutput("dataset.metrics", container = tags$div, class = "metrics col-sm-6"),
+                 div(class = "form-group row",
+                     tags$label("Theme", class = "col-sm-3 text-right col-form-label"),
+                     div(class = "col-sm-3",
+                         tags$select(name = "coltheme", id = "coltheme", class = "form-control rounded-all-90",
+                                 tags$option("DALI"),
+                                 tags$option("Colorblind"),
+                                 tags$option("DALII"),
+                                 tags$option("Pastel"),
+                                 tags$option("Spectrum")
+                            )
+                     )
+                )
             )
 
         )
