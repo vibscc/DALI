@@ -137,25 +137,6 @@ function(input, output, session) {
                         axis.text = element_blank()
                     ) + ggtitle("Clustering")
                 })
-                observe({
-                    if (!vals$no_vdj()) {
-                        output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                            DimplotChainRegion(
-                                object,
-                                grid = F,
-                                reduction = r,
-                                chain = input$chain.usage.chain,
-                                region = input$chain.usage.region
-                            ) + theme(
-                                axis.line = element_blank(),
-                                axis.title = element_blank(),
-                                axis.ticks = element_blank(),
-                                axis.text = element_blank(),
-                                panel.grid.major = element_blank()
-                            ) + ggtitle("Chain usage")
-                        })
-                    }
-                })
 
 
                     output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
@@ -1040,9 +1021,4 @@ function(input, output, session) {
 
         vals$deg.results.novdj
     })
-
-
-
-
-
 }
