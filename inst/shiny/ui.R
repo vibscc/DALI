@@ -13,7 +13,7 @@ fillPage(
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-4",
              uiOutput("headerUI"),
-             div(class = "row"
+             div(class = "row",
                  htmlOutput("dataset.metrics", container = tags$div, class = "metrics col-sm-6"),
                  div(class = "form-group row",
                      tags$label("Theme", class = "col-sm-3 text-right col-form-label"),
