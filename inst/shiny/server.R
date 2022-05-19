@@ -186,7 +186,6 @@ function(input, output, session) {
         for (reduction in names(object@reductions)) {
             local({
                 r <- reduction
-
                 output[[paste0('expansion.reduction.plot.', r)]] <- renderPlot({
                     Seurat::DimPlot(
                         object,
@@ -207,6 +206,9 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         threshold = 2,
+                        color.low = "lightgray",
+                        color.mid = "red",
+                        color.high = "darkred",
                         negative.alpha = 0.7
                     ) + theme(
                         axis.line = element_blank(),
@@ -526,7 +528,7 @@ function(input, output, session) {
         req(vals$data,vals$data@meta.data$vdj.v_fam, input$chain.usage.chain, input$chain.usage.region)
         HeatmapChainRegion(
             vals$data,
-            color = input$chain.usage.color,
+            color = input$coltheme,
             chain = input$chain.usage.chain,
             region = input$chain.usage.region,
             add.missing.families = input$chain.usage.add.missing.families,

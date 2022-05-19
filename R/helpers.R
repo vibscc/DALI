@@ -250,9 +250,9 @@ CreateVDJData <- function(new, orig = NULL) {
 #' @param n Colors in spectrum. Default = 100
 
 ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
-    if (is.null(name) || name == "coolwarm") {
+    if (is.null(name) || (name %in% c("coolwarm","DALI","DALII","Pastel","Spectrum"))) {
         return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(n))
-    } else if (name == "viridis") {
+    } else if (name == "viridis" | name == "Colorblind") {
         return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(n))
     } else {
         stop("invalid colorscheme ", name)
@@ -375,7 +375,7 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
         }
         n.5 <- n/2
         cols <- ggplotColors(n.5,c(290,180))
-        cols <- c(cols, ggplotColors(n.5,c(170,45))) %>% sample()
+        cols <- c(cols, ggplotColors(n.5,c(170,45)))
         return(cols)
 
     } else if (theme == "Pastel") {
@@ -387,7 +387,7 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
                       "#F7E368")
             return(cols[1:max(3,n)])
         }
-        return(hcl(h = (seq(0,360, length = n)), c = 55, l = 70) %>% sample())
+        return(hcl(h = (seq(0,360, length = n)), c = 55, l = 70))
 
     } else if (theme == "Colorblind") {
         # Colscheme 4: Colorblind
@@ -402,7 +402,7 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
 
     } else if (theme == "Spectrum") {
         # Colscheme 5: Spectrum/Rainbow
-        return(ggplotColors(n = n))
+        return(ggplotColors(n = n) %>% rev())
     }
     stop("Invalid color-theme ",theme)
 }
