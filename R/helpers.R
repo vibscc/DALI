@@ -321,10 +321,11 @@ Uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
 #' @param barcodes barcodes of data to be retained
 #' @param assay BCR or TCR data
 
-SubsetVDJ <- function(object, barcodes, assay = c("TCR","BCR")) {
-    if (is.null(object@misc$VDJ[assay])) {
+SubsetVDJData <- function(object, barcodes, assay = c("TCR","BCR")) {
+    if (is.null(object@misc$VDJ[[assay]])) {
         return(NULL)
     }
+    assay <- match.arg(assay)
     data <- object@misc$VDJ[[assay]]
     VDJ <- list("vdj.primary" = data.frame(),
                 "vdj.secondary" = data.frame(),
@@ -352,12 +353,6 @@ SubsetVDJ <- function(object, barcodes, assay = c("TCR","BCR")) {
     return(VDJ)
 }
 
-#' Gives VDJ data from Seurat objects an identifier and adds it to a merged object
-#'
-#' @param mergedobj A Merged Seurat object
-#' @param objectlist A list containing seurat objects before the merge
-#' @param assay specifies if BCR or TCR data is to be added
-
 AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
     VDJ_data <- list("vdj.primary" = data.frame(),
                      "vdj.secondary" = data.frame(),
@@ -365,6 +360,7 @@ AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
                      "vj.secondary" = data.frame())
     obj_idx <- 1
     exist <- F
+    assay <- match.arg(assay)
     for (object in objectlist) {
         if (!is.null(object@misc$VDJ[[assay]])) {
             exist <- T
@@ -372,14 +368,7 @@ AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
         }
         obj_idx <- obj_idx + 1
     }
-
-    if (assay == "BCR" & exist == T) {
-        mergedobj@misc$VDJ$BCR <- VDJ_data
-    } else if (assay == "TCR" & exist == T) {
-        mergedobj@misc$VDJ$TCR <- VDJ_data
-    } else if (assay %in% c("BCR","TCR")) {
-        stop("Invalid assay ", assay)
-    }
+    mergedobj@misc$VDJ[[assay]] <- VDJ_data
 
     if (exist) {
         Misc(object = mergedobj, slot = "default.assay.VDJ") <- assay
@@ -387,4 +376,30 @@ AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
         DefaultAssayVDJ(mergedobj) <- assay
     }
     return(mergedobj)
+}
+
+#' Adds VDJ data from lists to the misc slot
+#'
+#' @param object Seurat object
+#' @param TCR list with TCR data
+#' @param BCR list with BCR data
+
+AddMiscVDJData <- function(object,TCR = NULL ,BCR = NULL) {
+    if (!is.null(BCR) & !is.null(TCR)) {
+        Misc(object = object, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
+        Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
+        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(object) <- "TCR"
+    } else if (!is.null(BCR)) {
+        Misc(object = object, slot = "VDJ") <- list("BCR" = BCR)
+        Misc(object = object, slot = "default.assay.VDJ") <- "BCR"
+        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(object) <- "BCR"
+    } else if (!is.null(TCR)) {
+        Misc(object = object, slot = "VDJ") <- list("TCR" = BCR)
+        Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
+        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
+        DefaultAssayVDJ(object) <- "TCR"
+    }
+    return(object)
 }

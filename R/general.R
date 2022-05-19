@@ -594,43 +594,61 @@ MergeVDJ <- function(...) {
 #' Splits a Seurat object into a list of objects with their respective VDJ data in the misc slot
 #'
 #' @param object Seurat object
-#' @param column metadata column to split the data on
+#' @param id_column metadata column to split the data on
 #'
 #' @export
 
-SplitObject_VDJ <- function(object, column) {
+SplitObject_VDJ <- function(object, id_column) {
     # Get barcodes belonging to each samples based on specified metadata column
-    objects <- SplitObject(object, split.by = column)
+    objects <- SplitObject(object, split.by = id_column)
     vdj_absence <- 0
+
     for (obj in objects) {
         barcodes <- colnames(obj)
 
-        BCR <- subsetVDJ(object = object,barcodes = barcodes, assay = "BCR")
-        TCR <- subsetVDJ(object = object,barcodes = barcodes, assay = "TCR")
-
-        # Add misc data
-        if (!is.null(BCR) & !is.null(TCR)) {
-            Misc(object = obj, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
-            Misc(object = obj, slot = "default.assay.VDJ") <- "TCR"
-            Misc(object = obj, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-            DefaultAssayVDJ(obj) <- "TCR"
-        } else if (!is.null(BCR)) {
-            Misc(object = obj, slot = "VDJ") <- list("BCR" = BCR)
-            Misc(object = obj, slot = "default.assay.VDJ") <- "BCR"
-            Misc(object = obj, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-            DefaultAssayVDJ(obj) <- "BCR"
-        } else if (!is.null(TCR)) {
-            Misc(object = obj, slot = "VDJ") <- list("TCR" = BCR)
-            Misc(object = obj, slot = "default.assay.VDJ") <- "TCR"
-            Misc(object = obj, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-            DefaultAssayVDJ(obj) <- "TCR"
-        } else {
+        BCR <- SubsetVDJData(object = object,barcodes = barcodes, assay = "BCR")
+        TCR <- SubsetVDJData(object = object,barcodes = barcodes, assay = "TCR")
+        if (is.null(BCR) & is.null(TCR)){
             vdj_absence <- vdj_absence + 1
             if (length(objects) == vdj_absence) {
                 stop("No TCR or BCR assay present, use SplitObject() function from the Seurat Package")
             }
         }
+        # Add misc data
+        AddMiscVDJData(object = obj,TCR = TCR,BCR = BCR)
     }
     #return a list of objects
     return(objects)
+}
+
+#' Subsets part of a Seurat Object specified by sample_id from a metadata column
+#'
+#' @param object Seurat object
+#' @param id_column metadata column containing the sample identifier
+#' @param sample_id id in the id_column that corresponds to the to be subsetted sample
+#' @param assay assay (TCR or BCR) you want to keep. Default keeps both in the subset
+#'
+#' @export
+
+SubsetObject_VDJ <- function(object, id_column, sample_id, assay = NULL) {
+    subset <- SplitObject(object, split.by = id_column)[[sample_id]]
+    barcodes <- colnames(subset)
+
+    if (is.null(assay)) {
+        BCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = "BCR")
+        TCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = "TCR")
+    } else {
+        if (assay == "BCR") {
+            BCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = assay)
+            TCR <- NULL
+        } else if (assay == "TCR") {
+            TCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = assay)
+            BCR <- NULL
+        } else {
+            stop("invalid assay ",assay)
+        }
+    }
+    subset <- AddMiscVDJData(object = subset,TCR = TCR,BCR = BCR)
+
+    return(subset)
 }

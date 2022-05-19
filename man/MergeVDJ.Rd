@@ -2,7 +2,7 @@
 % Please edit documentation in R/general.R
 \name{MergeVDJ}
 \alias{MergeVDJ}
-\title{Merge seuratobjects with including their VDJ data}
+\title{Merge seuratobjects and include their VDJ data}
 \usage{
 MergeVDJ(...)
 }
@@ -10,5 +10,5 @@ MergeVDJ(...)
 \item{...}{seurat objects separated by comma}
 }
 \description{
-Merge seuratobjects with including their VDJ data
+Merge seuratobjects and include their VDJ data
 }

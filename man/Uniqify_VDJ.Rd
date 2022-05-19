@@ -9,7 +9,7 @@ Uniqify_VDJ(object, data, assay = c("BCR", "TCR"), index)
 \arguments{
 \item{object}{Seurat object}
 
-\item{data}{list of vdj datadrames}
+\item{data}{list of vdj dataframes}
 
 \item{assay}{specify assay}
 

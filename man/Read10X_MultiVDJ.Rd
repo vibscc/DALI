@@ -7,7 +7,7 @@
 Read10X_MultiVDJ(
   object,
   data.dir,
-  column = NULL,
+  id_column = NULL,
   assay = NULL,
   force = F,
   sort.by = c("umis", "reads"),
@@ -20,7 +20,7 @@ Read10X_MultiVDJ(
 
 \item{data.dir}{directory containing Cellranger output directories for every sample. If column is specified this will be a named list}
 
-\item{column}{(Optional:) Metadata column that contains the information to distinguish samples.}
+\item{id_column}{(Optional:) Metadata column that contains the information to distinguish samples.}
 
 \item{assay}{VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.}
 
