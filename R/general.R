@@ -16,32 +16,14 @@
 
 Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("umis", "reads"), use.filtered = T, quiet = F) {
 
-    location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
-    location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
-
     sort.by <- match.arg(sort.by)
-
-    if (!file.exists(location.annotation.contig)) {
-        stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
-    }
-
-    data <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
-                            filter(grepl("true", .data$productive, ignore.case = T))
 
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
-    if (file.exists(location.airr.rearrangement)) {
-        airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
-        colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
-        sequence.columns <- grep("sequence", colnames(airr.data), value = T)
-        data <- left_join(data, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
-        fields.extra <- c(fields.extra, sequence.columns)
-    } else {
-        if (!quiet) {
-            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
-        }
-    }
+    sequence.columns <- GetAIRRSequenceColumns(data.dir, quiet)
+    fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+    data <- GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
 
     for (field in fields.extra) {
         if (field %in% colnames(data)) {
@@ -56,10 +38,11 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #' Load 10x VDJ data from multiple directories into a Seurat object containing multiple samples
 #'
 #' @param object Seurat object
-#' @param id_column (Optional:) Metadata column that contains the information to distinguish samples.
 #' @param data.dir directory containing Cellranger output directories for every sample. If column is specified this will be a named list
+#' @param id_column Optional: Metadata column that contains the information to distinguish samples.
 #' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
+#' @param id_list Optional: Named vector used with id_column. Structured as so: ("directoryname" = "sample_id).
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
 #' @param quiet Ignore warnings. Default = FALSE
@@ -70,7 +53,8 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #'
 #' @export
 
-Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, id_list, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+
     if (!is.null(id_column)) {
         # check if the sample names are unique
         if (length(unique(names(object@meta.data[[id_column]]))) != length(names(object@meta.data[[id_column]]))) {
@@ -104,36 +88,20 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
     ndata <- 1
     for  (vdjdir in directories) {
         # Convert vdjfiles to df
-        vdjdir <- directories[1]
-        location.annotation.contig <- file.path(vdjdir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
-        location.airr.rearrangement <- file.path(vdjdir, "airr_rearrangement.tsv")
+        sequence.columns <- GetAIRRSequenceColumns(vdjdir, quiet)
+        fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+        vdj_df <- GetVDJ_Dataframe(vdjdir, sequence.columns, use.filtered)
 
-        if (!file.exists(location.annotation.contig)) {
-            stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
-        }
-
-        vdj_df <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
-            filter(grepl("true", .data$productive, ignore.case = T))
-
-        if (file.exists(location.airr.rearrangement)) {
-            airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
-            colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
-            sequence.columns <- grep("sequence", colnames(airr.data), value = T)
-            vdj_df <- left_join(vdj_df, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
-            fields.extra <- c(fields.extra, sequence.columns) %>% unique()
-        } else {
-            if (!quiet) {
-                warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
-            }
-        }
 
         if (!is.null(id_column)) {
             # Change cellbarcode according to specified metadata column
-            sample_id <- names(directories)[ndata]
-            cellbarcodes <- grepl(sample_id,object@meta.data[[id_column]])
+            # Sample_id names based on id_column
+            dir.name <- basename(vdjdir)
+            sample_id <- id_list[[dir.name]]
+            cellbarcodes <- grepl(sample_id, object@meta.data[[id_column]])
             cellbarcodes <- colnames(object)[cellbarcodes]
             suffix <- strsplit(colnames(object), "_") %>% sapply("[", 2)
-            vdj_df$barcodes <- paste0(vdj_df$barcodes,"_",suffix)
+            vdj_df$barcodes <- paste0(vdj_df$barcodes, "_", suffix)
         } else {
             vdj_df$ID <- ndata
         }
@@ -148,7 +116,18 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
                 # Check overlap of barcodes and store in overlapmatrix
                 overlap_matrix[row,col] <- length(intersect(cellbarcodes[[row]], data[data$ID == col,]$barcode)) / nrow(data[data$ID == col,])
             }
+            # check for highly similar overlap with the theorized actual sample
+            least.difference <- min(abs(overlap_matrix[row,] - max(overlap_matrix[row,])))
+            if (!force && least.difference <= 0.1 ) {
+                stop("Similarity between barcodes is too high. Use colomn_id & id_list to define samples")
+            }
         }
+
+        # check if every directory gets assigned a sample (1 to 1 relationships)
+        if (sum(overlap_matrix[row,]) != 1) {
+            stop("A Sample was assigned more than 1 directory containing VDJ data")
+        }
+
         # Now to check which vdj data belongs to which sample & Change the cellbarcode accordingly
         for (i in 1:ncol(overlap_matrix)) {
             df_id <- which.max(overlap_matrix[,i])
