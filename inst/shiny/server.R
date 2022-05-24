@@ -1,6 +1,6 @@
 library(shinyFiles)
 library(dplyr)
-library(ggrepel)
+
 function(input, output, session) {
 
     # ======================================================================= #
@@ -17,6 +17,14 @@ function(input, output, session) {
         lineage.tab = NULL,
         has_vdj = FALSE,
         loaded_data = !is.null(.GlobalEnv$.data.object.VDJ)
+    )
+
+    settings <- reactiveValues(
+        color.theme = "DALI",
+        color.scheme = "coolwarm",
+        dimplot.label = FALSE,
+        dimplot.color.by = "default.clustering",
+        dimplot.legend = FALSE
     )
 
     upload <- reactiveValues(
@@ -67,7 +75,7 @@ function(input, output, session) {
         updateSelectInput(session, "active.assay", choices = assays.vdj, selected = assay.selection)
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
-        updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
+        updateSelectInput(session, "group.by", choices = metadata.columns, selected = metadata.default)
 
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
@@ -91,23 +99,19 @@ function(input, output, session) {
     }
 
     output$headerUI <- renderUI({
-        if (!vals$has_vdj) {
+        if (vals$has_vdj) {
             tags$div(class = "form-group row col-sm-12",
-                     tags$div(class = "col-sm-9"),
-                     div(class = "col-sm-3",
-                         actionButton("more.files", label = "File Management", class = "files")
-                     )
-                )
-        } else {
-            tags$div(class = "form-group row col-sm-12",
-
               tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
               tags$div(class = "col-sm-6",
                        tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
               ),
-              div(class = "col-sm-3",
-                  actionButton("more.files", label = "File Management", class = "files")
+              div(class = "col-sm-1",
+                  actionButton("settings", label = "", icon = icon("cog"), class = "settings")
               )
+            )
+        } else {
+            div(class = "text-right",
+                actionButton("settings", label = "", icon = icon("cog"), class = "settings")
             )
         }
     })
@@ -128,13 +132,15 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "default.clustering",
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
+                        group.by = settings$dimplot.color.by,
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data[[settings$dimplot.color.by]], settings$color.theme),
+                        na.value = "lightgray"
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
-                        axis.text = element_blank()
+                        axis.text = element_blank(),
+                        legend.position = if (settings$dimplot.legend) "none" else "right"
                     ) + ggtitle("Clustering")
                 })
 
@@ -148,9 +154,9 @@ function(input, output, session) {
                             object,
                             grid = F,
                             reduction = r,
-                            cols = input$coltheme,
                             chain = input$chain.usage.chain,
-                            region = input$chain.usage.region
+                            region = input$chain.usage.region,
+                            color.theme = settings$color.theme
                         ) + theme(
                             axis.line = element_blank(),
                             axis.title = element_blank(),
@@ -171,13 +177,15 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        group.by = "default.clustering",
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
+                        group.by = settings$dimplot.color.by,
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data[[settings$dimplot.color.by]], settings$color.theme),
+                        na.value = "lightgray"
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
                         axis.ticks = element_blank(),
-                        axis.text = element_blank()
+                        axis.text = element_blank(),
+                        legend.position = if (settings$dimplot.legend) "none" else "right"
                     ) + ggtitle("Clustering")
                 })
 
@@ -203,7 +211,7 @@ function(input, output, session) {
                     CloneConnGraph(
                         object = object,
                         reduction = r,
-                        cols = input$coltheme
+                        color.theme = settings$color.theme
                     ) + theme(
                         legend.position = "none",
                         plot.title = element_text(hjust = 0.5, face = "bold", vjust = 1, size = 16, margin = margin(0,0,7,7))
@@ -223,7 +231,7 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
-                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, input$coltheme)
+                        cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, settings$color.theme)
                     ) + theme(
                         axis.line = element_blank(),
                         axis.title = element_blank(),
@@ -245,19 +253,19 @@ function(input, output, session) {
                 strong("Select a Seurat Rds file:"),
                 tags$br(),
                 shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
-                actionButton("seurat_rds_remove", "Remove", class = "upload-remove"),
+                actionButton("seurat_rds_remove", label = "", icon = icon("trash"), class = "upload-remove"),
                 textOutput("seurat.rds.path.text", inline = T),
             ),
             div(
                 h4("-- BCR DATA (optional) --"),
                 shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
-                actionButton("bcr_dir_remove", "Remove", class = "upload-remove"),
+                actionButton("bcr_dir_remove", label = "", icon = icon("trash"), class = "upload-remove"),
                 textOutput("bcr.dir.text", inline = T)
             ),
             div(
                 h4("-- TCR DATA (optional) --"),
                 shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
-                actionButton("tcr_dir_remove", "Remove", class = "upload-remove"),
+                actionButton("tcr_dir_remove", label = "", icon = icon("trash"), class = "upload-remove"),
                 textOutput("tcr.dir.text", inline = T)
             ),
             if (!is.null(error)) {
@@ -375,7 +383,7 @@ function(input, output, session) {
         vals$loaded_data <- TRUE
         app.initialize()
         return()
-    })
+    }, ignoreInit = T)
 
     output$seurat.rds.path.text <- renderText({
         req(upload$seurat.rds)
@@ -393,6 +401,84 @@ function(input, output, session) {
         req(upload$tcr.dir)
 
         gsub("/+", "/", upload$tcr.dir)
+    })
+
+    # ======================================================================= #
+    # Settings Modal
+    # ======================================================================= #
+
+    SettingsModal <- function() {
+        modalDialog(
+            tabsetPanel(
+                tabPanel("Color Scheme",
+                     div(
+                         selectInput("color.theme", label = "Main Color Theme: ", choices =  c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"), selected = settings$color.theme),
+                     ),
+                     div(
+                         strong("Contrast Color Scheme"),
+                         tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps, volcano plots, and feature plots"),
+                         selectInput("color.scheme", label = "", choices = c("coolwarm","viridis"), selected = settings$color.scheme)
+                     )
+                ),
+                tabPanel("Reduction Plots",
+                     div(
+                         selectInput("dimplot.color.by", label = "Color By: ", choices = vals$categorical.metadata, selected = settings$dimplot.color.by),
+                         checkboxInput("dimplot.label", "Add labels", value = settings$dimplot.label),
+                         checkboxInput("dimplot.legend", "Hide legend", value = settings$dimplot.legend)
+                     )
+                ),
+                tabPanel("Files",
+                     div(
+                         strong("Select a Seurat Rds file:"),
+                         tags$br(),
+                         shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
+                         actionButton("seurat_rds_remove", "", icon = icon("trash"), class = "upload-remove"),
+                         textOutput("seurat.rds.path.text", inline = T),
+                     ),
+                     div(
+                         h4("-- BCR DATA (optional) --"),
+                         shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
+                         actionButton("bcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
+                         textOutput("bcr.dir.text", inline = T)
+                     ),
+                     div(
+                         h4("-- TCR DATA (optional) --"),
+                         shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
+                         actionButton("tcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
+                         textOutput("tcr.dir.text", inline = T)
+                     ),
+                     br(),
+                     actionButton("load", "Reload Data", class = "closer"),
+                ),
+            ),
+            title = "Settings",
+            footer = tagList(
+                actionButton("cancel", "Cancel"),
+                actionButton("apply", "Apply & Close"),
+            ),
+            easyClose = T,
+            size = "m"
+        )
+    }
+
+    observeEvent(input$settings, {
+        showModal(SettingsModal())
+    })
+
+    observeEvent(c(input$apply), {
+        req(input$apply)
+
+        settings$color.theme <- input$color.theme
+        settings$color.scheme <- input$color.scheme
+        settings$dimplot.label <- input$dimplot.label
+        settings$dimplot.color.by <- input$dimplot.color.by
+        settings$dimplot.legend <- input$dimplot.legend
+        removeModal()
+    }
+    )
+
+    observeEvent(input$cancel, {
+        removeModal()
     })
 
     # ======================================================================= #
@@ -509,12 +595,12 @@ function(input, output, session) {
         req(vals$data,vals$data@meta.data$vdj.v_fam, input$chain.usage.chain, input$chain.usage.region)
         HeatmapChainRegion(
             vals$data,
-            color = input$coltheme,
             chain = input$chain.usage.chain,
             region = input$chain.usage.region,
             add.missing.families = input$chain.usage.add.missing.families,
             show.missing.values = F,
-            cluster.cols = input$chain.usage.cluster.cols
+            cluster.cols = input$chain.usage.cluster.cols,
+            color.scheme = input$color.scheme
         )
     })
 
@@ -529,7 +615,7 @@ function(input, output, session) {
             group.by = input$compare.group.by,
             sequence.type = "AA",
             plot.type = "ridge",
-            cols = input$coltheme
+            color.theme = settings$color.theme
         )
     })
 
@@ -671,13 +757,6 @@ function(input, output, session) {
         }
     })
 
-    # upload new files
-
-    observeEvent(input$more.files, {
-        showModal(dataUploadModal())
-    })
-
-
     # ======================================================================= #
     # Barplot to compare groups
     # ======================================================================= #
@@ -691,7 +770,7 @@ function(input, output, session) {
             ident.2 = input$compare.ident.2,
             region = input$compare.region,
             chain = input$compare.chain,
-            cols = input$coltheme,
+            color.theme = settings$color.theme,
             legend = F
         )
     })
@@ -861,7 +940,12 @@ function(input, output, session) {
     output$transcriptomics.featureplot <- renderPlot({
         req(vals$data, input$transcriptomics.feature, input$transcriptomics.reduction, input$transcriptomics.assay)
 
-        Seurat::FeaturePlot(vals$data, input$transcriptomics.feature, reduction = input$transcriptomics.reduction) + theme(
+        Seurat::FeaturePlot(
+            vals$data,
+            input$transcriptomics.feature,
+            reduction = input$transcriptomics.reduction,
+            cols = DALI:::ColorScale(settings$color.scheme, n = 2)
+        ) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -873,7 +957,11 @@ function(input, output, session) {
     output$transcriptomics.clonotype.featureplot <- renderPlot({
         req(vals$data, input$transcriptomics.clonotype, input$transcriptomics.reduction)
 
-        FeaturePlotClonotype(vals$data, input$transcriptomics.reduction, input$transcriptomics.clonotype) + theme(
+        FeaturePlotClonotype(
+            vals$data,
+            input$transcriptomics.reduction,
+            input$transcriptomics.clonotype
+        ) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -914,11 +1002,18 @@ function(input, output, session) {
         } else if (intersect(ident.1, ident.2) %>% length() > 0) {
             showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
         } else {
-            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
+            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 0, {
+                vals$deg.results <- NULL
+                incProgress(0.2)
                 vals$deg.results <- Seurat::FindMarkers(vals$data, ident.1 = ident.1, ident.2 = ident.2, group.by = input$deg.group.by, assay = input$deg.assay)
                 # Volcano Plot function
-                output$deg.volcano.plot <- renderPlot({req(vals$data, vals$deg.results)
-                                                 VolcanoPlotDEG(vals$deg.results)})
+                incProgress(0.7)
+                output$deg.volcano.plot <- renderPlot({
+                    req(vals$data, vals$deg.results)
+
+                    VolcanoPlotDEG(vals$deg.results.novdj, sig.P = input$sig.P.novdj, sig.logFC = input$sig.logFC.novdj, color.scheme = settings$color.scheme)
+                })
+                incProgress(0.1)
             })
             withProgress(message = "FINISHED CALCULATING", detail = "Check the Results tab", min = 1, max = 1, value = 1, {
                 Sys.sleep(1.5)
@@ -944,7 +1039,8 @@ function(input, output, session) {
             vals$data,
             group.by = "default.clustering",
             reduction = input$transcriptomics.reduction.novdj,
-            cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering, input$coltheme)
+            label = settings$dimplot.label,
+            cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering, settings$color.theme)
         ) + theme(
             axis.line = element_blank(),
             axis.title = element_blank(),
@@ -966,7 +1062,12 @@ function(input, output, session) {
     output$transcriptomics.featureplot.novdj <- renderPlot({
         req(vals$data, input$transcriptomics.feature.novdj, input$transcriptomics.reduction.novdj, input$transcriptomics.assay.novdj)
 
-        Seurat::FeaturePlot(vals$data, input$transcriptomics.feature.novdj, reduction = input$transcriptomics.reduction.novdj) + theme(
+        Seurat::FeaturePlot(
+            vals$data,
+            input$transcriptomics.feature.novdj,
+            reduction = input$transcriptomics.reduction.novdj,
+            cols = DALI:::ColorScale(settings$color.scheme, n = 2)
+        ) + theme(
             legend.position = "none",
             axis.line = element_blank(),
             axis.ticks = element_blank(),
@@ -1007,7 +1108,7 @@ function(input, output, session) {
             withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
                 vals$deg.results.novdj <- Seurat::FindMarkers(vals$data, ident.1 = ident.1.novdj, ident.2 = ident.2.novdj, group.by = input$deg.group.by.novdj, assay = input$deg.assay.novdj)
                 output$deg.volcano.plot.novdj <- renderPlot({req(vals$data, vals$deg.results.novdj)
-                    VolcanoPlotDEG(vals$deg.results.novdj)})
+                    VolcanoPlotDEG(vals$deg.results.novdj, sig.P = input$sig.P.novdj, sig.logFC = input$sig.logFC.novdj, color.scheme = settings$color.scheme)})
             })
             withProgress(message = "FINSHED CALCULATING", detail = "Check the Results tab", min = 1, max = 1, value = 1, {
                 Sys.sleep(1.5)

@@ -45,6 +45,7 @@ Imports:
     DT,
     ggplot2,
     ggraph,
+    ggrepel,
     ggridges,
     ggtree,
     gridExtra,

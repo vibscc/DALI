@@ -4,12 +4,21 @@
 \alias{VolcanoPlotDEG}
 \title{Use Seurat's DEG Table to plot a volcano plot}
 \usage{
-VolcanoPlotDEG(data, c.scheme = c("coolwarm", "viridis"))
+VolcanoPlotDEG(
+  deg,
+  sig.P = 0.05,
+  sig.logFC = 0.6,
+  color.scheme = c("coolwarm", "viridis")
+)
 }
 \arguments{
-\item{data}{Table with DEG data from Seurat::Findmarkers()}
+\item{deg}{Table with DEG data from Seurat::Findmarkers()}
 
-\item{c.scheme}{colorscheme to use}
+\item{sig.P}{Significant P value to extract over/under expressed geens from}
+
+\item{sig.logFC}{significant Log2(FC) value to extract over/underexpressed genes from}
+
+\item{color.scheme}{Color scheme to use. Options: "coolwarm", "viridis". Default = "coolwarm"}
 }
 \description{
 Use Seurat's DEG Table to plot a volcano plot

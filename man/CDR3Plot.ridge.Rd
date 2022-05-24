@@ -4,7 +4,14 @@
 \alias{CDR3Plot.ridge}
 \title{Plot length of CDR3 aa sequences as a ridgeplot}
 \usage{
-CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
+CDR3Plot.ridge(
+  object,
+  group.by,
+  vdj.cdr3.column,
+  vj.cdr3.column,
+  color.theme,
+  colors = NULL
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -15,7 +22,9 @@ CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
 
 \item{vj.cdr3.column}{Column name for light/beta cdr3 data}
 
-\item{cols}{Colors to use}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 }
 \description{
 Plot length of CDR3 aa sequences as a ridgeplot

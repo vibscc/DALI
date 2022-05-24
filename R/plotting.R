@@ -12,7 +12,8 @@
 #' @param add.missing.families Should missing families be added to the plot. Default = TRUE
 #' @param percent.total Should the fraction of cells be calculated from the total number or cells in the group or just the cells with VDJ info. Default = TRUE (= from total)
 #' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
-#' @param cols Colors to use
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #'
 #' @importFrom dplyr case_when count %>%
 #' @importFrom ggplot2 aes element_blank element_rect element_text facet_grid geom_bar geom_text ggplot labs position_dodge scale_fill_manual theme unit ylim
@@ -37,10 +38,12 @@ BarplotChainRegion <- function(
   add.missing.families = T,
   percent.total = T,
   show.missing.values = F,
-  cols = NULL
+  color.theme = ColorThemes(),
+  colors = NULL
 ) {
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
+  color.theme <- match.arg(color.theme)
 
   data.column <- GetDataColumn(chain, region, by.family)
 
@@ -128,12 +131,13 @@ BarplotChainRegion <- function(
 
   plot.data[[data.column]] <- factor(plot.data$family, levels = families)
 
-  if (!is.null(cols)) {
-      if (cols == "Colorblind") {
-          cols <- c("#FDE725","#423C81")
+  if (is.null(colors)) {
+      if (color.theme == "Colorblind") {
+        colors <- c("#FDE725", "#423C81")
+      } else {
+          colors <- GetCategoricalColorPalette(plot.data$group, color.theme)
       }
   }
-  cols <- GetCategoricalColorPalette(plot.data$group, cols)
 
   plot <- ggplot(plot.data, aes(x = .data[[data.column]], y = .data$freq, fill = .data$group)) +
       geom_bar(position = "dodge", stat = "identity") +
@@ -149,7 +153,7 @@ BarplotChainRegion <- function(
           legend.key.size = unit(0.1, "cm"),
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
       ) +
-      scale_fill_manual(values = cols)
+      scale_fill_manual(values = colors)
 
   if (grid) {
       plot <- plot + facet_grid(~ .data$group)
@@ -167,7 +171,6 @@ BarplotChainRegion <- function(
 #' Heatmap showing to percentage of cells with a specifiek chain/region combination
 #'
 #' @param object Seurat object
-#' @param color colorscheme to use for the heatmap. options: "viridis","coolwarm". Default="coolwarm"
 #' @param group.by Metadata column to group the family data by.
 #' @param chain Chain to plot. Options: 'H'(eavy), 'L'(ight) for BCR; 'A'(lpha), 'B'(eta) for TCR
 #' @param region Region to plot. Available options: 'V'(ariable) or 'C'(onstant)
@@ -177,6 +180,7 @@ BarplotChainRegion <- function(
 #' @param show.missing.values Should missing values be shown in the plot. Default = FALSE
 #' @param cluster.rows Should rows (genes) be clustered in the heatmap. Default = FALSE
 #' @param cluster.cols Should columns (groups) be clustered in the heatmap. Default = FALSE
+#' @param color.scheme Colorscheme to use for the heatmap. Options: "coolwarm", "viridis". Default = "coolwarm"
 #' @param ... parameters to pass to pheatmap::pheatmap()
 #'
 #' @importFrom dplyr case_when count filter group_by mutate select %>%
@@ -190,7 +194,6 @@ BarplotChainRegion <- function(
 
 HeatmapChainRegion <- function(
   object,
-  color = c("coolwarm","viridis"),
   group.by = NULL,
   chain = c("VDJ", "VJ"),
   region = c("V", "J", "C"),
@@ -200,13 +203,12 @@ HeatmapChainRegion <- function(
   show.missing.values = F,
   cluster.rows = F,
   cluster.cols = F,
+  color.scheme = c("coolwarm", "viridis"),
   ...
 ) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
-
-  c.sch <- ColorScale(color)
 
   if (is.null(group.by)) {
     object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -248,7 +250,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  pheatmap::pheatmap(plot.data, color = c.sch, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 0)
+  pheatmap::pheatmap(plot.data, color = ColorScale(color.scheme), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
 }
 
 #' Barplot with clonotype distribution
@@ -258,7 +260,8 @@ HeatmapChainRegion <- function(
 #' @param subset Subset data to these groups
 #' @param clonotypes Clonotypes to plot. Default = top 10
 #' @param position Position of the bars in the plots. Options = stack or dodge
-#' @param cols Colors to use
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #'
 #' @importFrom dplyr %>% filter group_by n select summarise
 #' @importFrom ggplot2 aes element_text geom_bar ggplot theme
@@ -267,7 +270,16 @@ HeatmapChainRegion <- function(
 #'
 #' @export
 
-BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes = NULL, position = c("stack", "dodge"), cols = NULL) {
+BarplotClonotypes <- function(
+    object,
+    group.by = NULL,
+    subset = NULL,
+    clonotypes = NULL,
+    position = c("stack", "dodge"),
+    color.theme = ColorThemes(),
+    colors = NULL
+) {
+  color.theme <- match.arg(color.theme)
 
   if (is.null(group.by)) {
     object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -309,14 +321,16 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 
   plot.data$clonotype <- factor(plot.data$clonotype, levels = clonotypes)
 
-  cols <- GetCategoricalColorPalette(plot.data[[group.by]], cols)
+  if (is.null(colors)) {
+    colors <- GetCategoricalColorPalette(plot.data[[group.by]], color.theme)
+  }
 
   ggplot(plot.data, aes(x = .data$clonotype, y = .data$n, fill = .data[[group.by]])) +
     geom_bar(position = position, stat = "identity") +
     theme(
       axis.text.x = element_text(angle = 90)
     ) +
-    scale_fill_manual(values = cols)
+    scale_fill_manual(values = colors)
 }
 
 #' Circosplot for family to gene distribution
@@ -382,14 +396,23 @@ CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 #' @param subset Subset data to these groups
 #' @param plot.type Type of plot. Options = ridge, line
 #' @param sequence.type Which CDR3 sequence should be used? Options: "AA" or "NT"
-#' @param cols Colors to use. Only has an effect on the ridgeplots
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #'
 #' @export
 
-CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridge", "line"), sequence.type = c("AA", "NT"), cols = NULL) {
-
+CDR3Plot <- function(
+    object,
+    group.by = NULL,
+    subset = NULL,
+    plot.type = c("ridge", "line"),
+    sequence.type = c("AA", "NT"),
+    color.theme = ColorThemes(),
+    colors = NULL
+) {
     plot.type <- match.arg(plot.type)
     sequence.type <- match.arg(sequence.type)
+    color.theme <- match.arg(color.theme)
 
     if (is.null(group.by)) {
         object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -412,9 +435,8 @@ CDR3Plot <- function(object, group.by = NULL, subset = NULL, plot.type = c("ridg
     if (plot.type == "line") {
       plots <- CDR3Plot.line(object, group.by, vdj.cdr3.column, vj.cdr3.column, sequence.type)
     } else if (plot.type == "ridge") {
-      plots <- CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols)
+      plots <- CDR3Plot.ridge(object, group.by, vdj.cdr3.column, vj.cdr3.column, color.theme = color.theme, colors = colors)
     }
-
 
     gridExtra::grid.arrange(grobs = plots, ncol = min(length(plots), 3))
 }
@@ -482,14 +504,16 @@ CDR3Plot.line <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, seq
 #' @param group.by Metadata column to group the family data by.
 #' @param vdj.cdr3.column Column name for heavy/alpha cdr3 data
 #' @param vj.cdr3.column Column name for light/beta cdr3 data
-#' @param cols Colors to use
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #'
 #' @importFrom dplyr %>% mutate
 #' @importFrom ggplot2 ggplot aes coord_cartesian scale_y_discrete scale_x_continuous
 #' @importFrom ggridges geom_density_ridges theme_ridges
 #' @importFrom rlang .data
 
-CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, cols) {
+CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, color.theme, colors = NULL) {
+  color.theme <- match.arg(color.theme)
   plots <- list()
 
   for (column in c(vdj.cdr3.column, vj.cdr3.column)) {
@@ -513,13 +537,15 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 
     title <- paste0(title, " chain")
 
-    cols <- GetCategoricalColorPalette(plot.data[[group.by]], cols)
+    if (is.null(colors )) {
+        colors <- GetCategoricalColorPalette(plot.data[[group.by]], color.theme)
+    }
 
     plots[[column]] <- ggplot(plot.data, aes(x = .data$len, y = .data[[group.by]], fill = .data[[group.by]])) +
       geom_density_ridges() +
       scale_y_discrete(expand = c(0, 0)) +
       scale_x_continuous(expand = c(0, 0)) +
-      scale_fill_manual(values = cols) +
+      scale_fill_manual(values = colors) +
       coord_cartesian(clip = "off") +
       theme_ridges(grid = F, center_axis_labels = T) +
       ggtitle(title)
@@ -536,7 +562,8 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 #' @param by.family Group genes of 1 family together. Only effective with the V-gene. Default = TRUE
 #' @param grid If TRUE, show per gene type in grid. If FALSE, show all genes types together on plot. Default = TRUE
 #' @param highlight Family or gene to highlight. Default = NULL
-#' @param cols Colors to use. Default DALI Colorpalette
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #' @param ... Extra parameters passed to Seurat::Dimplot
 #'
 #' @importFrom dplyr %>%
@@ -550,12 +577,14 @@ DimplotChainRegion <- function(
   by.family = T,
   grid = T,
   highlight = NULL,
-  cols = NULL,
+  color.theme = ColorThemes(),
+  colors = NULL,
   ...
 ) {
 
   region <- match.arg(region) %>% tolower()
   chain <- match.arg(chain) %>% tolower()
+  color.theme <- match.arg(color.theme)
 
   if (length(highlight) > 1) {
     stop("Can only select 1 family/gene to highlight", call. = F)
@@ -589,9 +618,12 @@ DimplotChainRegion <- function(
   if (!is.null(highlight)) {
     cells.highlight <- rownames(object@meta.data)[object@meta.data[[data.column]] %in% highlight]
   }
-  cols <- GetCategoricalColorPalette(object@meta.data[[data.column]], cols)
 
-  Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), cols = cols, ...) +
+  if (is.null(colors)) {
+    colors <- GetCategoricalColorPalette(object@meta.data[[data.column]], color.theme)
+  }
+
+  Seurat::DimPlot(object, group.by = data.column, split.by = split, cells.highlight = cells.highlight, order = rev(families), cols = colors, ...) +
     theme(
       panel.grid.major = element_line(color = "grey"),
       axis.line = element_blank()
@@ -925,8 +957,7 @@ FeaturePlotClonotype <- function(
   alpha = 1,
   missing.alpha = 1,
   missing.color = "lightgrey"
-  ) {
-
+) {
   if (is.null(clonotype.column)) {
     clonotype.column <- "clonotype"
   }
@@ -985,7 +1016,8 @@ FeaturePlotClonotype <- function(
 #' @param group.by  Metadata column to group the family data by.
 #' @param groups.highlight Groups for which to highlight the edges in the graph
 #' @param clonotype.column Metadata column with clonotype information. Default = clonotype
-#' @param cols Colors to use
+#' @param color.theme Color theme to use. Default = DALI
+#' @param colors Colors to use. This overwrites the selected color theme
 #'
 #' @importFrom dplyr %>% bind_rows distinct filter group_by group_map n
 #' @importFrom ggplot2 aes element_blank geom_point scale_color_manual theme
@@ -995,7 +1027,16 @@ FeaturePlotClonotype <- function(
 #'
 #' @export
 
-CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight = NULL, clonotype.column = NULL, cols = NULL) {
+CloneConnGraph <- function(
+    object,
+    reduction,
+    group.by = NULL,
+    groups.highlight = NULL,
+    clonotype.column = NULL,
+    color.theme = ColorThemes(),
+    colors = NULL
+) {
+  color.theme <- match.arg(color.theme)
 
   if (is.null(group.by)) {
     object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
@@ -1060,11 +1101,13 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
   label.x.axis <- colnames(dimred)[[1]]
   label.y.axis <- colnames(dimred)[[2]]
 
-  cols <- GetCategoricalColorPalette(dimred$group, cols)
+  if (is.null(colors)) {
+      colors <- GetCategoricalColorPalette(dimred$group, color.theme)
+  }
 
   plot <- ggraph(graph, layout = "manual", x = .data$x, y = .data$y) +
     geom_point(data = dimred, aes(x = .data[[label.x.axis]], y = .data[[label.y.axis]], color = .data$group), size = 1) +
-    scale_color_manual(values = cols) +
+    scale_color_manual(values = colors) +
     scale_edge_alpha(range = c(0.1, 1)) +
     scale_edge_width(range = c(0.5, 2)) +
     theme(
@@ -1085,38 +1128,40 @@ CloneConnGraph <- function(object, reduction, group.by = NULL, groups.highlight 
 
 #' Use Seurat's DEG Table to plot a volcano plot
 #'
-#' @param data Table with DEG data from Seurat::Findmarkers()
-#' @param c.scheme colorscheme to use
+#' @param deg Table with DEG data from Seurat::Findmarkers()
+#' @param sig.P Significant P value to extract over/under expressed geens from
+#' @param sig.logFC significant Log2(FC) value to extract over/underexpressed genes from
+#' @param color.scheme Color scheme to use. Options: "coolwarm", "viridis". Default = "coolwarm"
+#'
+#' @importFrom ggplot2 geom_point ggplot labs scale_color_manual theme_minimal ylim
+#' @importFrom ggrepel geom_text_repel
 #'
 #' @export
 
-VolcanoPlotDEG <- function(data, c.scheme = c("coolwarm", "viridis")) {
-    # For coloring: adding a colomn to indicate diff expression
-    data$expression <- "zero"
-    data$expression[data$avg_log2FC > 0.6 & data$p_val_adj < 0.05] <- "up"
-    data$expression[data$avg_log2FC < -0.6 & data$p_val_adj < 0.05] <- "down"
+VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c("coolwarm", "viridis")) {
+    color.scheme <- match.arg(color.scheme)
 
-    if (is.null(c.scheme) || c.scheme == "coolwarm") {
+    # For coloring: adding a colomn to indicate diff expression
+    deg$expression <- "zero"
+    deg$expression[deg$avg_log2FC > sig.logFC & deg$p_val_adj < sig.P] <- "up"
+    deg$expression[deg$avg_log2FC < -sig.logFC & deg$p_val_adj < sig.P] <- "down"
+
+    if (color.scheme == "coolwarm") {
         colors <- c("red", "blue", "black")
-    } else if (c.scheme == "viridis") {
-        colors <- c("")
-    } else {
-        stop("invalid colorscheme name")
+    } else if (color.scheme == "viridis") {
+        colors <-  c("#FDE725", "#423C81", "#249F87")
     }
 
-    ymax <- max(-log10(data$p_val_adj)) + 20
     names(colors) <- c("up", "down", "zero")
 
     #get names of diff expressed genes
-    data$genes <- NA
-    data$genes[data$expression != "zero"] <- rownames(data[data$expression != "zero",])
+    deg$genes <- NA
+    deg$genes[deg$expression != "zero"] <- rownames(deg[deg$expression != "zero",])
 
-    return(ggplot(data = data, aes(x = avg_log2FC, y = -log10(p_val_adj), col = expression, label = genes)) +
-               geom_point(show.legend = F) +
-               theme_minimal() +
-               ylim(-5,ymax) +
-               geom_text_repel(show.legend = F) +
-               scale_color_manual(values = colors) +
-               labs(x = expression(Log[2](FC)), y = expression(-log[10](Adj-P-value)))
-    )
+    ggplot(data = deg, aes(x = .data$avg_log2FC, y = -log10(.data$p_val_adj), col = expression, label = .data$genes)) +
+       geom_point(show.legend = F) +
+       geom_text_repel(show.legend = F) +
+       theme_minimal() +
+       scale_color_manual(values = colors) +
+       labs(x = expression(Log[2](FC)), y = expression(-log[10](Adj-P-value)))
 }

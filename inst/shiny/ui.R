@@ -8,27 +8,11 @@ fillPage(
     tags$head(
         tags$link(rel = "stylesheet", type = "text/css", href = "css/dali.min.css"),
     ),
-    tags$div(
-        class = "container-fluid header mb-2 p-0",
+    tags$div(class = "container-fluid header mb-2 p-0",
         tags$img(src = "images/dali.png", class = "header-logo"),
         tags$div(class = "col-sm-4",
              uiOutput("headerUI"),
-             div(class = "row",
-                 htmlOutput("dataset.metrics", container = tags$div, class = "metrics col-sm-6"),
-                 div(class = "form-group row",
-                     tags$label("Theme", class = "col-sm-3 text-right col-form-label"),
-                     div(class = "col-sm-3",
-                         tags$select(name = "coltheme", id = "coltheme", class = "form-control rounded-all-90",
-                                 tags$option("DALI"),
-                                 tags$option("Colorblind"),
-                                 tags$option("DALII"),
-                                 tags$option("Pastel"),
-                                 tags$option("Spectrum")
-                            )
-                     )
-                )
-            )
-
+             htmlOutput("dataset.metrics", container = tags$div, class = "metrics")
         )
     ),
     fluidPage(
@@ -132,10 +116,27 @@ fillPage(
                                 h4("Specify group 1"),
                                 fluidRow(
                                     column(4, selectizeInput("deg.group.by", label = "Metadata column", choices = NULL)),
-                                    column(8, selectizeInput("deg.ident.1", label = "Values", multiple = T, choices = NULL))
+                                    column(6, sliderInput(
+                                        "sig.P",
+                                        "significant P-value",
+                                        0.01,
+                                        0.1,
+                                        0.05)
+                                    ),
+                                    column(6, sliderInput(
+                                        "sig.logFC",
+                                        "significant Log2(FC)",
+                                        0,
+                                        5,
+                                        0.6,
+                                        step = 0.01)
+                                    ),
                                 ),
                                 fluidRow(
                                     column(4, selectInput("deg.assay", label = "Assay for results", choices = NULL)),
+                                    column(8, selectizeInput("deg.ident.2", label = "Values", multiple = T, choices = NULL))
+                                ),
+                                fluidRow(
                                     column(4, actionButton("deg.calculate", "Calculate DEG"))
                                 )
                             ),
@@ -184,19 +185,38 @@ fillPage(
                       div(class = "col-sm-5 well",
                           h4("Specify group 1"),
                           fluidRow(
-                              column(4, selectizeInput("deg.group.by.novdj", label = "Metadata column", choices = NULL)),
-                              column(8, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
+                              column(6, sliderInput(
+                                  "sig.P.novdj",
+                                  "significant P-value",
+                                  0.01,
+                                  0.1,
+                                  0.05)
+                              ),
+                              column(6, sliderInput(
+                                  "sig.logFC.novdj",
+                                  "significant Log2(FC)",
+                                  0,
+                                  5,
+                                  0.6,
+                                  step = 0.01)
+                              )
                           ),
                           fluidRow(
                               column(4, selectInput("deg.assay.novdj", label = "Assay for results", choices = NULL)),
-                              column(4, actionButton("deg.calculate.novdj", "Calculate DEG"))
+                              column(8, selectizeInput("deg.group.by.novdj", label = "Metadata column", choices = NULL)),
+                          ),
+                          fluidRow(
+                              column(8, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
                           )
                       ),
                       div(class = "col-sm-5 well",
                           h4("Specify group 2"),
                           fluidRow(
                               column(4, radioButtons("deg.ident.2.choice.novdj", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
-                              column(4, selectizeInput("deg.ident.2.novdj", label = "Values", multiple = T, choices = NULL))
+                              column(8, selectizeInput("deg.ident.2.novdj", label = "Values", multiple = T, choices = NULL))
+                          ),
+                          fluidRow(
+                              column(4, actionButton("deg.calculate.novdj", "Calculate DEG"))
                           )
                       )
                   )

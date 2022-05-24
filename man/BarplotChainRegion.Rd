@@ -17,7 +17,8 @@ BarplotChainRegion(
   add.missing.families = T,
   percent.total = T,
   show.missing.values = F,
-  cols = NULL
+  color.theme = ColorThemes(),
+  colors = NULL
 )
 }
 \arguments{
@@ -45,7 +46,9 @@ BarplotChainRegion(
 
 \item{show.missing.values}{Should missing values be shown in the plot. Default = FALSE}
 
-\item{cols}{Colors to use}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 }
 \description{
 Barplot for IGHV-family per group

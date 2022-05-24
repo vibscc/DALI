@@ -13,7 +13,7 @@
 }
 
 .header-logo {
-    height: $header-height - 50px;
+    height: $header-height - 30px;
     width: auto;
     margin-top: auto;
     margin-bottom: auto;
@@ -90,10 +90,12 @@ body {
     background-color: crimson;
     color: white;
 }
+
 .closer:hover{
     background-color: crimson;
     color: white;
 }
+
 .upload-remove:hover{
     color: crimson;
     font-weight: bold;

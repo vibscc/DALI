@@ -250,12 +250,12 @@ CreateVDJData <- function(new, orig = NULL) {
 #' @param n Colors in spectrum. Default = 100
 
 ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
-    if (is.null(name) || (name %in% c("coolwarm","DALI","DALII","Pastel","Spectrum"))) {
+    name <- match.arg(name)
+
+    if (name == "coolwarm") {
         return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(n))
-    } else if (name == "viridis" | name == "Colorblind") {
+    } else if (name == "viridis") {
         return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(n))
-    } else {
-        stop("invalid colorscheme ", name)
     }
 }
 
@@ -425,19 +425,18 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered = T) {
     return(vdj_df)
 }
 
-#' Returns colorvector based on chosen theme and amount of categories
+#' Returns vector of colors based on the selected color theme
 #'
-#' @param data data to get categories from
-#' @param theme coloscheme to use. Default = DALI
+#' @param data Data to get categories from
+#' @param theme Colorscheme to use. Default = DALI
 #'
 #' @importFrom Polychrome sky.colors
 #'
 #' @export
 
-
-
-GetCategoricalColorPalette <- function(data, theme = "DALI") {
+GetCategoricalColorPalette <- function(data, theme = ColorThemes()) {
     n <- unique(data) %>% length()
+
     if (theme == "DALI") {
         if (n <= 24) {
             return(sky.colors(max(c(3, n))) %>% rev() %>% unname())
@@ -446,16 +445,16 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
 
     } else if (theme == "DALII") {
         if (n <= 15) {
-            cols <- c("#FF932A","#3CB0B5","#5D3484",
-                      "#54DAFF","#FFCE54","#E484ED",
-                       "#0AFA1F","#FF0000","#967ADC",
-                       "#0014CF","#FF0CCD","#0072B2",
-                       "#2E8F26","#02FFB9","#B85100")
-            return(cols[1:max(3,n)])
+            cols <- c("#FF932A" ,"#3CB0B5", "#5D3484",
+                      "#54DAFF", "#FFCE54", "#E484ED",
+                       "#0AFA1F", "#FF0000", "#967ADC",
+                       "#0014CF", "#FF0CCD", "#0072B2",
+                       "#2E8F26", "#02FFB9", "#B85100")
+            return(cols[1:max(3, n)])
         }
         n.5 <- n/2
-        cols <- ggplotColors(n.5,c(290,180))
-        cols <- c(cols, ggplotColors(n.5,c(170,45)))
+        cols <- ggplotColors(n.5, c(290, 180))
+        cols <- c(cols, ggplotColors(n.5, c(170,45)))
         return(cols)
 
     } else if (theme == "Pastel") {
@@ -464,9 +463,9 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
                       "#F6F7A3", "#DAB6FE", "#C1DEC8",
                       "#F7D3BB", "#76D7D6",  "#D4F9E5",
                       "#F7E368")
-            return(cols[1:max(3,n)])
+            return(cols[1:max(3, n)])
         }
-        return(hcl(h = (seq(0,360, length = n)), c = 55, l = 70))
+        return(hcl(h = (seq(0, 360, length = n)), c = 55, l = 70))
 
     } else if (theme == "Colorblind") {
         if (n <= 12) {
@@ -474,7 +473,7 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
                       "#24FF24", "#FFB6DB", "#0072B2",
                       "#E69F00", "#FFFF99", "56B4E9",
                       "#000000", "#FFF600", "#FF007A")
-            return(cols[1:max(3,n)])
+            return(cols[1:max(3, n)])
         }
         return(ggplotColors(n = n))
 
@@ -483,4 +482,12 @@ GetCategoricalColorPalette <- function(data, theme = "DALI") {
     } else {
         stop("Invalid theme: ", theme)
     }
+}
+
+#' Get a list of the available color themes
+#'
+#' @export
+
+ColorThemes <- function() {
+    return(c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"))
 }
