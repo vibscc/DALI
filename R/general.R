@@ -21,8 +21,14 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
-    sequence.columns <- GetAIRRSequenceColumns(data.dir, quiet)
-    fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+    sequence.columns <- GetAIRRSequenceColumns(data.dir)
+    if (is.null(sequence.columns)) {
+        if (!quiet) {
+            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
+        }
+    } else {
+        fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+    }
     data <- GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
 
     for (field in fields.extra) {
@@ -38,11 +44,10 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #' Load 10x VDJ data from multiple directories into a Seurat object containing multiple samples
 #'
 #' @param object Seurat object
-#' @param data.dir directory containing Cellranger output directories for every sample. If column is specified this will be a named list
+#' @param data.dir directory containing Cellranger output directories for every sample. If column is specified this will be a named list: ("sample.id" = "directory")
 #' @param id_column Optional: Metadata column that contains the information to distinguish samples.
 #' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
-#' @param id_list Optional: Named vector used with id_column. Structured as so: ("directoryname" = "sample_id).
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
 #' @param quiet Ignore warnings. Default = FALSE
@@ -53,12 +58,15 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 #'
 #' @export
 
-Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, id_list, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
 
     if (!is.null(id_column)) {
         # check if the sample names are unique
         if (length(unique(names(object@meta.data[[id_column]]))) != length(names(object@meta.data[[id_column]]))) {
             stop("Sample names are not unique:", unique(names(object@meta.data[[id_column]])))
+        }
+        if (is.null(names(data.dir))) {
+            stop("Please use a named vector for your directories")
         }
 
         samples <- as.factor(object@meta.data[[id_column]])
@@ -66,9 +74,6 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
         overlap_matrix <- matrix(data = NA, nrow = length(levels(samples)), ncol = length(directories))
     } else {
         # Define samples using suffix & split barcodes into seperate elements in a list
-        if (is.null(names(data.dir))) {
-            stop("Please use a named vector for your directories")
-        }
         samples <- strsplit(colnames(object), "_") %>% sapply("[", 2) %>% as.factor()
         directories <- list.dirs(data.dir, recursive = F)
         cellbarcodes <- strsplit(colnames(object), "_") %>% sapply("[", 1) %>% split(samples)
@@ -88,16 +93,21 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
     ndata <- 1
     for  (vdjdir in directories) {
         # Convert vdjfiles to df
-        sequence.columns <- GetAIRRSequenceColumns(vdjdir, quiet)
-        fields.extra <- c(fields.extra, sequence.columns) %>% unique()
-        vdj_df <- GetVDJ_Dataframe(vdjdir, sequence.columns, use.filtered)
+        sequence.columns <- GetAIRRSequenceColumns(data.dir)
+        if (is.null(sequence.columns)) {
+            if (!quiet) {
+                warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
+            }
+        } else {
+            fields.extra <- c(fields.extra, sequence.columns) %>% unique()
+        }
+        data <- GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
 
 
         if (!is.null(id_column)) {
             # Change cellbarcode according to specified metadata column
             # Sample_id names based on id_column
-            dir.name <- basename(vdjdir)
-            sample_id <- id_list[[dir.name]]
+            sample_id <- names(data.dir)[ndata]
             cellbarcodes <- grepl(sample_id, object@meta.data[[id_column]])
             cellbarcodes <- colnames(object)[cellbarcodes]
             suffix <- strsplit(colnames(object), "_") %>% sapply("[", 2)
@@ -574,6 +584,8 @@ MergeVDJ <- function(...) {
 #'
 #' @param object Seurat object
 #' @param id_column metadata column to split the data on
+#'
+#' @importFrom Seurat SplitObject
 #'
 #' @export
 

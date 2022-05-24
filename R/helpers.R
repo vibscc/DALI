@@ -410,9 +410,8 @@ AddMiscVDJData <- function(object,TCR = NULL ,BCR = NULL) {
 #' Get The sequence columns from an airr_rearrangement.tsv file
 #'
 #' @param data.dir path to directory containing the airr_rearrangement.tsv file
-#' @param quiet Ignore warnings. Default = FALSE
 
-GetAIRRSequenceColumns <- function(data.dir, quiet = F) {
+GetAIRRSequenceColumns <- function(data.dir) {
     location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
 
     if (file.exists(location.airr.rearrangement)) {
@@ -420,9 +419,7 @@ GetAIRRSequenceColumns <- function(data.dir, quiet = F) {
         colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
         sequence.columns <- grep("sequence", colnames(airr.data), value = T)
     } else {
-        if (!quiet) {
-            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
-        }
+        sequence.columns <- NULL
     }
     return(sequence.columns)
 }
@@ -440,10 +437,14 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered) {
     if (!file.exists(location.annotation.contig)) {
         stop("Contig annotation file (", location.annotation.contig, ") is missing!", call. = F)
     }
+
     vdj_df <- read.csv(location.annotation.contig, stringsAsFactors = F) %>%
         filter(grepl("true", .data$productive, ignore.case = T))
-    airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
-    vdj_df <- left_join(vdj_df, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
+
+    if (file.exists(location.airr.rearrangement)) {
+        airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
+        vdj_df <- left_join(vdj_df, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
+    }
 
     return(vdj_df)
 }
