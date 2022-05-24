@@ -134,7 +134,7 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
         }
 
         # check if every directory gets assigned a sample (1 to 1 relationships)
-        if (sum(overlap_matrix[row,]) != 1) {
+        if (sum(overlap_matrix[row,]) > 1) {
             stop("A Sample was assigned more than 1 directory containing VDJ data")
         }
 
@@ -622,6 +622,11 @@ SplitObject_VDJ <- function(object, id_column) {
 #' @export
 
 SubsetObject_VDJ <- function(object, id_column, sample_id, assay = NULL) {
+
+    if (is.null(object@misc$VDJ)) {
+        warning("The object does not contain VDJ data")
+    }
+
     subset <- SplitObject(object, split.by = id_column)[[sample_id]]
     barcodes <- colnames(subset)
 
@@ -639,7 +644,8 @@ SubsetObject_VDJ <- function(object, id_column, sample_id, assay = NULL) {
             stop("invalid assay ",assay)
         }
     }
-    subset <- AddMiscVDJData(object = subset,TCR = TCR,BCR = BCR)
+
+    subset <- AddMiscVDJData(object = subset, TCR = TCR, BCR = BCR)
 
     return(subset)
 }

@@ -387,7 +387,7 @@ AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
 #' @param TCR list with TCR data
 #' @param BCR list with BCR data
 
-AddMiscVDJData <- function(object,TCR = NULL ,BCR = NULL) {
+AddMiscVDJData <- function(object, TCR = NULL, BCR = NULL) {
     if (!is.null(BCR) & !is.null(TCR)) {
         Misc(object = object, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
         Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
@@ -399,10 +399,14 @@ AddMiscVDJData <- function(object,TCR = NULL ,BCR = NULL) {
         Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
         DefaultAssayVDJ(object) <- "BCR"
     } else if (!is.null(TCR)) {
-        Misc(object = object, slot = "VDJ") <- list("TCR" = BCR)
+        Misc(object = object, slot = "VDJ") <- list("TCR" = TCR)
         Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
         Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
         DefaultAssayVDJ(object) <- "TCR"
+    } else {
+        Misc(object = object, slot = "VDJ") <- NULL
+        Misc(object = object, slot = "default.assay.VDJ") <- NULL
+        Misc(object = object, slot = "default.chain.VDJ") <- NULL
     }
     return(object)
 }
