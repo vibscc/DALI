@@ -592,7 +592,7 @@ function(input, output, session) {
 
 
     output$chain.usage.heatmap <- renderPlot({
-        req(vals$data,vals$data@meta.data$vdj.v_fam, input$chain.usage.chain, input$chain.usage.region)
+        req(vals$data, vals$data@meta.data$vdj.v_fam)
         HeatmapChainRegion(
             vals$data,
             chain = input$chain.usage.chain,
@@ -600,7 +600,7 @@ function(input, output, session) {
             add.missing.families = input$chain.usage.add.missing.families,
             show.missing.values = F,
             cluster.cols = input$chain.usage.cluster.cols,
-            color.scheme = input$color.scheme
+            color.scheme = settings$color.scheme
         )
     })
 
@@ -1010,8 +1010,7 @@ function(input, output, session) {
                 incProgress(0.7)
                 output$deg.volcano.plot <- renderPlot({
                     req(vals$data, vals$deg.results)
-
-                    VolcanoPlotDEG(vals$deg.results.novdj, sig.P = input$sig.P.novdj, sig.logFC = input$sig.logFC.novdj, color.scheme = settings$color.scheme)
+                    VolcanoPlotDEG(vals$deg.results, sig.P = input$sig.P.novdj, sig.logFC = input$sig.logFC.novdj, color.scheme = settings$color.scheme)
                 })
                 incProgress(0.1)
             })
@@ -1105,10 +1104,14 @@ function(input, output, session) {
         } else if (intersect(ident.1.novdj, ident.2.novdj) %>% length() > 0) {
             showNotification("Group 1 and 2 should not overlap!", type = c("error"), session = session)
         } else {
-            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 1, {
+            withProgress(message = "Calculating DEG", detail = "This may take a while", min = 0, max = 1, value = 0, {
+                vals$deg.results.novdj <- NULL
+                incProgress(0.2)
                 vals$deg.results.novdj <- Seurat::FindMarkers(vals$data, ident.1 = ident.1.novdj, ident.2 = ident.2.novdj, group.by = input$deg.group.by.novdj, assay = input$deg.assay.novdj)
+                incProgress(0.7)
                 output$deg.volcano.plot.novdj <- renderPlot({req(vals$data, vals$deg.results.novdj)
                     VolcanoPlotDEG(vals$deg.results.novdj, sig.P = input$sig.P.novdj, sig.logFC = input$sig.logFC.novdj, color.scheme = settings$color.scheme)})
+                incProgress(0.1)
             })
             withProgress(message = "FINSHED CALCULATING", detail = "Check the Results tab", min = 1, max = 1, value = 1, {
                 Sys.sleep(1.5)

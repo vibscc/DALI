@@ -3,4 +3,6 @@
 .RData
 .Ruserdata
 .RDataTmp
+.RDataTmp1
+.RDataTmp5
 inst/shiny/www/css

@@ -29,7 +29,8 @@ fillPage(
 		                checkboxInput("chain.usage.add.missing.families", label = "Show missing families", value = F),
                         checkboxInput("chain.usage.cluster.cols", label = "Cluster groups based on VDJ genes", value = F)
                         ),
-                    column(9, plotOutput("chain.usage.heatmap") %>% withSpinner()))
+                    column(9, plotOutput("chain.usage.heatmap") %>% withSpinner())
+                )
             ),
             tabPanel("Clone view",
                     fluidRow(
@@ -115,7 +116,6 @@ fillPage(
                             div(class = "col-sm-5 well",
                                 h4("Specify group 1"),
                                 fluidRow(
-                                    column(4, selectizeInput("deg.group.by", label = "Metadata column", choices = NULL)),
                                     column(6, sliderInput(
                                         "sig.P",
                                         "significant P-value",
@@ -134,17 +134,20 @@ fillPage(
                                 ),
                                 fluidRow(
                                     column(4, selectInput("deg.assay", label = "Assay for results", choices = NULL)),
-                                    column(8, selectizeInput("deg.ident.2", label = "Values", multiple = T, choices = NULL))
+                                    column(8, selectizeInput("deg.group.by", label = "Metadata column", choices = NULL))
                                 ),
                                 fluidRow(
-                                    column(4, actionButton("deg.calculate", "Calculate DEG"))
+                                    column(12, selectizeInput("deg.ident.1", label = "Values", multiple = T, choices = NULL))
                                 )
                             ),
                             div(class = "col-sm-5 well",
                                 h4("Specify group 2"),
                                 fluidRow(
                                     column(4, radioButtons("deg.ident.2.choice", "", c("All other cells" = 1, "Selected cells" = 2), inline = T)),
-                                    column(4, selectizeInput("deg.ident.2", label = "Values", multiple = T, choices = NULL))
+                                    column(8, selectizeInput("deg.ident.2", label = "Values", multiple = T, choices = NULL))
+                                ),
+                                fluidRow(
+                                    column(4, actionButton("deg.calculate", "Calculate DEG"))
                                 )
                             )
                         )
@@ -206,7 +209,7 @@ fillPage(
                               column(8, selectizeInput("deg.group.by.novdj", label = "Metadata column", choices = NULL)),
                           ),
                           fluidRow(
-                              column(8, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
+                              column(12, selectizeInput("deg.ident.1.novdj", label = "Values", multiple = T, choices = NULL))
                           )
                       ),
                       div(class = "col-sm-5 well",

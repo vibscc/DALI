@@ -250,7 +250,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  pheatmap::pheatmap(plot.data, color = ColorScale(color.scheme), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
+  return(pheatmap::pheatmap(plot.data, color = ColorScale(color.scheme), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 0))
 }
 
 #' Barplot with clonotype distribution
@@ -537,7 +537,7 @@ CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, co
 
     title <- paste0(title, " chain")
 
-    if (is.null(colors )) {
+    if (is.null(colors)) {
         colors <- GetCategoricalColorPalette(plot.data[[group.by]], color.theme)
     }
 
@@ -1129,7 +1129,7 @@ CloneConnGraph <- function(
 #' Use Seurat's DEG Table to plot a volcano plot
 #'
 #' @param deg Table with DEG data from Seurat::Findmarkers()
-#' @param sig.P Significant P value to extract over/under expressed geens from
+#' @param sig.P Significant P value to extract over/under expressed genes from
 #' @param sig.logFC significant Log2(FC) value to extract over/underexpressed genes from
 #' @param color.scheme Color scheme to use. Options: "coolwarm", "viridis". Default = "coolwarm"
 #'
@@ -1158,10 +1158,13 @@ VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c(
     deg$genes <- NA
     deg$genes[deg$expression != "zero"] <- rownames(deg[deg$expression != "zero",])
 
-    ggplot(data = deg, aes(x = .data$avg_log2FC, y = -log10(.data$p_val_adj), col = expression, label = .data$genes)) +
+    ymax <- -log10(deg$p_val_adj[deg$p_val_adj > 0] %>% min()) + 20
+
+    ggplot(data = deg, aes(x = avg_log2FC, y = -log10(p_val_adj), col = expression, label = genes)) +
        geom_point(show.legend = F) +
        geom_text_repel(show.legend = F) +
        theme_minimal() +
+       ylim(-5,ymax) +
        scale_color_manual(values = colors) +
        labs(x = expression(Log[2](FC)), y = expression(-log[10](Adj-P-value)))
 }
