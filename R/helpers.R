@@ -447,9 +447,9 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered) {
 
     if (file.exists(location.airr.rearrangement)) {
         airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
+        colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
         vdj_df <- left_join(vdj_df, airr.data[, c("contig_id", sequence.columns)], by = "contig_id")
     }
 
     return(vdj_df)
 }
-

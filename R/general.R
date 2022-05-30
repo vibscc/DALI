@@ -61,12 +61,13 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
 Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
 
     if (!is.null(id_column)) {
+        #check if data.dir is a named vector now
+        if (!is.vector(data.dir) | is.null(names(data.dir))) {
+            stop("data.dir must be a named vector when an id_column was given")
+        }
         # check if the sample names are unique
         if (length(unique(names(object@meta.data[[id_column]]))) != length(names(object@meta.data[[id_column]]))) {
             stop("Sample names are not unique:", unique(names(object@meta.data[[id_column]])))
-        }
-        if (is.null(names(data.dir))) {
-            stop("Please use a named vector for your directories")
         }
 
         samples <- as.factor(object@meta.data[[id_column]])
@@ -86,14 +87,14 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
         overlap_matrix <- matrix(data = NA, nrow = length(cellbarcodes), ncol = length(directories))
     }
 
-    data <- list()
+    data <- data.frame()
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
     ndata <- 1
     for  (vdjdir in directories) {
         # Convert vdjfiles to df
-        sequence.columns <- GetAIRRSequenceColumns(data.dir)
+        sequence.columns <- GetAIRRSequenceColumns(vdjdir)
         if (is.null(sequence.columns)) {
             if (!quiet) {
                 warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
@@ -101,8 +102,7 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
         } else {
             fields.extra <- c(fields.extra, sequence.columns) %>% unique()
         }
-        data <- GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
-
+        vdj_df <- GetVDJ_Dataframe(vdjdir, sequence.columns, use.filtered)
 
         if (!is.null(id_column)) {
             # Change cellbarcode according to specified metadata column
@@ -111,7 +111,7 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
             cellbarcodes <- grepl(sample_id, object@meta.data[[id_column]])
             cellbarcodes <- colnames(object)[cellbarcodes]
             suffix <- strsplit(colnames(object), "_") %>% sapply("[", 2)
-            vdj_df$barcodes <- paste0(vdj_df$barcodes, "_", suffix)
+            vdj_df$barcodes <- paste0(vdj_df$barcodes, "_", suffix[1])
         } else {
             vdj_df$ID <- ndata
         }
@@ -124,25 +124,29 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
         for (row in 1:length(cellbarcodes)) {
             for (col in 1:length(directories)) {
                 # Check overlap of barcodes and store in overlapmatrix
-                overlap_matrix[row,col] <- length(intersect(cellbarcodes[[row]], data[data$ID == col,]$barcode)) / nrow(data[data$ID == col,])
+                overlap_matrix[row, col] <- length(intersect(cellbarcodes[[row]], data[data$ID == col, ]$barcode)) / nrow(data[data$ID == col, ])
             }
             # check for highly similar overlap with the theorized actual sample
-            least.difference <- min(abs(overlap_matrix[row,] - max(overlap_matrix[row,])))
+            sorted_overlap <- sort(overlap_matrix[row, ])
+            least.difference <- abs(sorted_overlap[length(sorted_overlap)] - sorted_overlap[length(sorted_overlap) - 1])
             if (!force && least.difference <= 0.1 ) {
                 stop("Similarity between barcodes is too high. Use colomn_id & id_list to define samples")
             }
         }
 
         # check if every directory gets assigned a sample (1 to 1 relationships)
-        if (sum(overlap_matrix[row,]) > 1) {
+        id_check <- c()
+        for (i in 1:ncol(overlap_matrix)) {
+            df_id <- which.max(overlap_matrix[, i])
+            data[data$ID == i, ]$barcode <- paste0(data[data$ID == i, ]$barcode,names(cellbarcodes[df_id]))
+            id_check <- c(df_id, id_check)
+        }
+
+        # check if every directory gets assigned a sample (1 to 1 relationships)
+        if (length(id_check) != length(unique(id_check))) {
             stop("A Sample was assigned more than 1 directory containing VDJ data")
         }
 
-        # Now to check which vdj data belongs to which sample & Change the cellbarcode accordingly
-        for (i in 1:ncol(overlap_matrix)) {
-            df_id <- which.max(overlap_matrix[,i])
-            data[data$ID == i,]$barcode <- paste0(data[data$ID == i,]$barcode,names(cellbarcodes[df_id]))
-        }
     }
 
     for (field in fields.extra) {
