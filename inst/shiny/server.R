@@ -417,7 +417,7 @@ function(input, output, session) {
                      div(
                          strong("Contrast Color Scheme"),
                          tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps, volcano plots, and feature plots"),
-                         selectInput("color.scheme", label = "", choices = c("coolwarm","viridis"), selected = settings$color.scheme)
+                         selectInput("color.scheme", label = "", choices = c("coolwarm", "viridis", "gray to blue", "turning red"), selected = settings$color.scheme)
                      )
                 ),
                 tabPanel("Reduction Plots",

@@ -4,7 +4,7 @@
 \alias{ColorScale}
 \title{Return colorscales for heatmaps from name}
 \usage{
-ColorScale(name = c("coolwarm", "viridis"), n = 100)
+ColorScale(name = c("coolwarm", "viridis", "gray to blue", "turning red"), n = 100)
 }
 \arguments{
 \item{name}{Colorscheme name}

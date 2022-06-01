@@ -8,7 +8,7 @@ VolcanoPlotDEG(
   deg,
   sig.P = 0.05,
   sig.logFC = 0.6,
-  color.scheme = c("coolwarm", "viridis")
+  color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red")
 )
 }
 \arguments{

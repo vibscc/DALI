@@ -203,7 +203,7 @@ HeatmapChainRegion <- function(
   show.missing.values = F,
   cluster.rows = F,
   cluster.cols = F,
-  color.scheme = c("coolwarm", "viridis"),
+  color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
   ...
 ) {
 
@@ -513,7 +513,6 @@ CDR3Plot.line <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, seq
 #' @importFrom rlang .data
 
 CDR3Plot.ridge <- function(object, group.by, vdj.cdr3.column, vj.cdr3.column, color.theme, colors = NULL) {
-  color.theme <- match.arg(color.theme)
   plots <- list()
 
   for (column in c(vdj.cdr3.column, vj.cdr3.column)) {
@@ -1138,7 +1137,7 @@ CloneConnGraph <- function(
 #'
 #' @export
 
-VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c("coolwarm", "viridis")) {
+VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red")) {
     color.scheme <- match.arg(color.scheme)
 
     # For coloring: adding a colomn to indicate diff expression
@@ -1150,7 +1149,12 @@ VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c(
         colors <- c("red", "blue", "black")
     } else if (color.scheme == "viridis") {
         colors <-  c("#FDE725", "#423C81", "#249F87")
+    } else if (color.scheme == "gray to blue") {
+        colors <- c("#c0c0c0", "#c0c0c0", "#4575B4")
+    } else if (color.scheme == "turning red") {
+        colors <- c("#c0c0c0", "#c0c0c0", "#D73027")
     }
+
 
     names(colors) <- c("up", "down", "zero")
 

@@ -15,7 +15,7 @@ HeatmapChainRegion(
   show.missing.values = F,
   cluster.rows = F,
   cluster.cols = F,
-  color.scheme = c("coolwarm", "viridis"),
+  color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
   ...
 )
 }

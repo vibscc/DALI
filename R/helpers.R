@@ -249,13 +249,17 @@ CreateVDJData <- function(new, orig = NULL) {
 #' @param name Colorscheme name
 #' @param n Colors in spectrum. Default = 100
 
-ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
+ColorScale <- function(name = c("coolwarm", "viridis", "gray to blue", "turning red"), n = 100) {
     name <- match.arg(name)
 
     if (name == "coolwarm") {
         return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(n))
     } else if (name == "viridis") {
         return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(n))
+    } else if (name == "gray to blue") {
+        return(colorRampPalette(c("#c0c0c0", "#c0c0c0", "#c0c0c0", "#91BFDB", "#4575B4"))(n))
+    } else if (name == "turning red") {
+        return(colorRampPalette(c("#c0c0c0", "#c0c0c0", "#c0c0c0", "#FC8D59", "#D73027"))(n))
     }
 }
 
