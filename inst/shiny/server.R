@@ -1,5 +1,6 @@
 library(shinyFiles)
 library(dplyr)
+suppressPackageStartupMessages(library(circlize))
 
 function(input, output, session) {
 
@@ -917,6 +918,22 @@ function(input, output, session) {
         req(vals$data, vals$deg.results)
 
         vals$deg.results
+    })
+
+    # ======================================================================= #
+    # CircosPlot
+    # ======================================================================= #
+
+    output$circosplot.genes <- renderPlot({
+        req(vals$data)
+        circos.clear()
+        CircosPlotGenes(object = vals$data, seed = 0)
+    })
+
+    output$circosplot.chains <- renderPlot({
+        req(vals$data)
+        circos.clear()
+        CircosPlotChains(object = vals$data)
     })
 
     # ####################################################################### #

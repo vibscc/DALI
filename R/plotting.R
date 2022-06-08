@@ -333,7 +333,7 @@ BarplotClonotypes <- function(object, group.by = NULL, subset = NULL, clonotypes
 #'
 #' @export
 
-CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
+CircosPlotGenes <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
 
     if (!is.null(seed)) {
         set.seed(seed)
@@ -367,6 +367,84 @@ CircosPlot <- function(object, group.by = NULL, subset = NULL, seed = NULL) {
     plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
 
     chordDiagram(plot.data, annotationTrack = "grid",
+                 preAllocateTracks = list(track.height = plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()/3))
+    circos.track(track.index = 1, panel.fun = function(x, y) {
+        circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index,
+                    facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5), cex = 0.5)
+    }, bg.border = NA)
+}
+
+
+#' Circosplot for VDJ chain useage distribution
+#'
+#' @param object Seurat object
+#' @param group.by Metadata column to group the family data by.
+#' @param subset Subset data to these groups
+#'
+#' @importFrom circlize chordDiagram circos.track circos.text CELL_META
+#' @importFrom dplyr %>% select
+#' @importFrom graphics strwidth
+#' @importFrom rlang .data
+#' @importFrom stats na.omit
+#'
+#' @export
+
+CircosPlotChains <- function(object, group.by = NULL, subset = NULL) {
+    if (is.null(group.by)) {
+        object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
+        group.by <- "default.clustering"
+    }
+
+    if (!group.by %in% colnames(object@meta.data)) {
+        stop("Invalid group.by column ", group.by)
+    }
+
+    if (!is.null(subset)) {
+        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+        object <- subset(object, cells = cells)
+    }
+
+    v.gene.column <- "vdj.v_gene"
+    d.gene.column <- "vdj.d_gene"
+    j.gene.column <- "vdj.j_gene"
+
+    plot.data_dj <- object@meta.data %>%
+        select(.data[[d.gene.column]], .data[[j.gene.column]]) %>%
+        na.omit() %>%
+        table()
+    plot.data_dv <- object@meta.data %>%
+        select(.data[[d.gene.column]], .data[[v.gene.column]]) %>%
+        na.omit() %>%
+        table()
+    plot.data_jv <- object@meta.data %>%
+        select(.data[[j.gene.column]], .data[[v.gene.column]]) %>%
+        na.omit() %>%
+        table()
+
+    plot.data_dj <- EqualiseTableRows(plot_data_x = plot.data_dj,plot_data_y = plot.data_dv)
+    plot.data_dv <- EqualiseTableRows(plot_data_x = plot.data_dv,plot_data_y = plot.data_dj)
+    plot.data_jv <- EqualiseTableRows(t(plot.data_jv),t(plot.data_dv)) %>% t()
+    plot.data_dv <- EqualiseTableRows(t(plot.data_dv),t(plot.data_jv)) %>% t()
+
+    plot.data_jj <- matrix(rep(0, nrow(plot.data_jv)*ncol(plot.data_dj)), nrow = nrow(plot.data_jv))
+    colnames(plot.data_jj) <- colnames(plot.data_dj)
+    rownames(plot.data_jj) <- rownames(plot.data_jv)
+
+    right.data <- rbind(plot.data_dv,plot.data_jv)
+    left.data <- rbind(plot.data_dj, plot.data_jj)
+    plot.data <- cbind(left.data,right.data)
+
+    nm <- unique(unlist(dimnames(plot.data)))
+    group <- structure(gsub("[^VDJ]","" , nm), names = nm)
+
+    col.vector <- unname(group) %>% as.factor()
+    levels(col.vector) <- c("#267ABA","#BA265D","#38EB1D")
+    grid.col <- structure(col.vector,
+                          names = names(group))
+
+    plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
+
+    chordDiagram(plot.data, group = group, grid.col = grid.col, annotationTrack = "grid",
                  preAllocateTracks = list(track.height = plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()/3))
     circos.track(track.index = 1, panel.fun = function(x, y) {
         circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index,

@@ -80,10 +80,25 @@ fillPage(
                 )
             ),
             tabPanel("Clonotypes",
-                DT::DTOutput("clonotypes.table"),
-                fluidRow(
-                    column(4, uiOutput("clonotype.lineage.ui")),
-                    column(8, plotOutput("clonotype.lineage"))
+                tabsetPanel(
+                    tabPanel("Table & Lineage",
+                        DT::DTOutput("clonotypes.table"),
+                        fluidRow(
+                            column(4, uiOutput("clonotype.lineage.ui")),
+                            column(8, plotOutput("clonotype.lineage"))
+                        ),
+                    ),
+                    tabPanel("Family & Chain useage",
+                        fluidRow(
+                            column(width = 6,
+                                   plotOutput("circosplot.genes") %>% withSpinner(),
+                            ),
+                            column(width = 6,
+                                   plotOutput("circosplot.chains") %>% withSpinner(),
+                            ),
+
+                        ),
+                    )
                 )
             ),
             tabPanel("Transcriptomics",
