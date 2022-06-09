@@ -35,6 +35,8 @@ LazyData: true
 RoxygenNote: 7.2.0
 biocViews:
 Remotes:
+    dynverse/dynplot
+    dynverse/dynwrap
     YuLab-SMU/ggtree
 Requires:
     R (>= 3.5.0)
@@ -71,5 +73,7 @@ Imports:
     treeio,
     vegan
 Suggests:
+    dynplot,
+    dynwrap,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
