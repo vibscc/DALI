@@ -70,6 +70,9 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
 
+        updateSelectInput(session, "subset.circos.genes",choices = metadata.columns, selected = metadata.default )
+        updateSelectInput(session, "subset.circos.chains",choices = metadata.columns, selected = metadata.default)
+
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
 
@@ -624,6 +627,22 @@ function(input, output, session) {
 
         groups <- vals$data@meta.data[, input$clonotype.group.by] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
         updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]], server = T)
+    })
+
+    observeEvent(input$subset.circos.genes, {
+        req(vals$data, input$subset.circos.genes)
+
+        gene.subsets <- vals$data@meta.data[, input$subset.circos.genes] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        gene.subsets <- c("Select group...", gene.subsets)
+        updateSelectizeInput(session, "gene.subset.group", choices = gene.subsets, selected = gene.subsets[[1]], server = T)
+    })
+
+    observeEvent(input$subset.circos.chains, {
+        req(vals$data, input$subset.circos.chains)
+
+        chain.subsets <- vals$data@meta.data[, input$subset.circos.chains] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        chain.subsets <- c("Select group...", chain.subsets)
+        updateSelectizeInput(session, "chain.subset.group", choices = chain.subsets, selected = chain.subsets[[1]], server = T)
     })
 
     # Top clonotypes change
