@@ -13,6 +13,12 @@ if (!requireNamespace("devtools", quietly = TRUE))
 
 devtools::install_github("vibscc/DALI")
 ```
+To perform Trajectory analyses, installation of the Dynverse R packages and an installation of Docker is required.
+Dynverse is installed using `devtools`:
+
+```
+devtools::install_github("dynverse/dyno")
+```
 
 ## Usage
 

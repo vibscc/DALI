@@ -275,3 +275,20 @@ ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
         stop("invalid colorscheme ", name)
     }
 }
+
+#' Helperfunction to subset BCR or TCR data in a Seurat object
+#'
+#' @param object Seurat object to be subsetted
+#' @param assay BCR or TCR assay
+#'
+#' @importFrom dplyr %>%
+
+SubsetAssay <- function(object, assay = c('TCR', 'BCR')) {
+    assay <- match.arg(assay)
+
+    barcodes <- c()
+    for (df in object@misc$VDJ[[assay]]) {
+        barcodes <- c(barcodes, df$barcode) %>% unique()
+    }
+    return(object[,barcodes])
+}
