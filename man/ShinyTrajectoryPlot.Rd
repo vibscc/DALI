@@ -4,7 +4,13 @@
 \alias{ShinyTrajectoryPlot}
 \title{Plotfunction to plot a simple Trajectory Analysis plot for the DALI shiny app}
 \usage{
-ShinyTrajectoryPlot(object, reduction, gene = 1, color.theme = "DALI")
+ShinyTrajectoryPlot(
+  object,
+  reduction,
+  gene,
+  start_cluster_id,
+  color.theme = "DALI"
+)
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,6 +18,8 @@ ShinyTrajectoryPlot(object, reduction, gene = 1, color.theme = "DALI")
 \item{reduction}{Dimensionality reduction as basis for the analysis and plot.}
 
 \item{gene}{Gene to base trajectory analysis on. Default = the first in the expression matrix}
+
+\item{start_cluster_id}{ID of the cluster to root the trajectory tree on}
 
 \item{color.theme}{Colorscheme for the plot.}
 }

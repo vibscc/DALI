@@ -1190,50 +1190,52 @@ TrajectoryPlot <- function(
 #' @param object Seurat object
 #' @param reduction Dimensionality reduction as basis for the analysis and plot.
 #' @param gene Gene to base trajectory analysis on. Default = the first in the expression matrix
+#' @param start_cluster_id ID of the cluster to root the trajectory tree on
 #' @param color.theme Colorscheme for the plot.
 #'
-#' @importFrom slingshot getLineages getCurves
+#' @importFrom slingshot slingshot
 #' @importFrom dplyr first
 #' @importFrom Seurat FindNeighbors FindClusters
 #' @importFrom graphics legend lines
 
-ShinyTrajectoryPlot <- function(object, reduction, gene = 1, color.theme = "DALI") {
+ShinyTrajectoryPlot <- function(object, reduction, gene, start_cluster_id, color.theme = "DALI") {
     # Check if the reduction is actually present
     if (is.null(object@reductions[[reduction]])) {
         stop(reduction, " reduction was not performed on the object")
     }
-    # Check if the gene is present in the expression matrixµ
-    if (is.null(object@assays$RNA@counts[gene, ])) {
-        stop("Gene ", gene, " was not detected in the expression matrix")
-    }
 
     set.seed(1)
-    object <- FindNeighbors(object, verbose = FALSE) %>%
-        FindClusters(resolution = 0.25, verbose = FALSE)
 
     dimred <- object@reductions[[reduction]]@cell.embeddings
-    clustering <- object@meta.data$RNA_snn_res.0.25
+    clustering <- object@meta.data$seurat_clusters
 
-    start_cluster_id <- tibble(
-        expression = object@assays$RNA@counts[gene, ],
-        cluster_id = clustering
-    ) %>%
-        group_by(cluster_id) %>%
-        summarise(expression = mean(expression)) %>%
-        arrange(desc(expression)) %>%
-        pull(cluster_id) %>%
-        dplyr::first() %>%
-        as.character()
+    if (!is.null(gene)) {
+        # Check if the gene is present in the expression matrix
+        if (is.null(object@assays$RNA@counts[gene, ])) {
+            stop("Gene ", gene, " was not detected in the expression matrix")
+        }
+        start_cluster_id <- tibble(
+            expression = object@assays$RNA@counts[gene,],
+            cluster_id = clustering
+        ) %>%
+            group_by(cluster_id) %>%
+            summarise(expression = mean(expression)) %>%
+            arrange(desc(expression)) %>%
+            pull(cluster_id) %>%
+            first() %>%
+            as.character()
+    } else if (is.null(start_cluster_id)) {
+        stop("Please Specify a Start Cluster ID or Gene to base the Trajectory tree")
+    } else if (!(start_cluster_id %in% levels(clustering))) {
+        stop( start_cluster_id," is not a valid cluster ID")
+    }
 
-    lineages <- getLineages(dimred, clustering, start.clus = start_cluster_id)
-    curves <- getCurves(lineages)
+    lineage <- slingshot(dimred, clustering, start.clus = start_cluster_id, allow.breaks = T)
 
     colors <- GetCategoricalColorPalette(levels(object@meta.data$seurat_clusters))
 
     plot(dimred, col = colors[clustering], asp = 1, pch = 16)
-    for (lineage in curves@metadata$curves) {
+    for (lineage in lineage@metadata$curves) {
         lines(lineage, lwd = 3, col = 'black')
     }
-    legend(x = "topright", legend = levels(object@meta.data$seurat_clusters), fill = colors)
 }
-

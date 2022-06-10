@@ -49,18 +49,27 @@ fillPage(
                                     ),
                                  fluidRow(
                                     column(3, plotOutput("cdr3.frequency")),
-                                    column(5, tableOutput("top.clonotypes"))
+                                    column(5, plotOutput("trajectory.plot") %>% withSpinner()),
                                 )),
                         column(4,
                             sidebarPanel(width = 12,
-                            selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
-                            selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),
+                                selectInput("traject.red", label = "Reduction", choices = NULL),
+                                selectInput("traject.start.method", label = "Startcluster calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
+                                uiOutput("trajectory.selection")
+                            ),
+                            sidebarPanel(width = 12,
+                                selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
+                                selectInput("featureplot.reduction", label = "Reduction", choices = NULL),
                             ),
                             plotOutput("featureplot.clonotype") %>% withSpinner()
-                            )
+                        ),
+                    fluidRow(
+                        column(8,
+                            tableOutput("top.clonotypes")
+                        )
                     )
-
-                ),
+                )
+            ),
             tabPanel("Population comparison",
                 fluidRow(
                     column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
