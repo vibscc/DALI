@@ -16,6 +16,8 @@ function(input, output, session) {
     vals <- reactiveValues(
         data = .GlobalEnv$.data.object.VDJ,
         lineage.tab = NULL,
+        traject.cluster = "0",
+        traject.gene = NULL,
         has_vdj = FALSE,
         loaded_data = !is.null(.GlobalEnv$.data.object.VDJ)
     )
@@ -100,6 +102,8 @@ function(input, output, session) {
         updateSelectizeInput(session, "deg.group.by.novdj", choices = categorical.metadata, selected = metadata.default, server = T)
         updateSelectInput(session, "deg.assay.novdj", choices = assays, selected = assays.default)
 
+        updateSelectInput(session, "traject.red", choices = reductions, selected = selected)
+
         vals$categorical.metadata <- categorical.metadata
     }
 
@@ -118,6 +122,17 @@ function(input, output, session) {
             div(class = "text-right",
                 actionButton("settings", label = "", icon = icon("cog"), class = "settings")
             )
+        }
+    })
+
+    output$trajectory.selection <- renderUI({
+        req(vals$data)
+        if (input$traject.start.method == "Gene Expression") {
+            genes.list <- rownames(isolate(vals$data))
+            selectizeInput("traject.gene", label = "Gene to root Trajectory on", choices = genes.list, multiple = F)
+        } else if (input$traject.start.method == "Cluster ID") {
+            groups <- levels(isolate(vals$data@meta.data$default.clustering))
+            selectizeInput("traject.cluster", label = "Startcluster of the Trajectory", choices = groups, multiple = F)
         }
     })
 
@@ -787,6 +802,19 @@ function(input, output, session) {
         }
     })
 
+    # trajectory analyses
+
+    observeEvent(input$traject.cluster, {
+        vals$traject.cluster <- input$traject.cluster
+        vals$traject.gene <- NULL
+    })
+
+    observeEvent(input$traject.gene, {
+        vals$traject.gene <- input$traject.gene
+        vals$traject.cluster <- NULL
+    })
+
+
     # ======================================================================= #
     # Barplot to compare groups
     # ======================================================================= #
@@ -976,7 +1004,18 @@ function(input, output, session) {
         }
     })
 
+    # Trajectory analyses
+    # TODO: change trajectory analyses method based on installation of dynverse packages
 
+    output$trajectory.plot <- renderPlot({
+        req(vals$data, input$traject.red)
+        DALI:::ShinyTrajectoryPlot(
+            object = vals$data,
+            reduction = input$traject.red,
+            gene = vals$traject.gene,
+            start_cluster_id = vals$traject.cluster
+        )
+    })
 
 
     # ======================================================================= #
