@@ -103,7 +103,7 @@ fillPage(
                                 sidebarPanel( width = 10,
                                     h4("Family to V-gene"),
                                     fluidRow(
-                                        selectInput("subset.circos.genes", label = "Group data by ", choices = NULL),
+                                        selectInput("subsetby.circos.genes", label = "Group data by ", choices = NULL),
                                         selectInput("gene.subset.group", label = "Select group: ", choices = NULL)
                                     ),
                                 ),
@@ -112,7 +112,7 @@ fillPage(
                                 sidebarPanel(width = 10,
                                     h4("V D J chain useage"),
                                     fluidRow(
-                                        selectInput("subset.circos.chains", label = "Group data by ", choices = NULL),
+                                        selectInput("subsetby.circos.chains", label = "Group data by ", choices = NULL),
                                         selectInput("chain.subset.group", label = "Select group: ", choices = NULL )
                                     ),
                                 ),

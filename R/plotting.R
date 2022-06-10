@@ -349,8 +349,10 @@ CircosPlotGenes <- function(object, group.by = NULL, subset = NULL, seed = NULL)
     }
 
     if (!is.null(subset)) {
-        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
-        object <- subset(object, cells = cells)
+        if (!(subset == "Select group...")) {
+            cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+            object <- subset(object, cells = cells)
+        }
     }
 
     type <- object@misc$default.assay.VDJ
@@ -400,8 +402,10 @@ CircosPlotChains <- function(object, group.by = NULL, subset = NULL) {
     }
 
     if (!is.null(subset)) {
-        cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
-        object <- subset(object, cells = cells)
+        if (!(subset == "Select group...")) {
+            cells <- rownames(object@meta.data)[object@meta.data[[group.by]] %in% subset]
+            object <- subset(object, cells = cells)
+        }
     }
 
     v.gene.column <- "vdj.v_gene"
@@ -443,6 +447,9 @@ CircosPlotChains <- function(object, group.by = NULL, subset = NULL) {
                           names = names(group))
 
     plot.data <- plot.data[gtools::mixedsort(rownames(plot.data), decreasing = T), ]
+    if (is.null(ncol(plot.data))) {
+        stop("No enough data. Genes for at least two chains out of V/D/J is required")
+    }
 
     chordDiagram(plot.data, group = group, grid.col = grid.col, annotationTrack = "grid",
                  preAllocateTracks = list(track.height = plot.data %>% dimnames() %>% unlist() %>% strwidth() %>% max()/3))

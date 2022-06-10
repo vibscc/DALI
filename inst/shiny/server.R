@@ -70,8 +70,8 @@ function(input, output, session) {
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = "default.clustering")
 
-        updateSelectInput(session, "subset.circos.genes",choices = metadata.columns, selected = metadata.default )
-        updateSelectInput(session, "subset.circos.chains",choices = metadata.columns, selected = metadata.default)
+        updateSelectInput(session, "subsetby.circos.genes",choices = categorical.metadata, selected = metadata.default )
+        updateSelectInput(session, "subsetby.circos.chains",choices = categorical.metadata, selected = metadata.default)
 
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
@@ -629,20 +629,20 @@ function(input, output, session) {
         updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]], server = T)
     })
 
-    observeEvent(input$subset.circos.genes, {
-        req(vals$data, input$subset.circos.genes)
+    observeEvent(input$subsetby.circos.genes, {
+        req(vals$data, input$subsetby.circos.genes)
 
-        gene.subsets <- vals$data@meta.data[, input$subset.circos.genes] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        gene.subsets <- vals$data@meta.data[, input$subsetby.circos.genes] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
         gene.subsets <- c("Select group...", gene.subsets)
-        updateSelectizeInput(session, "gene.subset.group", choices = gene.subsets, selected = gene.subsets[[1]], server = T)
+        updateSelectizeInput(session, "gene.subset.group", choices = gene.subsets, selected = "Select group...", server = T)
     })
 
-    observeEvent(input$subset.circos.chains, {
-        req(vals$data, input$subset.circos.chains)
+    observeEvent(input$subsetby.circos.chains, {
+        req(vals$data, input$subsetby.circos.chains)
 
-        chain.subsets <- vals$data@meta.data[, input$subset.circos.chains] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        chain.subsets <- vals$data@meta.data[, input$subsetby.circos.chains] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
         chain.subsets <- c("Select group...", chain.subsets)
-        updateSelectizeInput(session, "chain.subset.group", choices = chain.subsets, selected = chain.subsets[[1]], server = T)
+        updateSelectizeInput(session, "chain.subset.group", choices = chain.subsets, selected = "Select group...", server = T)
     })
 
     # Top clonotypes change
@@ -946,13 +946,18 @@ function(input, output, session) {
     output$circosplot.genes <- renderPlot({
         req(vals$data)
         circos.clear()
-        CircosPlotGenes(object = vals$data, seed = 0)
+        CircosPlotGenes(object = vals$data,
+                        group.by = input$subsetby.circos.genes,
+                        subset = input$gene.subset.group,
+                        seed = 0)
     })
 
     output$circosplot.chains <- renderPlot({
         req(vals$data)
         circos.clear()
-        CircosPlotChains(object = vals$data)
+        CircosPlotChains(object = vals$data,
+                         group.by = input$subsetby.circos.chains,
+                         subset = input$chain.subset.group)
     })
 
     # ####################################################################### #
