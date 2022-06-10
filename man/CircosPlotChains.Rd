@@ -4,7 +4,7 @@
 \alias{CircosPlotChains}
 \title{Circosplot for VDJ chain useage distribution}
 \usage{
-CircosPlotChains(object, group.by = NULL, subset = NULL)
+CircosPlotChains(object, group.by = NULL, subset = NULL, color.theme = "DALI")
 }
 \arguments{
 \item{object}{Seurat object}
@@ -12,6 +12,8 @@ CircosPlotChains(object, group.by = NULL, subset = NULL)
 \item{group.by}{Metadata column to group the family data by.}
 
 \item{subset}{Subset data to these groups}
+
+\item{color.theme}{Color theme to use. Default = DALI}
 }
 \description{
 Circosplot for VDJ chain useage distribution

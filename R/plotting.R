@@ -382,6 +382,7 @@ CircosPlotGenes <- function(object, group.by = NULL, subset = NULL, seed = NULL)
 #' @param object Seurat object
 #' @param group.by Metadata column to group the family data by.
 #' @param subset Subset data to these groups
+#' @param color.theme Color theme to use. Default = DALI
 #'
 #' @importFrom circlize chordDiagram circos.track circos.text CELL_META
 #' @importFrom dplyr %>% select
@@ -391,7 +392,10 @@ CircosPlotGenes <- function(object, group.by = NULL, subset = NULL, seed = NULL)
 #'
 #' @export
 
-CircosPlotChains <- function(object, group.by = NULL, subset = NULL) {
+CircosPlotChains <- function(object, group.by = NULL, subset = NULL, color.theme = "DALI") {
+    # TODO color.theme integration
+    # color.theme = ColorThemes() in function parameters
+    color.theme <- match.arg(color.theme)
     if (is.null(group.by)) {
         object <- Seurat::AddMetaData(object, Seurat::Idents(object), "default.clustering")
         group.by <- "default.clustering"
@@ -442,6 +446,8 @@ CircosPlotChains <- function(object, group.by = NULL, subset = NULL) {
     group <- structure(gsub("[^VDJ]","" , nm), names = nm)
 
     col.vector <- unname(group) %>% as.factor()
+    # TODO color.theme integration
+    # levels(col.vector) <- GetCategoricalColorPalette(levels(col.vector), color.theme)
     levels(col.vector) <- c("#267ABA","#BA265D","#38EB1D")
     grid.col <- structure(col.vector,
                           names = names(group))
