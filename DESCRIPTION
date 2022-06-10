@@ -65,6 +65,7 @@ Imports:
     shiny,
     shinycssloaders,
     shinyFiles,
+    slingshot,
     stringdist,
     stringr,
     tibble,
