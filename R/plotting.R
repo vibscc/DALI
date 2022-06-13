@@ -1334,11 +1334,6 @@ TrajectoryPlot <- function(
     }
 
     color.scheme <- match.arg(color.scheme)
-    # Check if the dimensionality reduction i spresent
-    if (is.null(object@reductions[[reduction]])) {
-        stop("Dimensionality reduction ", reduction," was not performed for the Seurat object")
-    }
-    dimred <- object@reductions[[reduction]]@cell.embeddings
 
     # Keep only specified assay data if assay is specified
     if (!is.null(assay) && assay %in% c('TCR', 'BCR')) {
@@ -1347,6 +1342,12 @@ TrajectoryPlot <- function(
     } else if (!is.null(assay)){
         stop("Unrecognized assay: ", assay)
     }
+
+    # Check if the dimensionality reduction i spresent
+    if (is.null(object@reductions[[reduction]])) {
+        stop("Dimensionality reduction ", reduction," was not performed for the Seurat object")
+    }
+    dimred <- object@reductions[[reduction]]@cell.embeddings
 
     if (!is.null(color.by)) {
         # don't color clonotypes with hardly any representation (change to NA)
