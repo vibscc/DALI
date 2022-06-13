@@ -52,6 +52,7 @@ Imports:
     gridExtra,
     gtools,
     igraph,
+    Matrix,
     methods,
     pheatmap,
     Polychrome,
