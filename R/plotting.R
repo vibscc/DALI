@@ -1366,8 +1366,8 @@ TrajectoryPlot <- function(
     }
 
     dataset <- dynwrap::wrap_expression(
-        counts = t(object@assays$RNA@counts),
-        expression = t(object@assays$RNA@data)
+        counts = t(as.matrix(object@assays$RNA@counts)),
+        expression = t(as.matrix(object@assays$RNA@data))
     )
 
     # Check if method is an existing dyno method
