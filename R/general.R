@@ -244,9 +244,21 @@ Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T
 ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sort.by = c("umis", "reads")) {
 
     if (is.null(assay)) {
+        has.TCR <- FALSE
+        has.BCR <- FALSE
+
         if (sum(grepl("^TR[ABDG]", data$c_gene)) > 0) {
+            has.TCR <- TRUE
+        }
+        if (sum(grepl("^IG[HKL]", data$c_gene)) > 0) {
+            has.BCR <- TRUE
+        }
+
+        if (has.TCR && has.BCR) {
+            stop("Found both TCR and BCR data. VDJ data should be split by assay to use with DALI", call. = F)
+        } else if (has.TCR) {
             assay <- "TCR"
-        } else if (sum(grepl("^IG[HKL]", data$c_gene)) > 0) {
+        } else if (has.BCR) {
             assay <- "BCR"
         } else {
             stop("Could not determine if the data is TCR or BCR, please provide the data assay manually with the `assay` parameter", call. = F)
@@ -375,8 +387,10 @@ DefaultAssayVDJ.Seurat <- function(object, ...) {
 
     chain <- DefaultChainVDJ(object)
 
-    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vj.", chain)))
-    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vdj.", chain)))
+    if (!is.null(chain)) {
+        object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vj.", chain)))
+        object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, value, paste0("vdj.", chain)))
+    }
 
     slot(object, "misc")[["default.assay.VDJ"]] <- value
 
@@ -408,8 +422,10 @@ DefaultChainVDJ.Seurat <- function(object, ...) {
 
     assay <- DefaultAssayVDJ(object)
 
-    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vj.", value)))
-    object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vdj.", value)))
+    if (!is.null(assay)) {
+        object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vj.", value)))
+        object <- Seurat::AddMetaData(object, GetInfoForMetadata(object, assay, paste0("vdj.", value)))
+    }
 
     slot(object, "misc")[["default.chain.VDJ"]] <- value
 
@@ -558,6 +574,14 @@ IsValidSeuratObject <- function(object) {
 #' @importFrom tibble column_to_rownames
 
 GetInfoForMetadata <- function(object, assay, chain) {
+    if (!assay %in% names(slot(object, "misc")[["VDJ"]])) {
+        stop("Invalid assay: ", assay, call. = F)
+    }
+
+    if (!chain %in% names(slot(object, "misc")[["VDJ"]][[assay]])) {
+        stop("Invalid chain: ", chain, call. = F)
+    }
+
     data <- slot(object, "misc")[["VDJ"]][[assay]][[chain]] %>% column_to_rownames("barcode")
     columns.to.ignore <- grep("sequence", colnames(data))
 
