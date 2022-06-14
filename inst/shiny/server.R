@@ -1002,9 +1002,4 @@ function(input, output, session) {
 
         vals$deg.results.novdj
     })
-
-
-
-
-
 }

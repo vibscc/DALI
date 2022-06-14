@@ -64,7 +64,7 @@ fillPage(
             tabPanel("Population comparison",
                 fluidRow(
                     column(4, uiOutput("reduction.tabs.comparison") %>% withSpinner()),
-                    column(8,
+                    column(8
                         fluidRow(
                             column(8, plotOutput("barplot.comparison") %>% withSpinner()),
                             sidebarPanel(width = 4,

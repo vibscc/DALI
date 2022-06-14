@@ -245,7 +245,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  pheatmap::pheatmap(plot.data, color = c.sch, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 90)
+  pheatmap::pheatmap(plot.data, color = c.sch, cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 0)
 }
 
 #' Barplot with clonotype distribution
