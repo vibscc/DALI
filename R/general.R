@@ -148,7 +148,7 @@ Read10X_multi_vdj <- function(object, data.dir, id.column = NULL , assay = NULL,
     }
 
     for (field in fields.extra) {
-        if (field %in% colnames(data)) {
+        if (field %in% colnames(data.all)) {
             fields <- c(fields, field)
         }
     }
