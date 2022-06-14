@@ -1,42 +1,20 @@
 seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
-VDJseuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", quiet = T)
+seuratObj_BCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", quiet = T)
 
-#can split objects by meta.data
-test_that("can split Seurat objects that include VDJ data", {
-    suppressWarnings(split <- SplitObject_VDJ(VDJseuratObj,"seurat_clusters"))
-    suppressWarnings(split2 <- SplitObject_VDJ(VDJseuratObj,"orig.ident"))
-    expect_equal(length(split) , 8)
-    expect_equal(length(split2), 1)
-    }
-)
+test_that("can split Seurat object without VDJ data", {
+    expect_identical(SplitObject_VDJ(seuratObj, "seurat_clusters", quiet = T), Seurat::SplitObject(seuratObj, "seurat_clusters"))
+})
 
-#can detect when meta.data column /sample_id does not exist
-test_that("can detect wrong meta-data column", {
+test_that("can split Seurat object that include VDJ data", {
+    split <- SplitObject_VDJ(seuratObj_BCR, "seurat_clusters", quiet = T)
+
+    expect_length(split, 8)
+    expect_identical(SplitObject_VDJ(seuratObj_BCR, "orig.ident")[[1]], seuratObj_BCR)
+})
+
+
+test_that("fails on wrong input", {
     expect_error(SplitObject_VDJ(seuratObj, "wrong.column"))
-    expect_error(SubsetObject_VDJ(VDJseuratObj, "wrong.column", "missing_id"))
-    expect_error(SubsetObject_VDJ(VDJseuratObj, "seurat_clusters", "missing_id"))
-    }
-)
-
-#can detect when no vdj data is present
-test_that("Can detect splitting an object without vdj data",{
-    expect_error(SplitObject(seuratObj, "Seurat_clusters"))
-    }
-)
-
-#can subset object by id column and sample id
-test_that("Can subset object by metadata column & sample_id",{
-    suppressWarnings(subset1 <- SubsetObject_VDJ(VDJseuratObj, "seurat_clusters", "1", "BCR"))
-    expect_warning(SubsetObject_VDJ(seuratObj, "seurat_clusters", "1"))
-    expect_equal(length(subset1), 1)
-    }
-)
-
-#can chooce to keep just one assay
-test_that("can choose to subset and keep 1 assay", {
-    suppressWarnings(subset1 <- SubsetObject_VDJ(VDJseuratObj, "seurat_clusters", "1", "BCR"))
-    suppressWarnings(subset2 <- SubsetObject_VDJ(VDJseuratObj, "seurat_clusters", "1", "TCR"))
-    expect_equal(length(subset1@misc$VDJ), 1)
-    expect_equal(length(subset2@misc$VDJ), 0)
-    }
-)
+    expect_error(SubsetObject_VDJ(seuratObj_BCR, "wrong.column", "missing_id"))
+    expect_error(SubsetObject_VDJ(seuratObj_BCR, "seurat_clusters", "missing_id"))
+})

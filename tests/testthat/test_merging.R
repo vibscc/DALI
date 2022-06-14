@@ -1,75 +1,28 @@
 seuratObj <- readRDS("../testdata/seurat_objects/seuratObj_10x_sc5p_v2_hs_PBMC.rds")
-VDJseuratObj <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", quiet = T)
+seuratObj_BCR <- Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", quiet = T)
 
-# can merge data in objects
+test_that("can merge objects without VDJ data", {
+    # Suppress warning 'Some cell names are duplicated across objects provided. Renaming to enforce unique cell names.'
+    suppressWarnings(
+        expect_identical(MergeVDJ(seuratObj, seuratObj), merge(seuratObj, seuratObj))
+    )
+})
+
 test_that("can merge seurat objects containing VDJ data", {
-    expect_silent(suppressWarnings(MergeVDJ(VDJseuratObj,VDJseuratObj)))
-    }
-)
+    options(warn = -1)
+    merged <- MergeVDJ(seuratObj_BCR, seuratObj_BCR)
+    options(warn = 0)
 
-# can link directories and merge to object
-test_that("can add VDJ data from directories to a merged seurat object", {
-    metadata <- rep("ident1",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
+    expect_s4_class(merged, "Seurat")
+    expect_equal(DefaultAssayVDJ(merged), "BCR")
+    expect_equal(DefaultChainVDJ(merged), "primary")
 
-    metadata <- rep("ident2",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj2 <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
-
-    expect_warning(mergedobj <- merge(seuratObj,seuratObj2))
-
-    expect_silent(Read10X_MultiVDJ(mergedobj, id_column = "id", c("ident2" = "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC_Copy", "ident1" = "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC"), quiet =  T, force = T))
-    }
-)
-
-# can detect too many dirs for the amount of available samples
-test_that("gives an error when the #dirs is more than the #samples", {
-    expect_error(Read10X_MultiVDJ(mergedobj, data.dir = "../testdata/empty_files", quiet = T))
-    }
-)
-
-# gives warning when no airr
-test_that("warns when there is no airr file", {
-    metadata <- rep("ident1",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
-
-    metadata <- rep("ident2",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj2 <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
-
-    expect_warning(mergedobj <- merge(seuratObj,seuratObj2))
-
-    expect_warning(expect_warning(Read10X_MultiVDJ(mergedobj, id_column = "id", c("ident2" = "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC_Copy", "ident1" = "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC"), force  = T)))
-    }
-)
-
-# can detect too similar samples
-test_that("gives an error when sampels are too similar", {
-    metadata <- rep("ident1",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
-
-    metadata <- rep("ident2",times = length(colnames(seuratObj)))
-    metadata <- as.data.frame(metadata)
-    rownames(metadata) <- colnames(seuratObj)
-    seuratObj2 <- AddMetaData(seuratObj, metadata = metadata, col.name = "id")
-
-    expect_warning(mergedobj <- merge(seuratObj,seuratObj2))
-
-    expect_error(Read10X_MultiVDJ(mergedobj, data.dir = "../testdata/cellranger_4.0.0/", quiet = T))
-    }
-)
-
-# can detect wrong id'd smaples (2 dirs for 1 sample)
-test_that("gives an error when samples get linked to more than 1 directory", {
-    expect_error(Read10X_MultiVDJ(mergedobj, data.dir = "../testdata/cellranger_4.0.0", quiet =  T, force = T))
-    }
-)
-
+    expect_equal(nrow(slot(merged, "misc")[["VDJ"]][["BCR"]][["vdj.primary"]]), nrow(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vdj.primary"]]) * 2)
+    expect_equal(ncol(slot(merged, "misc")[["VDJ"]][["BCR"]][["vdj.primary"]]), ncol(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vdj.primary"]]))
+    expect_equal(nrow(slot(merged, "misc")[["VDJ"]][["BCR"]][["vdj.secondary"]]), nrow(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vdj.secondary"]]) * 2)
+    expect_equal(ncol(slot(merged, "misc")[["VDJ"]][["BCR"]][["vdj.secondary"]]), ncol(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vdj.secondary"]]))
+    expect_equal(nrow(slot(merged, "misc")[["VDJ"]][["BCR"]][["vj.primary"]]), nrow(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vj.primary"]]) * 2)
+    expect_equal(ncol(slot(merged, "misc")[["VDJ"]][["BCR"]][["vj.primary"]]), ncol(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vj.primary"]]))
+    expect_equal(nrow(slot(merged, "misc")[["VDJ"]][["BCR"]][["vj.secondary"]]), nrow(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vj.secondary"]]) * 2)
+    expect_equal(ncol(slot(merged, "misc")[["VDJ"]][["BCR"]][["vj.secondary"]]), ncol(slot(seuratObj_BCR, "misc")[["VDJ"]][["BCR"]][["vj.secondary"]]))
+})
