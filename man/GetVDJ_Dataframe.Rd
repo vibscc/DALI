@@ -4,7 +4,7 @@
 \alias{GetVDJ_Dataframe}
 \title{Construct a dataframe with vdj data for a seurat object}
 \usage{
-GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
+GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered = T)
 }
 \arguments{
 \item{data.dir}{directory containing the vdj data}

@@ -21,14 +21,12 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
-    sequence.columns <- GetAIRRSequenceColumns(data.dir)
-    if (is.null(sequence.columns)) {
-        if (!quiet) {
-            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
-        }
-    } else {
+    sequence.columns <- GetAIRRSequenceColumns(data.dir, quiet)
+
+    if (!is.null(sequence.columns)) {
         fields.extra <- c(fields.extra, sequence.columns) %>% unique()
     }
+
     data <- GetVDJ_Dataframe(data.dir, sequence.columns, use.filtered)
 
     for (field in fields.extra) {
@@ -41,112 +39,112 @@ Read10X_vdj <- function(object, data.dir, assay = NULL, force = F, sort.by = c("
     return(ReadData(object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
-#' Load 10x VDJ data from multiple directories into a Seurat object containing multiple samples
+#' Load 10x VDJ data into a Seurat object containing multiple samples merged together
 #'
 #' @param object Seurat object
-#' @param data.dir directory containing Cellranger output directories for every sample. If column is specified this will be a named list: ("sample.id" = "directory")
-#' @param id_column Optional: Metadata column that contains the information to distinguish samples.
+#' @param data.dir Cellranger output directory for every sample. Can be 1 directory or a named vector/list of multiple directories. The names must correspond to the sample ids in the metdata column specified by column.id
+#' @param id.column Metadata column that contains the information to distinguish samples. Used to map the keys of the named vector to the sample in the object
 #' @param assay VDJ assay type for loaded data. This is automatically detected from input, but can be overwritten when something goes wrong.
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
 #' @param quiet Ignore warnings. Default = FALSE
 #'
-#' @importFrom dplyr %>% filter left_join
+#' @importFrom dplyr %>% bind_rows filter left_join
 #' @importFrom rlang .data
 #' @importFrom utils read.csv
 #'
 #' @export
 
-Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
+Read10X_multi_vdj <- function(object, data.dir, id.column = NULL , assay = NULL, force = F, sort.by = c("umis","reads"), use.filtered = T, quiet = F) {
 
-    if (!is.null(id_column)) {
-        #check if data.dir is a named vector now
-        if (!is.vector(data.dir) | is.null(names(data.dir))) {
-            stop("data.dir must be a named vector when an id_column was given")
-        }
-        # check if the sample names are unique
-        if (length(unique(names(object@meta.data[[id_column]]))) != length(names(object@meta.data[[id_column]]))) {
-            stop("Sample names are not unique:", unique(names(object@meta.data[[id_column]])))
+    if (!is.null(names(data.dir))) {
+        # We got a named vector/list of directories
+
+        if (is.null(id.column)) {
+            stop("id.column cannot be null when providing multiple data directories as input")
         }
 
-        samples <- as.factor(object@meta.data[[id_column]])
-        directories <- data.dir
-        overlap_matrix <- matrix(data = NA, nrow = length(levels(samples)), ncol = length(directories))
-    } else {
-        # Define samples using suffix & split barcodes into seperate elements in a list
-        samples <- strsplit(colnames(object), "_") %>% sapply("[", 2) %>% as.factor()
-        directories <- list.dirs(data.dir, recursive = F)
-        cellbarcodes <- strsplit(colnames(object), "_") %>% sapply("[", 1) %>% split(samples)
-
-        # Check if there aren't too many VDJ directories
-        if (length(cellbarcodes) < length(directories)) {
-            stop("Too many VDJ data files for ",length(cellbarcodes)," samples!")
+        if (!id.column %in% colnames(object@meta.data)) {
+            stop("Invalid column '", id.column, "' provided as id.column. The column must be available in the metadata of the object")
         }
 
-        overlap_matrix <- matrix(data = NA, nrow = length(cellbarcodes), ncol = length(directories))
+        if (length(unique(names(data.dir))) != length(names(data.dir))) {
+            stop("Sample names are not unique for the provided data.dirs", call. = F)
+        }
+    } else if (length(data.dir) != 1) {
+        stop("data.dir must either be a named list/vector of directories OR 1 directory", call. = F)
     }
 
-    data <- data.frame()
+    if (!is.null(id.column)) {
+        sample.labels <- unique(object@meta.data[[id.column]])
+        sample.suffixes <- c()
+
+        for (sample.label in sample.labels) {
+            cell.barcodes <- rownames(object@meta.data[object@meta.data[[id.column]] == sample.label, ])
+            sample.suffix <- strsplit(cell.barcodes, "_") %>% sapply("[", 2) %>% unique()
+
+            if (length(sample.suffix) != 1) {
+                stop("Found multiple sample suffixes for label '", sample.label, "' from metadata column '", id.column, "'", call. = F)
+            }
+            sample.suffixes <- c(sample.suffixes, sample.suffix)
+        }
+        names(sample.suffixes) <- sample.labels
+    } else {
+        sample.suffixes <- strsplit(colnames(object), "_") %>% sapply("[", 2) %>% unique()
+    }
+
+    cell.barcodes.per.suffix <- list()
+    for (suffix in sample.suffixes) {
+        cell.barcodes.per.suffix[[suffix]] <- colnames(object)[grepl(paste0("_", suffix, "$"), colnames(object))]
+        cell.barcodes.per.suffix[[suffix]] <- gsub("[0-9_-]", "", cell.barcodes.per.suffix[[suffix]])
+    }
+
+    data.all <- data.frame()
     fields <- c("barcode", "v_gene", "d_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "reads", "umis", "raw_clonotype_id")
     fields.extra <- c("fwr1", "fwr1_nt", "cdr1", "cdr1_nt", "fwr2", "fwr2_nt", "cdr2", "cdr2_nt", "fwr3", "fwr3_nt", "fwr4", "fwr4_nt")
 
-    ndata <- 1
-    for  (vdjdir in directories) {
-        # Convert vdjfiles to df
-        sequence.columns <- GetAIRRSequenceColumns(vdjdir)
-        if (is.null(sequence.columns)) {
-            if (!quiet) {
-                warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
-            }
-        } else {
+    for (i in 1:length(data.dir)) {
+        directory <- data.dir[i]
+        sample <- names(data.dir)[i]
+
+        if (is.null(sample)) {
+            sample <- i
+        }
+
+        sequence.columns <- GetAIRRSequenceColumns(directory)
+        if (!is.null(sequence.columns)) {
             fields.extra <- c(fields.extra, sequence.columns) %>% unique()
         }
-        vdj_df <- GetVDJ_Dataframe(vdjdir, sequence.columns, use.filtered)
 
-        if (!is.null(id_column)) {
-            # Change cellbarcode according to specified metadata column
-            # Sample_id names based on id_column
-            sample_id <- names(data.dir)[ndata]
-            cellbarcodes <- grepl(sample_id, object@meta.data[[id_column]])
-            cellbarcodes <- colnames(object)[cellbarcodes]
-            suffix <- strsplit(colnames(object), "_") %>% sapply("[", 2)
-            vdj_df$barcodes <- paste0(vdj_df$barcodes, "_", suffix[1])
-        } else {
-            vdj_df$ID <- ndata
-        }
+        data.sample <- GetVDJ_Dataframe(directory, sequence.columns, use.filtered)
 
-        data <- rbind(data, vdj_df)
-        ndata <- ndata + 1
-    }
-
-    if (is.null(id_column)) {
-        for (row in 1:length(cellbarcodes)) {
-            for (col in 1:length(directories)) {
-                # Check overlap of barcodes and store in overlapmatrix
-                overlap_matrix[row, col] <- length(intersect(cellbarcodes[[row]], data[data$ID == col, ]$barcode)) / nrow(data[data$ID == col, ])
+        if (force && !is.null(id.column)) { # Force the data to the corresponding sample
+            data.sample$barcode <- paste0(data.sample$barcode, "_", sample.suffixes[[sample]])
+        } else { # Get the suffix with the highest overlap
+            highest.overlap <- 0
+            matching.suffix <- NULL
+            for (suffix in names(cell.barcodes.per.suffix)) {
+                overlap <- length(intersect(gsub("[0-9_-]", "", data.sample$barcode), cell.barcodes.per.suffix[[suffix]])) / nrow(data.sample)
+                if (overlap > highest.overlap) {
+                    highest.overlap <- overlap
+                    matching.suffix <- suffix
+                }
             }
-            # check for highly similar overlap with the theorized actual sample
-            sorted_overlap <- sort(overlap_matrix[row, ])
-            least.difference <- abs(sorted_overlap[length(sorted_overlap)] - sorted_overlap[length(sorted_overlap) - 1])
-            if (!force && least.difference <= 0.1 ) {
-                stop("Similarity between barcodes is too high. Use colomn_id & id_list to define samples")
+
+            if (is.null(matching.suffix)) {
+                message(names(cell.barcodes.per.suffix))
+                stop("Could not find any suffix in the data that had any overlap with the cellbarcodes of the VDJ data!", call. = F)
             }
+
+            if (!force && highest.overlap <= 0.1) {
+                stop("Overlap in cell barcodes is not large enough between the provided VDJ data and the cells in the Seurat object", call. = F)
+            }
+
+            data.sample$barcode <- paste0(data.sample$barcode, "_", matching.suffix)
         }
 
-        # check if every directory gets assigned a sample (1 to 1 relationships)
-        id_check <- c()
-        for (i in 1:ncol(overlap_matrix)) {
-            df_id <- which.max(overlap_matrix[, i])
-            data[data$ID == i, ]$barcode <- paste0(data[data$ID == i, ]$barcode,names(cellbarcodes[df_id]))
-            id_check <- c(df_id, id_check)
-        }
-
-        # check if every directory gets assigned a sample (1 to 1 relationships)
-        if (length(id_check) != length(unique(id_check))) {
-            stop("A Sample was assigned more than 1 directory containing VDJ data")
-        }
-
+        data.all <- dplyr::bind_rows(data.all, data.sample)
     }
 
     for (field in fields.extra) {
@@ -156,7 +154,7 @@ Read10X_MultiVDJ <- function(object, data.dir, id_column = NULL , assay = NULL, 
     }
     columns <- gsub("raw_clonotype_id", "clonotype", fields)
 
-    return(ReadData(object = object, assay = assay, data = data, fields = fields, columns = columns, force = force, sort.by = sort.by))
+    return(ReadData(object = object, assay = assay, data = data.all, fields = fields, columns = columns, force = force, sort.by = sort.by))
 }
 
 #' Load 10x VDJ data in a seurat object from 10X AIRR rearrangement tsv
@@ -592,88 +590,144 @@ GetInfoForMetadata <- function(object, assay, chain) {
     return(data)
 }
 
-#' Merge seuratobjects and include their VDJ data
+#' Merge multiple seurat objects and include their VDJ data
 #'
-#' @param ... seurat objects separated by comma
+#' @param ... Seurat objects separated by comma
 #'
 #' @export
 
 MergeVDJ <- function(...) {
     objects <- list(...)
-    mergedobj <- merge(...)
+    merged.object <- merge(...) # Merge all data, except for the VDJ data in the misc
 
-    mergedobj <- AddVDJForAssay(mergedobj = mergedobj, objectlist = objects, assay = "BCR")
-    mergedobj <- AddVDJForAssay(mergedobj = mergedobj, objectlist = objects, assay = "TCR")
+    i <- 1
+    default.vdj.assay <- NULL
+    default.vdj.chain <- NULL
 
-    return(mergedobj)
+    # Loop over all objects and append all uniqified vdj data into the new object
+    for (object in objects) {
+        for (assay in names(object@misc$VDJ)) {
+            merged.object <- AppendVDJData(merged.object, Uniqify_VDJ(object, i, assay), assay)
+        }
+        i <- i + 1
+
+        default.vdj.assay <- DefaultAssayVDJ(object)
+        default.vdj.chain <- DefaultChainVDJ(object)
+    }
+
+    if (!is.null(default.vdj.assay) && !is.null(default.vdj.chain)) {
+        DefaultChainVDJ(merged.object) <- default.vdj.chain
+        DefaultAssayVDJ(merged.object) <- default.vdj.assay
+    }
+
+    return(merged.object)
 }
 
 #' Splits a Seurat object into a list of objects with their respective VDJ data in the misc slot
 #'
 #' @param object Seurat object
-#' @param id_column metadata column to split the data on
+#' @param split.by Attribute for splitting.
+#' @param quiet Supress warnings. Default = FALSE
 #'
 #' @importFrom Seurat SplitObject
 #'
 #' @export
 
-SplitObject_VDJ <- function(object, id_column) {
-    # Get barcodes belonging to each samples based on specified metadata column
-    objects <- SplitObject(object, split.by = id_column)
-    vdj_absence <- 0
-
-    for (obj in objects) {
-        barcodes <- colnames(obj)
-
-        BCR <- SubsetVDJData(object = object,barcodes = barcodes, assay = "BCR")
-        TCR <- SubsetVDJData(object = object,barcodes = barcodes, assay = "TCR")
-        if (is.null(BCR) & is.null(TCR)){
-            vdj_absence <- vdj_absence + 1
-            if (length(objects) == vdj_absence) {
-                stop("No TCR or BCR assay present, use SplitObject() function from the Seurat Package")
-            }
-        }
-        # Add misc data
-        AddMiscVDJData(object = obj,TCR = TCR,BCR = BCR)
+SplitObject_VDJ <- function(object, split.by, quiet = F) {
+    if (!split.by %in% colnames(object@meta.data)) {
+        stop("Invalid column: ", split.by)
     }
-    #return a list of objects
-    return(objects)
+
+    objects.split <- SplitObject(object, split.by = split.by)
+
+    for (group in names(objects.split)) {
+        barcodes <- colnames(objects.split[[group]])
+
+        objects.split[[group]] <- ClearVDJ(objects.split[[group]])
+
+        bcr.data <- SubsetVDJData(object, barcodes, assay = "BCR")
+        tcr.data <- SubsetVDJData(object, barcodes, assay = "TCR")
+
+        if (is.null(bcr.data) && is.null(tcr.data)) {
+            if (!quiet) {
+                warning("No VDJ data found for group '", group, "'")
+            }
+            next
+        }
+
+        if (!is.null(bcr.data)) {
+            objects.split[[group]] <- AddVDJDataForAssay("BCR", objects.split[[group]], bcr.data[["vdj.primary"]], bcr.data[["vdj.secondary"]], bcr.data[["vj.primary"]], bcr.data[["vj.secondary"]])
+        }
+
+        if (!is.null(tcr.data)) {
+            objects.split[[group]] <- AddVDJDataForAssay("TCR", objects.split[[group]], tcr.data[["vdj.primary"]], tcr.data[["vdj.secondary"]], tcr.data[["vj.primary"]], tcr.data[["vj.secondary"]])
+        }
+
+        # Set default assay to the default assay of the original object.
+        # If this assay is not present for the subset, set the available assay as default
+        if (DefaultAssayVDJ(object) %in% names(slot(objects.split[[group]], "misc")[["VDJ"]])) {
+            DefaultAssayVDJ(objects.split[[group]]) <- DefaultAssayVDJ(object)
+        } else {
+            DefaultAssayVDJ(objects.split[[group]]) <- names(slot(objects.split[[group]], "misc")[["VDJ"]])[1]
+        }
+    }
+
+    return(objects.split)
 }
 
 #' Subsets part of a Seurat Object specified by sample_id from a metadata column
 #'
 #' @param object Seurat object
-#' @param id_column metadata column containing the sample identifier
-#' @param sample_id id in the id_column that corresponds to the to be subsetted sample
-#' @param assay assay (TCR or BCR) you want to keep. Default keeps both in the subset
+#' @param subset.by Attribute for subsetting.
+#' @param group.id Name of the group to subset for
+#' @param assay VDJ assay (TCR or BCR) you want to keep. Default keeps both in the subset
 #'
 #' @export
 
-SubsetObject_VDJ <- function(object, id_column, sample_id, assay = NULL) {
+SubsetObject_VDJ <- function(object, subset.by, group.id, assay = NULL) {
 
     if (is.null(object@misc$VDJ)) {
         warning("The object does not contain VDJ data")
     }
 
-    subset <- SplitObject(object, split.by = id_column)[[sample_id]]
-    barcodes <- colnames(subset)
-
-    if (is.null(assay)) {
-        BCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = "BCR")
-        TCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = "TCR")
-    } else {
-        if (assay == "BCR") {
-            BCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = assay)
-            TCR <- NULL
-        } else if (assay == "TCR") {
-            TCR <- SubsetVDJData(object = subset,barcodes = barcodes, assay = assay)
-            BCR <- NULL
-        } else {
-            stop("invalid assay ",assay)
-        }
+    if (!subset.by %in% colnames(object@meta.data)) {
+        stop("Invalid subset.by column: ", subset.by, call. = F)
     }
 
-    subset <- AddMiscVDJData(object = subset, TCR = TCR, BCR = BCR)
+    if (!group.id %in% unique(object@meta.data[[subset.by]])) {
+        stop("The requested group (", group.id, ") is not present in metadata column ", subset.by, call. = F)
+    }
+
+    subset <- SplitObject(object, split.by = subset.by)[[group.id]]
+    barcodes <- colnames(subset)
+
+    bcr.data <- NULL
+    tcr.data <- NULL
+    default.vdj.assay <- assay
+
+    if (is.null(assay)) {
+        bcr.data <- SubsetVDJData(subset, barcodes, assay = "BCR")
+        tcr.data <- SubsetVDJData(subset, barcodes, assay = "TCR")
+        default.vdj.assay <- DefaultAssayVDJ(object)
+    } else if (assay == "BCR") {
+        bcr.data <- SubsetVDJData(subset, barcodes, assay = assay)
+    } else if (assay == "TCR") {
+        tcr.data <- SubsetVDJData(subset, barcodes, assay = assay)
+    } else {
+        stop("Invalid assay: ", assay, call. = F)
+    }
+
+    subset <- ClearVDJ(subset)
+
+    if (!is.null(bcr.data)) {
+        subset <- AddVDJDataForAssay("BCR", subset, bcr.data[["vdj.primary"]], bcr.data[["vdj.secondary"]], bcr.data[["vj.primary"]], bcr.data[["vj.secondary"]])
+    }
+
+    if (!is.null(tcr.data)) {
+        subset <- AddVDJDataForAssay("TCR", subset, tcr.data[["vdj.primary"]], tcr.data[["vdj.secondary"]], tcr.data[["vj.primary"]], tcr.data[["vj.secondary"]])
+    }
+
+    DefaultAssayVDJ(subset) <- default.vdj.assay
 
     return(subset)
 }

@@ -4,12 +4,14 @@
 \alias{SplitObject_VDJ}
 \title{Splits a Seurat object into a list of objects with their respective VDJ data in the misc slot}
 \usage{
-SplitObject_VDJ(object, id_column)
+SplitObject_VDJ(object, split.by, quiet = F)
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{id_column}{metadata column to split the data on}
+\item{split.by}{Attribute for splitting.}
+
+\item{quiet}{Supress warnings. Default = FALSE}
 }
 \description{
 Splits a Seurat object into a list of objects with their respective VDJ data in the misc slot

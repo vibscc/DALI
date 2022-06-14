@@ -4,16 +4,16 @@
 \alias{SubsetObject_VDJ}
 \title{Subsets part of a Seurat Object specified by sample_id from a metadata column}
 \usage{
-SubsetObject_VDJ(object, id_column, sample_id, assay = NULL)
+SubsetObject_VDJ(object, subset.by, group.id, assay = NULL)
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{id_column}{metadata column containing the sample identifier}
+\item{subset.by}{Attribute for subsetting.}
 
-\item{sample_id}{id in the id_column that corresponds to the to be subsetted sample}
+\item{group.id}{Name of the group to subset for}
 
-\item{assay}{assay (TCR or BCR) you want to keep. Default keeps both in the subset}
+\item{assay}{VDJ assay (TCR or BCR) you want to keep. Default keeps both in the subset}
 }
 \description{
 Subsets part of a Seurat Object specified by sample_id from a metadata column

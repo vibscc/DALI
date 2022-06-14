@@ -2,19 +2,24 @@
 % Please edit documentation in R/helpers.R
 \name{Uniqify_VDJ}
 \alias{Uniqify_VDJ}
-\title{Give cellbarcodes and clonotypes from VDJ data an identifier}
+\title{Give cell barcodes and clonotypes from VDJ data an identifier to allow merging of VDJ data from multiple samples}
 \usage{
-Uniqify_VDJ(object, data, assay = c("BCR", "TCR"), index)
+Uniqify_VDJ(
+  object,
+  sample.suffix,
+  assay = c("BCR", "TCR"),
+  columns.to.update = c("clonotype", "barcode")
+)
 }
 \arguments{
 \item{object}{Seurat object}
 
-\item{data}{list of vdj dataframes}
+\item{sample.suffix}{Suffix to add to the barcodes/clonotypes to make them unique}
 
-\item{assay}{specify assay}
+\item{assay}{VDJ assay to make unique.}
 
-\item{index}{object name/id}
+\item{columns.to.update}{List of columns that should be suffixed with sample.suffix. Default = c("clonotype", "barcode")}
 }
 \description{
-Give cellbarcodes and clonotypes from VDJ data an identifier
+Give cell barcodes and clonotypes from VDJ data an identifier to allow merging of VDJ data from multiple samples
 }

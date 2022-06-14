@@ -32,7 +32,7 @@ Description: Analyse VDJ data in the Seurat ecosystem.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 biocViews:
 Remotes:
     YuLab-SMU/ggtree

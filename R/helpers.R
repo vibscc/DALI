@@ -276,45 +276,26 @@ ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
     }
 }
 
-#' Give cellbarcodes and clonotypes from VDJ data an identifier
+#' Give cell barcodes and clonotypes from VDJ data an identifier to allow merging of VDJ data from multiple samples
 #'
 #' @param object Seurat object
-#' @param data list of vdj dataframes
-#' @param assay specify assay
-#' @param index object name/id
+#' @param sample.suffix Suffix to add to the barcodes/clonotypes to make them unique
+#' @param assay VDJ assay to make unique.
+#' @param columns.to.update List of columns that should be suffixed with sample.suffix. Default = c("clonotype", "barcode")
 
-Uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
-
-    counter <- 1
-    new_data <- list()
+Uniqify_VDJ <- function(object, sample.suffix, assay = c("BCR","TCR"), columns.to.update = c("clonotype", "barcode")) {
     assay <- match.arg(assay)
-    assay_data <- object@misc$VDJ[[assay]]
+    vdj.data <- object@misc$VDJ[[assay]]
 
-    for (vdj in assay_data) {
-        if (length(vdj$barcode) > 0) {
-
-            vdj$clonotype <- paste0(vdj$clonotype, "_", as.character(index))
-            vdj$barcode <- paste0(vdj$barcode, "_", as.character(index))
+    for (data.type in names(vdj.data)) {
+        for (column in columns.to.update) {
+            if (column %in% colnames(vdj.data[[data.type]])) {
+                vdj.data[[data.type]][[column]] <- paste0(vdj.data[[data.type]][[column]], "_", sample.suffix)
+            }
         }
-        if (counter == 1) {
-            converted_data <- list( "vdjp" = vdj)
-        } else if  (counter == 2) {
-            converted_data <- list( "vdjs" = vdj)
-        } else if (counter == 3) {
-            converted_data <- list( "vjp" = vdj)
-        } else {
-            converted_data <- list( "vjs" = vdj)
-        }
-        new_data <- append(new_data, converted_data)
-        counter <- counter + 1
     }
 
-    data$vdj.primary <- rbind(new_data$vdjp, data$vdj.primary)
-    data$vdj.secondary <- rbind(new_data$vdjs, data$vdj.secondary)
-    data$vj.primary <- rbind(new_data$vjp, data$vj.primary)
-    data$vj.secondary <- rbind(new_data$vjs, data$vj.secondary)
-
-    return(data)
+    return(vdj.data)
 }
 
 #' Create a subset of VDJ data using given cellbarcodes
@@ -322,110 +303,113 @@ Uniqify_VDJ <- function(object, data, assay = c("BCR","TCR"), index) {
 #' @param object Seurat object to be split
 #' @param barcodes barcodes of data to be retained
 #' @param assay BCR or TCR data
+#'
+#' @importFrom dplyr filter
 
 SubsetVDJData <- function(object, barcodes, assay = c("TCR","BCR")) {
     if (is.null(object@misc$VDJ[[assay]])) {
         return(NULL)
     }
+
     assay <- match.arg(assay)
-    data <- object@misc$VDJ[[assay]]
-    VDJ <- list("vdj.primary" = data.frame(),
-                "vdj.secondary" = data.frame(),
-                "vj.primary" = data.frame(),
-                "vj.secondary" = data.frame())
+    data <- slot(object, "misc")[["VDJ"]][[assay]]
 
-    index <- 1
-    for (df in data) {
-        transfers <- intersect(df$barcode,barcodes)
+    vdj.data <- list(
+        "vdj.primary" = data.frame(),
+        "vdj.secondary" = data.frame(),
+        "vj.primary" = data.frame(),
+        "vj.secondary" = data.frame()
+    )
 
-        if (index == 1) {
-            VDJ$vdj.primary <- df[df$barcode %in% transfers,]
-            rownames(VDJ$vdj.primary) <- NULL
-        } else if (index == 2) {
-            VDJ$vdj.secondary <-  df[df$barcode %in% transfers,]
-            rownames(VDJ$vdj.secondary) <- NULL
-        } else if (index == 3) {
-            VDJ$vj.primary <-  df[df$barcode %in% transfers,]
-            rownames(VDJ$vj.primary) <- NULL
-        } else {
-            VDJ$vj.secondary <-  df[df$barcode %in% transfers,]
-            rownames(VDJ$vj.secondary) <- NULL
-        }
-        index <- index + 1
+    for (data.type in names(vdj.data)) {
+        barcodes.to.transfer <- intersect(data[[data.type]]$barcode, barcodes)
+        vdj.data[[data.type]] <- data[[data.type]] %>% filter(.data$barcode %in% barcodes.to.transfer)
     }
-    return(VDJ)
+
+    if (sum(unlist(lapply(vdj.data, nrow))) == 0) {
+        return(NULL)
+    }
+
+    return(vdj.data)
 }
 
-AddVDJForAssay <- function(mergedobj, objectlist, assay = c("BCR","TCR")) {
-    VDJ_data <- list("vdj.primary" = data.frame(),
-                     "vdj.secondary" = data.frame(),
-                     "vj.primary" = data.frame(),
-                     "vj.secondary" = data.frame())
-    obj_idx <- 1
-    exist <- F
-    assay <- match.arg(assay)
-    for (object in objectlist) {
-        if (!is.null(object@misc$VDJ[[assay]])) {
-            exist <- T
-            VDJ_data <- Uniqify_VDJ(object, VDJ_data, assay, obj_idx)
-        }
-        obj_idx <- obj_idx + 1
-    }
-    mergedobj@misc$VDJ[[assay]] <- VDJ_data
+#' Append VDJ data to an object
+#'
+#' @param object Seurat object to append the VDJ data to
+#' @param vdj.data List with 4 dataframes (vdj.primary, vdj.secondary, vj.primary, vj.secondary) to append
+#' @param assay VDJ assay to add this new data to
 
-    if (exist) {
-        Misc(object = mergedobj, slot = "default.assay.VDJ") <- assay
-        Misc(object = mergedobj, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(mergedobj) <- assay
+AppendVDJData <- function(object, vdj.data, assay = c("BCR", "TCR")) {
+    assay <- match.arg(assay)
+
+    if (!assay %in% names(object@misc$VDJ)) {
+        object@misc$VDJ[[assay]] <- list(
+            "vdj.primary" = data.frame(),
+            "vdj.secondary" = data.frame(),
+            "vj.primary" = data.frame(),
+            "vj.secondary" = data.frame()
+        )
     }
-    return(mergedobj)
+
+    object@misc$VDJ[[assay]][["vdj.primary"]] <- rbind(object@misc$VDJ[[assay]][["vdj.primary"]], vdj.data[["vdj.primary"]])
+    object@misc$VDJ[[assay]][["vdj.secondary"]] <- rbind(object@misc$VDJ[[assay]][["vdj.secondary"]], vdj.data[["vdj.secondary"]])
+    object@misc$VDJ[[assay]][["vj.primary"]] <- rbind(object@misc$VDJ[[assay]][["vj.primary"]], vdj.data[["vj.primary"]])
+    object@misc$VDJ[[assay]][["vj.secondary"]] <- rbind(object@misc$VDJ[[assay]][["vj.secondary"]], vdj.data[["vj.secondary"]])
+
+    return(object)
 }
 
-#' Adds VDJ data from lists to the misc slot
+#' Remove the VDJ data from a seurat object
 #'
 #' @param object Seurat object
-#' @param TCR list with TCR data
-#' @param BCR list with BCR data
+#' @param assay VDJ assay to remove. Default = NULL (=> removes everything)
 
-AddMiscVDJData <- function(object, TCR = NULL, BCR = NULL) {
-    if (!is.null(BCR) & !is.null(TCR)) {
-        Misc(object = object, slot = "VDJ") <- list("TCR" = TCR, "BCR" = BCR)
-        Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
-        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(object) <- "TCR"
-    } else if (!is.null(BCR)) {
-        Misc(object = object, slot = "VDJ") <- list("BCR" = BCR)
-        Misc(object = object, slot = "default.assay.VDJ") <- "BCR"
-        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(object) <- "BCR"
-    } else if (!is.null(TCR)) {
-        Misc(object = object, slot = "VDJ") <- list("TCR" = TCR)
-        Misc(object = object, slot = "default.assay.VDJ") <- "TCR"
-        Misc(object = object, slot = "default.chain.VDJ") <- DefaultChainVDJ(object)
-        DefaultAssayVDJ(object) <- "TCR"
-    } else {
-        Misc(object = object, slot = "VDJ") <- NULL
-        Misc(object = object, slot = "default.assay.VDJ") <- NULL
-        Misc(object = object, slot = "default.chain.VDJ") <- NULL
+ClearVDJ <- function(object, assay = NULL) {
+    if (!is.null(assay) && !assay %in% c("BCR", "TCR")) {
+        stop("Invalid assay ", assay, call. = F)
     }
+
+    # Assay not in object, so we return the original object
+    if (!is.null(assay) && !assay %in% names(slot(object, "misc"))) {
+        return(object)
+    }
+
+    # TODO: remove the metadata columns generated by DALI
+    if (is.null(assay) || length(names(slot(object, "misc"))) == 1) { # We remove everything
+        slot(object, "misc")[["VDJ"]] <- NULL
+        slot(object, "misc")[["default.chain.VDJ"]] <- NULL
+        slot(object, "misc")[["default.assay.VDJ"]] <- NULL
+    } else {
+        slot(object, "misc")[["VDJ"]][[assay]] <- NULL
+        DefaultAssayVDJ(object) <- names(slot(object, "misc"))[1]
+    }
+
     return(object)
 }
 
 #' Get The sequence columns from an airr_rearrangement.tsv file
 #'
 #' @param data.dir path to directory containing the airr_rearrangement.tsv file
+#' @param quiet Ignore warnings. Default = FALSE
 
-GetAIRRSequenceColumns <- function(data.dir) {
+GetAIRRSequenceColumns <- function(data.dir, quiet = F) {
+    if (!dir.exists(data.dir)) {
+        stop("Invalid data directory: ", data.dir, call. = F)
+    }
+
     location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
 
-    if (file.exists(location.airr.rearrangement)) {
-        airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
-        colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
-        sequence.columns <- grep("sequence", colnames(airr.data), value = T)
-    } else {
-        sequence.columns <- NULL
+    if (!file.exists(location.airr.rearrangement)) {
+        if (!quiet) {
+            warning("Could not find airr_rearrangement.tsv. Sequence information will not be loaded and some functionality for BCR lineage tracing will not be available", call. = F)
+        }
+        return(NULL)
     }
-    return(sequence.columns)
+
+    airr.data <- read.csv(location.airr.rearrangement, sep = "\t")
+    colnames(airr.data) <- gsub("sequence_id", "contig_id", colnames(airr.data))
+
+    return(grep("sequence", colnames(airr.data), value = T))
 }
 
 #' Construct a dataframe with vdj data for a seurat object
@@ -434,7 +418,11 @@ GetAIRRSequenceColumns <- function(data.dir) {
 #' @param sequence.columns sequence columns from an AIRR file
 #' @param use.filtered Load filtered contig annotation. Default = TRUE
 
-GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered) {
+GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered = T) {
+    if (!dir.exists(data.dir)) {
+        stop("Invalid data directory: ", data.dir, call. = F)
+    }
+
     location.annotation.contig <- file.path(data.dir, paste0(if (use.filtered) "filtered" else "all", "_contig_annotations.csv"))
     location.airr.rearrangement <- file.path(data.dir, "airr_rearrangement.tsv")
 

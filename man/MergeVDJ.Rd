@@ -2,13 +2,13 @@
 % Please edit documentation in R/general.R
 \name{MergeVDJ}
 \alias{MergeVDJ}
-\title{Merge seuratobjects and include their VDJ data}
+\title{Merge multiple seurat objects and include their VDJ data}
 \usage{
 MergeVDJ(...)
 }
 \arguments{
-\item{...}{seurat objects separated by comma}
+\item{...}{Seurat objects separated by comma}
 }
 \description{
-Merge seuratobjects and include their VDJ data
+Merge multiple seurat objects and include their VDJ data
 }

@@ -4,10 +4,12 @@
 \alias{GetAIRRSequenceColumns}
 \title{Get The sequence columns from an airr_rearrangement.tsv file}
 \usage{
-GetAIRRSequenceColumns(data.dir)
+GetAIRRSequenceColumns(data.dir, quiet = F)
 }
 \arguments{
 \item{data.dir}{path to directory containing the airr_rearrangement.tsv file}
+
+\item{quiet}{Ignore warnings. Default = FALSE}
 }
 \description{
 Get The sequence columns from an airr_rearrangement.tsv file
