@@ -10,7 +10,8 @@ CloneConnGraph(
   group.by = NULL,
   groups.highlight = NULL,
   clonotype.column = NULL,
-  cols = NULL
+  color.theme = ColorThemes(),
+  colors = NULL
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ CloneConnGraph(
 
 \item{clonotype.column}{Metadata column with clonotype information. Default = clonotype}
 
-\item{cols}{Colors to use}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 }
 \description{
 Display connections between clusters

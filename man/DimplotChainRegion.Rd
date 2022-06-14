@@ -11,7 +11,8 @@ DimplotChainRegion(
   by.family = T,
   grid = T,
   highlight = NULL,
-  cols = NULL,
+  color.theme = ColorThemes(),
+  colors = NULL,
   ...
 )
 }
@@ -28,7 +29,9 @@ DimplotChainRegion(
 
 \item{highlight}{Family or gene to highlight. Default = NULL}
 
-\item{cols}{Colors to use}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 
 \item{...}{Extra parameters passed to Seurat::Dimplot}
 }

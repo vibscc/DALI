@@ -70,23 +70,6 @@ ggplotColors <- function(n, h = c(15, 375)) {
     hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
 }
 
-#' Get a colorpalette for given categorical data
-#'
-#' @param data Categorical data
-#'
-#' @importFrom dplyr %>%
-#' @importFrom Polychrome sky.colors
-
-GetCategoricalColorPalette <- function(data) {
-    n.categories <- unique(data) %>% length()
-
-    if (n.categories <= 24) {
-        return(sky.colors(max(c(3, n.categories))) %>% unname())
-    }
-
-    return(ggplotColors(n = n.categories))
-}
-
 #' Get metadata column for given chain and region
 #'
 #' @param chain VDJ chain
@@ -266,13 +249,17 @@ CreateVDJData <- function(new, orig = NULL) {
 #' @param name Colorscheme name
 #' @param n Colors in spectrum. Default = 100
 
-ColorScale <- function(name = c("coolwarm", "viridis"), n = 100) {
-    if (is.null(name) || name == "coolwarm") {
+ColorScale <- function(name = c("coolwarm", "viridis", "gray to blue", "turning red"), n = 100) {
+    name <- match.arg(name)
+
+    if (name == "coolwarm") {
         return(colorRampPalette(c("#4575B4", "#91BFDB", "#E0F3F8", "#FFFFBF", "#FEE090", "#FC8D59", "#D73027"))(n))
     } else if (name == "viridis") {
         return(colorRampPalette(c("#440154", "#443A83", "#31688E", "#21908C", "#35B779", "#8FD744", "#FDE725"))(n))
-    } else {
-        stop("invalid colorscheme ", name)
+    } else if (name == "gray to blue") {
+        return(colorRampPalette(c("#c0c0c0", "#c0c0c0", "#c0c0c0", "#91BFDB", "#4575B4"))(n))
+    } else if (name == "turning red") {
+        return(colorRampPalette(c("#c0c0c0", "#c0c0c0", "#c0c0c0", "#FC8D59", "#D73027"))(n))
     }
 }
 
@@ -440,4 +427,74 @@ GetVDJ_Dataframe <- function(data.dir, sequence.columns, use.filtered = T) {
     }
 
     return(vdj_df)
+}
+
+#' Returns vector of colors based on the selected color theme
+#'
+#' @param data Data to get categories from
+#' @param theme Colorscheme to use. Default = DALI
+#'
+#' @importFrom Polychrome sky.colors
+#'
+#' @export
+
+GetCategoricalColorPalette <- function(data, theme = ColorThemes()) {
+    theme <- match.arg(theme)
+
+    n <- unique(data) %>% length()
+
+    if (theme == "DALI") {
+        if (n <= 24) {
+            return(sky.colors(max(c(3, n))) %>% rev() %>% unname())
+        }
+
+        return(ggplotColors(n = n))
+    } else if (theme == "DALII") {
+        if (n <= 15) {
+            cols <- c("#FF932A" ,"#3CB0B5", "#5D3484",
+                      "#54DAFF", "#FFCE54", "#E484ED",
+                       "#0AFA1F", "#FF0000", "#967ADC",
+                       "#0014CF", "#FF0CCD", "#0072B2",
+                       "#2E8F26", "#02FFB9", "#B85100")
+            return(cols[1:max(3, n)])
+        }
+        n.5 <- n/2
+        cols <- ggplotColors(n.5, c(290, 180))
+        cols <- c(cols, ggplotColors(n.5, c(170,45)))
+
+        return(cols)
+    } else if (theme == "Pastel") {
+        if (n <= 10) {
+            cols <- c("#78FFF1", "#FEB6DB", "#79CAFF",
+                      "#F6F7A3", "#DAB6FE", "#C1DEC8",
+                      "#F7D3BB", "#76D7D6",  "#D4F9E5",
+                      "#F7E368")
+            return(cols[1:max(3, n)])
+        }
+
+        return(hcl(h = (seq(0, 360, length = n)), c = 55, l = 70))
+    } else if (theme == "Colorblind") {
+        if (n <= 12) {
+            cols <- c("#AA44AA", "#D55E00", "#44AAAA",
+                      "#24FF24", "#FFB6DB", "#0072B2",
+                      "#E69F00", "#FFFF99", "56B4E9",
+                      "#000000", "#FFF600", "#FF007A")
+
+            return(cols[1:max(3, n)])
+        }
+
+        return(ggplotColors(n = n))
+    } else if (theme == "Spectrum") {
+        return(ggplotColors(n = n) %>% rev())
+    } else {
+        stop("Invalid theme: ", theme)
+    }
+}
+
+#' Get a list of the available color themes
+#'
+#' @export
+
+ColorThemes <- function() {
+    return(c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"))
 }

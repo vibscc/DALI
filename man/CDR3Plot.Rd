@@ -10,7 +10,8 @@ CDR3Plot(
   subset = NULL,
   plot.type = c("ridge", "line"),
   sequence.type = c("AA", "NT"),
-  cols = NULL
+  color.theme = ColorThemes(),
+  colors = NULL
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ CDR3Plot(
 
 \item{sequence.type}{Which CDR3 sequence should be used? Options: "AA" or "NT"}
 
-\item{cols}{Colors to use. Only has an effect on the ridgeplots}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 }
 \description{
 Plot length of CDR3 AA/NT sequences

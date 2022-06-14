@@ -10,7 +10,8 @@ BarplotClonotypes(
   subset = NULL,
   clonotypes = NULL,
   position = c("stack", "dodge"),
-  cols = NULL
+  color.theme = ColorThemes(),
+  colors = NULL
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ BarplotClonotypes(
 
 \item{position}{Position of the bars in the plots. Options = stack or dodge}
 
-\item{cols}{Colors to use}
+\item{color.theme}{Color theme to use. Default = DALI}
+
+\item{colors}{Colors to use. This overwrites the selected color theme}
 }
 \description{
 Barplot with clonotype distribution

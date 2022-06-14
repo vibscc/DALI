@@ -6,7 +6,6 @@
 \usage{
 HeatmapChainRegion(
   object,
-  color = c("coolwarm", "viridis"),
   group.by = NULL,
   chain = c("VDJ", "VJ"),
   region = c("V", "J", "C"),
@@ -16,13 +15,12 @@ HeatmapChainRegion(
   show.missing.values = F,
   cluster.rows = F,
   cluster.cols = F,
+  color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
   ...
 )
 }
 \arguments{
 \item{object}{Seurat object}
-
-\item{color}{colorscheme to use for the heatmap. options: "viridis","coolwarm". Default="coolwarm"}
 
 \item{group.by}{Metadata column to group the family data by.}
 
@@ -41,6 +39,8 @@ HeatmapChainRegion(
 \item{cluster.rows}{Should rows (genes) be clustered in the heatmap. Default = FALSE}
 
 \item{cluster.cols}{Should columns (groups) be clustered in the heatmap. Default = FALSE}
+
+\item{color.scheme}{Colorscheme to use for the heatmap. Options: "coolwarm", "viridis". Default = "coolwarm"}
 
 \item{...}{parameters to pass to pheatmap::pheatmap()}
 }
