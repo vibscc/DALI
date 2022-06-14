@@ -39,11 +39,11 @@ fillPage(
                     fluidRow(
                         column(8,
                                fluidRow(
-                                        sidebarPanel(width = 2,
-                                            selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
-                                            selectizeInput("clonotype.group", label = "Group", choices = NULL),
-                                            sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
-                                            checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
+                                    sidebarPanel(width = 2,
+                                        selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
+                                        selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                                        sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
+                                        checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
                                         )
                                     ),
                                  fluidRow(
@@ -79,10 +79,45 @@ fillPage(
                 )
             ),
             tabPanel("Clonotypes",
-                DT::DTOutput("clonotypes.table"),
-                fluidRow(
-                    column(4, uiOutput("clonotype.lineage.ui")),
-                    column(8, plotOutput("clonotype.lineage"))
+                tabsetPanel(
+                    tabPanel("Table & Lineage",
+                        DT::DTOutput("clonotypes.table"),
+                        fluidRow(
+                            column(4, uiOutput("clonotype.lineage.ui")),
+                            column(8, plotOutput("clonotype.lineage"))
+                        ),
+                    ),
+                    tabPanel("Family & Chain useage",
+                        fluidRow(
+                            column(width = 6,
+                                   plotOutput("circosplot.genes", height = 700, width = 700) %>% withSpinner(),
+                            ),
+                            column(width = 6,
+                                   plotOutput("circosplot.chains", height = 700, width = 700) %>% withSpinner(),
+                            ),
+
+                        ),
+                        fluidRow(
+                            column(width = 6,
+                                sidebarPanel( width = 10,
+                                    h4("Family to V-gene"),
+                                    fluidRow(
+                                        selectInput("subsetby.circos.genes", label = "Group data by ", choices = NULL),
+                                        selectInput("gene.subset.group", label = "Select group: ", choices = NULL)
+                                    ),
+                                ),
+                            ),
+                            column(width = 6,
+                                sidebarPanel(width = 10,
+                                    h4("V D J chain useage"),
+                                    fluidRow(
+                                        selectInput("subsetby.circos.chains", label = "Group data by ", choices = NULL),
+                                        selectInput("chain.subset.group", label = "Select group: ", choices = NULL )
+                                    ),
+                                ),
+                            )
+                        )
+                    ),
                 )
             ),
             tabPanel("Transcriptomics",

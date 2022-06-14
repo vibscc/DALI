@@ -498,3 +498,26 @@ GetCategoricalColorPalette <- function(data, theme = ColorThemes()) {
 ColorThemes <- function() {
     return(c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"))
 }
+
+#' Return table X, with the same rows as table Y
+#'
+#' @param plot_data_x table to be transformed
+#' @param plot_data_y reference table
+
+EqualiseTableRows <- function(plot_data_x, plot_data_y) {
+    diff <- nrow(plot_data_y) - nrow(plot_data_x)
+    if (diff > 0) {
+        new.data <- matrix(rep(0, diff * ncol(plot_data_x)), nrow = diff)
+        new.rownames <- c()
+        for (row in rownames(plot_data_y)) {
+            if (!(row %in% rownames(plot_data_x))) {
+                new.rownames <- c(new.rownames, row)
+            }
+        }
+        colnames(new.data) <- colnames(plot_data_x)
+        rownames(new.data) <- new.rownames
+        plot_data_x <- rbind(plot_data_x, new.data)
+    }
+    return(plot_data_x)
+}
+

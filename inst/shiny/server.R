@@ -1,5 +1,6 @@
 library(shinyFiles)
 library(dplyr)
+suppressPackageStartupMessages(library(circlize))
 
 function(input, output, session) {
 
@@ -76,6 +77,9 @@ function(input, output, session) {
 
         metadata.columns <- colnames(isolate(vals$data@meta.data))
         updateSelectInput(session, "group.by", choices = metadata.columns, selected = metadata.default)
+
+        updateSelectInput(session, "subsetby.circos.genes",choices = categorical.metadata, selected = metadata.default )
+        updateSelectInput(session, "subsetby.circos.chains",choices = categorical.metadata, selected = metadata.default)
 
         selected <- if ("umap" %in% reductions) "umap" else if ("tsne" %in% reductions) "tsne" else NULL
         updateSelectizeInput(session, "featureplot.reduction", choices = reductions, selected = selected)
@@ -717,6 +721,22 @@ function(input, output, session) {
         updateSelectizeInput(session, "clonotype.group", choices = groups, selected = groups[[1]], server = T)
     })
 
+    observeEvent(input$subsetby.circos.genes, {
+        req(vals$data, input$subsetby.circos.genes)
+
+        gene.subsets <- vals$data@meta.data[, input$subsetby.circos.genes] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        gene.subsets <- c("Select group...", gene.subsets)
+        updateSelectizeInput(session, "gene.subset.group", choices = gene.subsets, selected = "Select group...", server = T)
+    })
+
+    observeEvent(input$subsetby.circos.chains, {
+        req(vals$data, input$subsetby.circos.chains)
+
+        chain.subsets <- vals$data@meta.data[, input$subsetby.circos.chains] %>% as.character() %>% unique() %>% gtools::mixedsort(x = .)
+        chain.subsets <- c("Select group...", chain.subsets)
+        updateSelectizeInput(session, "chain.subset.group", choices = chain.subsets, selected = "Select group...", server = T)
+    })
+
     # Top clonotypes change
 
     observeEvent(vals$top.clonotypes, {
@@ -1024,6 +1044,27 @@ function(input, output, session) {
         req(vals$data, vals$deg.results)
 
         vals$deg.results
+    })
+
+    # ======================================================================= #
+    # CircosPlot
+    # ======================================================================= #
+
+    output$circosplot.genes <- renderPlot({
+        req(vals$data)
+        circos.clear()
+        CircosPlotGenes(object = vals$data,
+                        group.by = input$subsetby.circos.genes,
+                        subset = input$gene.subset.group,
+                        seed = 0)
+    })
+
+    output$circosplot.chains <- renderPlot({
+        req(vals$data)
+        circos.clear()
+        CircosPlotChains(object = vals$data,
+                         group.by = input$subsetby.circos.chains,
+                         subset = input$chain.subset.group)
     })
 
     # ####################################################################### #
