@@ -22,6 +22,7 @@ function(input, output, session) {
 
     settings <- reactiveValues(
         color.theme = "DALI",
+        color.feature = "gray to blue",
         color.scheme = "coolwarm",
         dimplot.label = FALSE,
         dimplot.color.by = "default.clustering",
@@ -137,6 +138,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = settings$dimplot.color.by,
+                        label = settings$dimplot.label,
                         cols = DALI:::GetCategoricalColorPalette(object@meta.data[[settings$dimplot.color.by]], settings$color.theme),
                         na.value = "lightgray"
                     ) + theme(
@@ -182,6 +184,7 @@ function(input, output, session) {
                         object,
                         reduction = r,
                         group.by = settings$dimplot.color.by,
+                        label = settings$dimplot.label,
                         cols = DALI:::GetCategoricalColorPalette(object@meta.data[[settings$dimplot.color.by]], settings$color.theme),
                         na.value = "lightgray"
                     ) + theme(
@@ -235,6 +238,7 @@ function(input, output, session) {
                     Seurat::DimPlot(
                         object,
                         reduction = r,
+                        label = settings$dimplot.label,
                         cols = DALI:::GetCategoricalColorPalette(object@meta.data$default.clustering, settings$color.theme)
                     ) + theme(
                         axis.line = element_blank(),
@@ -415,14 +419,19 @@ function(input, output, session) {
         modalDialog(
             tabsetPanel(
                 tabPanel("Color Scheme",
-                         div(
-                             selectInput("color.theme", label = "Main Color Theme: ", choices =  c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"), selected = settings$color.theme),
-                         ),
-                         div(
-                             strong("Contrast Color Scheme"),
-                             tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps, volcano plots, and feature plots"),
-                             selectInput("color.scheme", label = "", choices = c("coolwarm", "viridis", "gray to blue", "turning red"), selected = settings$color.scheme)
-                         )
+                     div(
+                         selectInput("color.theme", label = "Main Color Theme: ", choices =  c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"), selected = settings$color.theme),
+                     ),
+                     div(
+                         strong("Feature plot Color Scheme"),
+                         tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for feature plots"),
+                         selectInput("color.feature", label = "", choices = c("coolwarm", "viridis", "gray to blue", "turning red"), selected = settings$color.feature)
+                     ),
+                     div(
+                         strong("Contract Color Scheme"),
+                         tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps and volcano plots"),
+                         selectInput("color.scheme", label = "", choices = c("coolwarm", "viridis"), selected = settings$color.scheme)
+                     )
                 ),
                 tabPanel("Reduction Plots",
                          div(
@@ -474,6 +483,7 @@ function(input, output, session) {
 
         settings$color.theme <- input$color.theme
         settings$color.scheme <- input$color.scheme
+        settings$color.feature <- input$color.feature
         settings$dimplot.label <- input$dimplot.label
         settings$dimplot.color.by <- input$dimplot.color.by
         settings$dimplot.legend <- input$dimplot.legend
@@ -989,7 +999,7 @@ function(input, output, session) {
             vals$data,
             input$transcriptomics.feature,
             reduction = input$transcriptomics.reduction,
-            cols = DALI:::ColorScale(settings$color.scheme, n = 2)
+            cols = DALI:::ColorScale(settings$color.feature, n = 2)
         ) + theme(
             legend.position = "none",
             axis.line = element_blank(),
@@ -1104,7 +1114,6 @@ function(input, output, session) {
             vals$data,
             group.by = "default.clustering",
             reduction = input$transcriptomics.reduction.novdj,
-            label = settings$dimplot.label,
             cols = DALI:::GetCategoricalColorPalette(vals$data@meta.data$default.clustering, settings$color.theme)
         ) + theme(
             axis.line = element_blank(),
@@ -1131,7 +1140,7 @@ function(input, output, session) {
             vals$data,
             input$transcriptomics.feature.novdj,
             reduction = input$transcriptomics.reduction.novdj,
-            cols = DALI:::ColorScale(settings$color.scheme, n = 2)
+            cols = DALI:::ColorScale(settings$color.feature, n = 2)
         ) + theme(
             legend.position = "none",
             axis.line = element_blank(),
