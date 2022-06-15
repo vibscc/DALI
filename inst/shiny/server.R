@@ -999,6 +999,7 @@ function(input, output, session) {
             vals$data,
             input$transcriptomics.feature,
             reduction = input$transcriptomics.reduction,
+            order = input$order,
             cols = DALI:::ColorScale(settings$color.feature, n = 2)
         ) + theme(
             legend.position = "none",
