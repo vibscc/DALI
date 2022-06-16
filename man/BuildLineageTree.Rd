@@ -4,12 +4,10 @@
 \alias{BuildLineageTree}
 \title{Build a lineage tree for the given sequences}
 \usage{
-BuildLineageTree(sequences, distance.method = "lv", outgroup = NULL, root = F)
+BuildLineageTree(sequences, outgroup = NULL, root = F)
 }
 \arguments{
 \item{sequences}{Named vector of sequences}
-
-\item{distance.method}{Method to use to compute distances between the sequences. Default = lv (Levenshtein)}
 
 \item{outgroup}{Outgroup to root the tree}
 

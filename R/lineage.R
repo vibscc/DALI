@@ -15,55 +15,21 @@
 #'
 #' @export
 
-LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), color.tip.by = NULL, clonotype.column = NULL) {
+LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), color.tip.by = NULL, clonotype.column = "clonotype") {
     if (DefaultAssayVDJ(object) != "BCR") {
-        stop("Lineages can only be computed on BCR data!", call. = F)
+        print("Lineages can only be computed on BCR data!", call. = F)
     }
-
-    chain <- match.arg(chain) %>% tolower()
     clonotype.name <- clonotype
 
-    if (is.null(clonotype.column)) {
-        clonotype.column <- "clonotype"
-    }
+    chain <- match.arg(chain)
 
-    data <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]) & .data[[clonotype.column]] == clonotype.name)
-    cells <- rownames(data)
-
-    if (nrow(data) < 2) {
+    metadata <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]) && .data[[clonotype.column]] == clonotype.name)
+    sequences <- GetSequences(object = object, metadata = metadata, regions = regions, reference = reference, chain = chain )
+    if (length(sequences) < 2) {
         stop("Clonotype needs at least 2 cells to build a tree!", call. = F)
     }
 
-    calls <- list("v_call" = NULL, "d_call" = NULL, "j_call" = NULL, "c_call" = NULL)
-
-    for (region in regions) {
-        if (!region %in% AvailableRegions(chain)) {
-            stop("Invalid region ", region, call. = F)
-        }
-        region <- tolower(region)
-        region.call <- data %>% pull(paste0(chain, ".", region, "_gene")) %>% unique()
-
-        if (is.na(region.call)) {
-            next
-        }
-
-        if (length(region.call) > 1) {
-            stop("Found more than 1 ", region, "_gene for given clonotype.", call. = F)
-        }
-
-        calls[[paste0(region, "_call")]] <- region.call
-    }
-
-    sequences <- GetGermline(reference, v_call = calls[["v_call"]], d_call = calls[["d_call"]], j_call = calls[["j_call"]], c_call = calls[["c_call"]])
-
-    for (cell in cells) {
-        sequences <- c(sequences, GetSequence(object, cell, "BCR", chain = chain %>% toupper(), regions = regions))
-    }
-
-    germline.name <- paste0("germline (", unname(unlist(calls)) %>% paste(collapse = ";"), ")")
-    names(sequences) <- c(germline.name, cells)
-
-    tree <- BuildLineageTree(sequences, outgroup = germline.name, root = T)
+    tree <- BuildLineageTree(sequences, outgroup = names(sequences)[1], root = T)
 
     color.tip <- F
     continues.scale <- F
@@ -103,11 +69,10 @@ LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("
 #' Build a lineage tree for the given sequences
 #'
 #' @param sequences Named vector of sequences
-#' @param distance.method Method to use to compute distances between the sequences. Default = lv (Levenshtein)
 #' @param root Should the tree be rooted. Default = FALSE
 #' @param outgroup Outgroup to root the tree
 
-BuildLineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root = F) {
+BuildLineageTree <- function(sequences, outgroup = NULL, root = F) {
     if (root & is.null(outgroup)) {
         stop("Missing outgroup to root the tree.", call. = F)
     }
@@ -120,9 +85,7 @@ BuildLineageTree <- function(sequences, distance.method = "lv", outgroup = NULL,
         stop("Sequence vector should be named", call. = F)
     }
 
-    distance.mat <- stringdist::stringdistmatrix(sequences, sequences, method = distance.method)
-    colnames(distance.mat) <- names(sequences)
-    rownames(distance.mat) <- names(sequences)
+    distance.mat <- GetDistance(sequences = sequences,  distance.method = "lv" )
 
     tree <- ape::nj(distance.mat)
 
@@ -252,4 +215,109 @@ AddTreeMetadata <- function(tree, object, metadata = NULL, features = NULL) {
     }
 
     return(full_join(tree, tree.tibble, by = "label"))
+}
+
+#' Returns the mutation rate of each cell's VDJ chain to "mutation.rate" metadata column
+#'
+#' @param object Seurat object#'
+#' @param clonotype Clonotype to get mutation rate from. Default uses every clonotype available.
+#' @param regions VDJ region to use sequence for. DEfault = V.
+#' @param reference Path to fasta reference sequence file
+#' @param chain Which chain to use
+#' @param clonotype.column name of the metadata column that contains the clonotypes
+#'
+#' @importFrom dplyr %>% filter
+
+GetMutationRate <- function(
+        object,
+        clonotype = NULL,
+        regions = "V",
+        reference,
+        chain = c("VDJ", "VJ"),
+        clonotype.column = "clonotype"
+        ) {
+
+    if (DefaultAssayVDJ(object) != "BCR") {
+        print("Mutationrate can only be computed on BCR data!", call. = F)
+    }
+
+    data <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]))
+    if (is.null(clonotype)) {
+        clonotypes <- data[[clonotype.column]] %>% unique()
+    } else {
+        clonotypes <- clonotype
+    }
+
+    chain <- match.arg(chain)
+
+    distances <- c()
+
+    for (clonotype.name in clonotypes) {
+        clonotypedata <- data %>% filter(.data[[clonotype.column]] == clonotype.name)
+        sequences <- GetSequences(object = object, metadata = clonotypedata, regions = regions, reference = reference, chain = chain)
+
+        distance.mat <- GetDistance(sequences = sequences,  distance.method = "lv" )
+        distance <- distance.mat[1,2:length(distance.mat[1,])]
+        names(distance) <- colnames(distance.mat)[2:length(distance.mat[1,])]
+        distances <- c(distances, distance)
+    }
+    return(distances)
+}
+
+#' Get a distance matrix with distances calculated from a reference
+#'
+#' @param sequences Named vector of sequences
+#' @param distance.method Method to use to calculate distance between sequences. Defaul = "lv" (Levenstein)
+
+GetDistance <- function(sequences, distance.method = "lv") {
+
+    distance.mat <- stringdist::stringdistmatrix(sequences, sequences, method = distance.method)
+    colnames(distance.mat) <- names(sequences)
+    rownames(distance.mat) <- names(sequences)
+
+    return(distance.mat)
+}
+
+#' Get sequences for reference fasta & clonotype
+#'
+#' @param object Seurat object
+#' @param metadata Metadata of the cells of one clonotype
+#' @param regions VDJ regions to use sequence for. Default = V
+#' @param reference path to the reference fasta file
+#' @param chain Which chain to use?
+
+GetSequences <- function(object, metadata, regions = "V", reference, chain = c("VDJ", "VJ")) {
+    cells <- rownames(metadata)
+    chain <- match.arg(chain) %>% tolower()
+
+    calls <- list("v_call" = NULL, "d_call" = NULL, "j_call" = NULL, "c_call" = NULL)
+
+    for (region in regions) {
+        if (!region %in% AvailableRegions(chain)) {
+            stop("Invalid region ", region, call. = F)
+        }
+        region <- tolower(region)
+        region.call <- metadata %>% pull(paste0(chain, ".", region, "_gene")) %>% unique()
+
+        if (is.na(region.call)) {
+            next
+        }
+
+        if (length(region.call) > 1) {
+            stop("Found more than 1 ", region, "_gene for given clonotype.", call. = F)
+        }
+
+        calls[[paste0(region, "_call")]] <- region.call
+    }
+
+    sequences <- GetGermline(reference, v_call = calls[["v_call"]], d_call = calls[["d_call"]], j_call = calls[["j_call"]], c_call = calls[["c_call"]])
+
+    for (cell in cells) {
+        sequences <- c(sequences, GetSequence(object, cell, "BCR", chain = chain %>% toupper(), regions = regions))
+    }
+    germline.name <- paste0("germline (", unname(unlist(calls)) %>% paste(collapse = ";"), ")")
+    names(sequences) <- c(germline.name, cells)
+
+    return(sequences)
+
 }
