@@ -129,7 +129,10 @@ fillPage(
                                                          column(6, selectInput("transcriptomics.assay", label = "Assay", choices = NULL)),
                                                          column(6, selectInput("transcriptomics.reduction", label = "Reduction", choices = NULL))
                                                      ),
-                                                     selectizeInput("transcriptomics.feature", label = "Feature", choices = NULL)
+                                                     fluidRow(
+                                                        column(6, selectizeInput("transcriptomics.feature", label = "Feature", choices = NULL)),
+                                                        column(6, checkboxInput("order", label = "Set positive cells in foreground", value = F))
+                                                     )
                                         ),
                                         sidebarPanel(width = 6,
                                                      selectizeInput("transcriptomics.clonotype", label = "Clonotype", choices = NULL)
