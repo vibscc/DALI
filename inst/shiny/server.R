@@ -90,6 +90,13 @@ function(input, output, session) {
         updateSelectInput(session, "deg.assay.novdj", choices = assays, selected = assays.default)
 
         updateSelectInput(session, "traject.red", choices = reductions, selected = selected)
+        updateSelectInput(session, "adv.traj.red", choices = reductions, selected = selected)
+
+        traject.colby.opt <- c("Select column...", categorical.metadata)
+        updateSelectInput(session, "traj.col.by", choices = traject.colby.opt, selected = "Select column...")
+
+        ti_methods <- dynwrap::get_ti_methods()$id
+        updateSelectInput(session, "traject.method", choices = ti_methods)
 
         vals$categorical.metadata <- categorical.metadata
     }
@@ -865,16 +872,52 @@ function(input, output, session) {
     })
 
     # Trajectory analyses
+
+    output$trajectory.UI <- renderUI({
+        #check package installed
+        if ("dynwrap" %in% installed.packages()) {
+
+            sidebarPanel(width = 12,
+                selectInput("traject.method", label = "Method to calculate trajectory", choices = NULL),
+                selectInput("adv.traj.red", label = "Reduction", choices = NULL),
+                selectInput("traj.col.by", label = "Color by metadata", choices = NULL),
+                numericInput("min.occur", label = "Minimal Occurence to be colored", value = 5),
+                actionButton("calc.traject", label = "Calculate Trajectory")
+            )
+        } else {
+            sidebarPanel(width = 12,
+                 selectInput("traject.red", label = "Reduction", choices = NULL),
+                 selectInput("traject.start.method", label = "Startcluster calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
+                 uiOutput("trajectory.selection")
+            )
+        }
+    })
+
     # TODO: change trajectory analyses method based on installation of dynverse packages
 
     output$trajectory.plot <- renderPlot({
-        req(vals$data, input$traject.red)
-        DALI:::ShinyTrajectoryPlot(
-            object = vals$data,
-            reduction = input$traject.red,
-            gene = vals$traject.gene,
-            start_cluster_id = vals$traject.cluster
-        )
+        req(vals$data)
+
+        if ("dynwrap" %in% installed.packages()) {
+            req(input$calc.traject)
+
+            TrajectoryPlot(
+                object = vals$data,
+                method = eval(parse(text = paste0("dynmethods:::ti_",input$traject.method,"()"))),
+                reduction = input$adv.traj.red,
+                assay = input$active.assay,
+                min.occurence = input$min.occur,
+                color.by = input$traj.col.by,
+                color.scheme = "coolwarm", # TODO: make compatible with colorschemes (the gradient ones)
+            )
+        } else {
+            DALI:::ShinyTrajectoryPlot(
+                object = vals$data,
+                reduction = input$traject.red,
+                gene = vals$traject.gene,
+                start_cluster_id = vals$traject.cluster
+            )
+        }
     })
 
 

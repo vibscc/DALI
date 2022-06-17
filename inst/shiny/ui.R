@@ -49,14 +49,10 @@ fillPage(
                                     ),
                                  fluidRow(
                                     column(3, plotOutput("cdr3.frequency")),
-                                    column(5, plotOutput("trajectory.plot") %>% withSpinner()),
+                                    column(5, renderUI("traj.plot.ui")),
                                 )),
                         column(4,
-                            sidebarPanel(width = 12,
-                                selectInput("traject.red", label = "Reduction", choices = NULL),
-                                selectInput("traject.start.method", label = "Startcluster calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
-                                uiOutput("trajectory.selection")
-                            ),
+                            uiOutput("trajectory.UI"),
                             sidebarPanel(width = 12,
                                 selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
                                 selectInput("featureplot.reduction", label = "Reduction", choices = NULL),
