@@ -50,7 +50,8 @@ fillPage(
                             fluidRow(
                                 column(3, plotOutput("cdr3.frequency")),
                                 column(5, plotOutput("trajectory.plot") %>% withSpinner()),
-                            )),
+                            )
+                        ),
                         column(4,
                             uiOutput("trajectory.UI"),
                             sidebarPanel(width = 12,

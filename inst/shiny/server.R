@@ -19,7 +19,8 @@ function(input, output, session) {
         traject.cluster = "0",
         traject.gene = NULL,
         has_vdj = FALSE,
-        loaded_data = !is.null(.GlobalEnv$.data.object.VDJ)
+        loaded_data = !is.null(.GlobalEnv$.data.object.VDJ),
+        trajectoryplot = NULL
     )
 
     settings <- reactiveValues(
@@ -105,8 +106,8 @@ function(input, output, session) {
         updateSelectInput(session, "traject.red", choices = reductions, selected = selected)
         updateSelectInput(session, "adv.traj.red", choices = reductions, selected = selected)
 
-        traject.colby.opt <- c("Select column...", categorical.metadata)
-        updateSelectInput(session, "traj.col.by", choices = traject.colby.opt, selected = "Select column...")
+        traject.colby.opt <- c("Select metadata...", categorical.metadata)
+        updateSelectInput(session, "traj.col.by", choices = traject.colby.opt, selected = "Select metadata...")
 
         ti_methods <- dynwrap::get_ti_methods()$id
         updateSelectInput(session, "traject.method", choices = ti_methods)
@@ -128,6 +129,28 @@ function(input, output, session) {
         } else {
             div(class = "text-right",
                 actionButton("settings", label = "", icon = icon("cog"), class = "settings")
+            )
+        }
+    })
+
+    # Trajectory analyses ui
+
+    output$trajectory.UI <- renderUI({
+        #check package installed
+        if ("dynwrap" %in% installed.packages()) {
+
+            div(class = "well",
+                 selectInput("traject.method", label = "Method to calculate trajectory", choices = NULL),
+                 selectInput("adv.traj.red", label = "Reduction", choices = NULL),
+                 selectInput("traj.col.by", label = "Color by metadata", choices = NULL),
+                 numericInput("min.occur", label = "Minimal Occurence to be colored", value = 5, min = 0, max = 100),
+                 actionButton("calc.traject", label = "Calculate Trajectory")
+            )
+        } else {
+            sidebarPanel(width = 12,
+                 selectInput("traject.red", label = "Reduction", choices = NULL),
+                 selectInput("traject.start.method", label = "Startcluster calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
+                 uiOutput("trajectory.selection")
             )
         }
     })
@@ -1011,45 +1034,35 @@ function(input, output, session) {
         }
     })
 
-    # Trajectory analyses
-
-    output$trajectory.UI <- renderUI({
-        #check package installed
-        if ("dynwrap" %in% installed.packages()) {
-
-            sidebarPanel(width = 12,
-                selectInput("traject.method", label = "Method to calculate trajectory", choices = NULL),
-                selectInput("adv.traj.red", label = "Reduction", choices = NULL),
-                selectInput("traj.col.by", label = "Color by metadata", choices = NULL),
-                numericInput("min.occur", label = "Minimal Occurence to be colored", value = 5),
-                actionButton("calc.traject", label = "Calculate Trajectory")
-            )
-        } else {
-            sidebarPanel(width = 12,
-                 selectInput("traject.red", label = "Reduction", choices = NULL),
-                 selectInput("traject.start.method", label = "Startcluster calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
-                 uiOutput("trajectory.selection")
-            )
-        }
-    })
-
     # TODO: change trajectory analyses method based on installation of dynverse packages
+    observeEvent(input$calc.traject, {
+        vals$trajectoryplot <- renderPlot({
+            if ("dynwrap" %in% installed.packages()) {
 
-    output$trajectory.plot <- renderPlot({
+                if (input$traj.col.by == "Select metadata...") {
+                    trajectplot.color.by <- NULL
+                } else {
+                    trajectplot.color.by <- input$traj.col.by
+                }
+
+                TrajectoryPlot(
+                    object = vals$data,
+                    method = eval(parse(text = paste0("dynmethods:::ti_",input$traject.method,"()"))),
+                    reduction = input$adv.traj.red,
+                    assay = input$active.assay,
+                    min.occurence = input$min.occur,
+                    color.by = input$traj.col.by,
+                    color.scheme = "coolwarm", # TODO: make compatible with colorschemes (the gradient ones)
+                )
+            }
+        })
+
+     })
+
+    vals$trajectoryplot <- renderPlot({
         req(vals$data)
-
         if ("dynwrap" %in% installed.packages()) {
-            req(input$calc.traject)
-
-            TrajectoryPlot(
-                object = vals$data,
-                method = eval(parse(text = paste0("dynmethods:::ti_",input$traject.method,"()"))),
-                reduction = input$adv.traj.red,
-                assay = input$active.assay,
-                min.occurence = input$min.occur,
-                color.by = input$traj.col.by,
-                color.scheme = "coolwarm", # TODO: make compatible with colorschemes (the gradient ones)
-            )
+            return(NULL)
         } else {
             DALI:::ShinyTrajectoryPlot(
                 object = vals$data,
@@ -1059,6 +1072,10 @@ function(input, output, session) {
             )
         }
     })
+
+    output$trajectory.plot <- renderPlot(
+        vals$trajectoryplot
+    )
 
 
     # ======================================================================= #
