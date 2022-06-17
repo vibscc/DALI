@@ -105,13 +105,13 @@ function(input, output, session) {
     output$headerUI <- renderUI({
         if (vals$has_vdj) {
             tags$div(class = "form-group row col-sm-12",
-              tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
-              tags$div(class = "col-sm-6",
-                       tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
-              ),
-              div(class = "col-sm-1",
-                  actionButton("settings", label = "", icon = icon("cog"), class = "settings")
-              )
+                     tags$label("Assay", class = "col-sm-3 text-right col-form-label"),
+                     tags$div(class = "col-sm-6",
+                              tags$select(name = "active.assay", id = "active.assay", class = "form-control rounded-all-90"),
+                     ),
+                     div(class = "col-sm-1",
+                         actionButton("settings", label = "", icon = icon("cog"), class = "settings")
+                     )
             )
         } else {
             div(class = "text-right",
@@ -149,26 +149,26 @@ function(input, output, session) {
                 })
 
 
-                    output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
-                        if (!vals$has_vdj) {
-                            return()
-                        }
+                output[[paste0('reduction.plot.vdj.', r)]] <- renderPlot({
+                    if (!vals$has_vdj) {
+                        return()
+                    }
 
-                        DimplotChainRegion(
-                            object,
-                            grid = F,
-                            reduction = r,
-                            chain = input$chain.usage.chain,
-                            region = input$chain.usage.region,
-                            color.theme = settings$color.theme
-                        ) + theme(
-                            axis.line = element_blank(),
-                            axis.title = element_blank(),
-                            axis.ticks = element_blank(),
-                            axis.text = element_blank(),
-                            panel.grid.major = element_blank()
-                        ) + ggtitle("Chain usage")
-                    })
+                    DimplotChainRegion(
+                        object,
+                        grid = F,
+                        reduction = r,
+                        chain = input$chain.usage.chain,
+                        region = input$chain.usage.region,
+                        color.theme = settings$color.theme
+                    ) + theme(
+                        axis.line = element_blank(),
+                        axis.title = element_blank(),
+                        axis.ticks = element_blank(),
+                        axis.text = element_blank(),
+                        panel.grid.major = element_blank()
+                    ) + ggtitle("Chain usage")
+                })
             })
         }
     }
@@ -415,44 +415,44 @@ function(input, output, session) {
         modalDialog(
             tabsetPanel(
                 tabPanel("Color Scheme",
-                     div(
-                         selectInput("color.theme", label = "Main Color Theme: ", choices =  c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"), selected = settings$color.theme),
-                     ),
-                     div(
-                         strong("Contrast Color Scheme"),
-                         tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps, volcano plots, and feature plots"),
-                         selectInput("color.scheme", label = "", choices = c("coolwarm", "viridis", "gray to blue", "turning red"), selected = settings$color.scheme)
-                     )
+                         div(
+                             selectInput("color.theme", label = "Main Color Theme: ", choices =  c("DALI", "DALII", "Pastel", "Colorblind", "Spectrum"), selected = settings$color.theme),
+                         ),
+                         div(
+                             strong("Contrast Color Scheme"),
+                             tags$span(class = "glyphicon glyphicon-info-sign", title = "Color Theme used for heatmaps, volcano plots, and feature plots"),
+                             selectInput("color.scheme", label = "", choices = c("coolwarm", "viridis", "gray to blue", "turning red"), selected = settings$color.scheme)
+                         )
                 ),
                 tabPanel("Reduction Plots",
-                     div(
-                         selectInput("dimplot.color.by", label = "Color By: ", choices = vals$categorical.metadata, selected = settings$dimplot.color.by),
-                         checkboxInput("dimplot.label", "Add labels", value = settings$dimplot.label),
-                         checkboxInput("dimplot.legend", "Hide legend", value = settings$dimplot.legend)
-                     )
+                         div(
+                             selectInput("dimplot.color.by", label = "Color By: ", choices = vals$categorical.metadata, selected = settings$dimplot.color.by),
+                             checkboxInput("dimplot.label", "Add labels", value = settings$dimplot.label),
+                             checkboxInput("dimplot.legend", "Hide legend", value = settings$dimplot.legend)
+                         )
                 ),
                 tabPanel("Files",
-                     div(
-                         strong("Select a Seurat Rds file:"),
-                         tags$br(),
-                         shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
-                         actionButton("seurat_rds_remove", "", icon = icon("trash"), class = "upload-remove"),
-                         textOutput("seurat.rds.path.text", inline = T),
-                     ),
-                     div(
-                         h4("-- BCR DATA (optional) --"),
-                         shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
-                         actionButton("bcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
-                         textOutput("bcr.dir.text", inline = T)
-                     ),
-                     div(
-                         h4("-- TCR DATA (optional) --"),
-                         shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
-                         actionButton("tcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
-                         textOutput("tcr.dir.text", inline = T)
-                     ),
-                     br(),
-                     actionButton("load", "Reload Data", class = "closer"),
+                         div(
+                             strong("Select a Seurat Rds file:"),
+                             tags$br(),
+                             shinyFilesButton("seurat_rds", "Browse...", "Choose an Rds file to load",  multiple = F, filetype = list(data = c("Rds", "rds"))),
+                             actionButton("seurat_rds_remove", "", icon = icon("trash"), class = "upload-remove"),
+                             textOutput("seurat.rds.path.text", inline = T),
+                         ),
+                         div(
+                             h4("-- BCR DATA (optional) --"),
+                             shinyDirButton("bcr_dir", "Browse...", "Select cellranger output folder containing vdj_b (BCR) data", multiple = F),
+                             actionButton("bcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
+                             textOutput("bcr.dir.text", inline = T)
+                         ),
+                         div(
+                             h4("-- TCR DATA (optional) --"),
+                             shinyDirButton("tcr_dir", "Browse...", "Select cellranger output folder containing vdj_t (TCR) data", multiple = F),
+                             actionButton("tcr_dir_remove", "", icon = icon("trash"), class = "upload-remove"),
+                             textOutput("tcr.dir.text", inline = T)
+                         ),
+                         br(),
+                         actionButton("load", "Reload Data", class = "closer"),
                 ),
             ),
             title = "Settings",
@@ -885,14 +885,15 @@ function(input, output, session) {
             shinyFilesButton("reference_fasta", "Browse...", "Choose the VDJ reference fasta for loaded dataset",  multiple = F, filetype = list(data = c("fa", "fasta", "fas"))),
             textOutput("reference.fasta.path.text", inline = T),
             checkboxInput("lineage.color.tips", label = "Color tips by metadata/feature", value = F),
+            checkboxInput("clonotype.filter", label = "Show only somatic hypermutation rate of selected clonotype", value = T),
             tabsetPanel(id = "lineage_tabs",
-                tabPanel("Metadata",
-                    selectizeInput("lineage.metadata", label = "Metadata", choices = vals$categorical.metadata, multiple = F)
-                ),
-                tabPanel("Feature",
-                    selectInput("lineage.assay", label = "Assay", choices = assays, multiple = F),
-                    selectizeInput("lineage.feature", label = "Feature", choices = NULL, multiple = F)
-                )
+                        tabPanel("Metadata",
+                                 selectizeInput("lineage.metadata", label = "Metadata", choices = vals$categorical.metadata, multiple = F)
+                        ),
+                        tabPanel("Feature",
+                                 selectInput("lineage.assay", label = "Assay", choices = assays, multiple = F),
+                                 selectizeInput("lineage.feature", label = "Feature", choices = NULL, multiple = F)
+                        )
             )
         )
     })
@@ -914,12 +915,34 @@ function(input, output, session) {
                     color.tip.by <- input$lineage.feature
                 }
             }
-
             DALI::LineageTree(
                 object = vals$data,
                 clonotype = vals$clonotype.table.selected,
                 reference = vals$reference$datapath,
                 color.tip.by = color.tip.by
+            )
+        }
+    })
+
+    output$clonotype.smh <- renderPlot({
+        req(vals$reference, vals$data)
+
+        if (length(vals$reference$datapath) == 0 | is.null(vals$reference)) {
+            return()
+        }
+
+        if (DALI::DefaultAssayVDJ(vals$data) == "BCR") {
+            if (input$clonotype.filter) {
+                clonotype <- vals$clonotype.table.selected
+            } else {
+                clonotype <- NULL
+            }
+
+            PlotSHM(
+                object = vals$data,
+                clonotype = clonotype,
+                reference = vals$reference$datapath,
+                order = T
             )
         }
     })
@@ -942,6 +965,8 @@ function(input, output, session) {
             }
         }
     })
+
+
 
 
     # ======================================================================= #

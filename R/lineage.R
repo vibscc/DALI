@@ -23,7 +23,7 @@ LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("
 
     chain <- match.arg(chain)
 
-    metadata <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]) && .data[[clonotype.column]] == clonotype.name)
+    metadata <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]) & .data[[clonotype.column]] == clonotype.name)
     sequences <- GetSequences(object = object, metadata = metadata, regions = regions, reference = reference, chain = chain )
     if (length(sequences) < 2) {
         stop("Clonotype needs at least 2 cells to build a tree!", call. = F)
