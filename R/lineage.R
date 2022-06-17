@@ -17,7 +17,7 @@
 
 LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("VDJ", "VJ"), color.tip.by = NULL, clonotype.column = "clonotype") {
     if (DefaultAssayVDJ(object) != "BCR") {
-        print("Lineages can only be computed on BCR data!", call. = F)
+        stop("Lineages can only be computed on BCR data!", call. = F)
     }
     clonotype.name <- clonotype
 
@@ -69,10 +69,11 @@ LineageTree <- function(object, clonotype, regions = "V", reference, chain = c("
 #' Build a lineage tree for the given sequences
 #'
 #' @param sequences Named vector of sequences
+#' @param distance.method Method used to calculate the distance/difference
 #' @param root Should the tree be rooted. Default = FALSE
 #' @param outgroup Outgroup to root the tree
 
-BuildLineageTree <- function(sequences, outgroup = NULL, root = F) {
+BuildLineageTree <- function(sequences, distance.method = "lv", outgroup = NULL, root = F) {
     if (root & is.null(outgroup)) {
         stop("Missing outgroup to root the tree.", call. = F)
     }
@@ -85,7 +86,7 @@ BuildLineageTree <- function(sequences, outgroup = NULL, root = F) {
         stop("Sequence vector should be named", call. = F)
     }
 
-    distance.mat <- GetDistance(sequences = sequences,  distance.method = "lv" )
+    distance.mat <- GetDistance(sequences = sequences, distance.method = distance.method )
 
     tree <- ape::nj(distance.mat)
 
@@ -238,7 +239,7 @@ GetMutationRate <- function(
         ) {
 
     if (DefaultAssayVDJ(object) != "BCR") {
-        print("Mutationrate can only be computed on BCR data!", call. = F)
+        stop("Mutationrate can only be computed on BCR data!", call. = F)
     }
 
     data <- object@meta.data %>% filter(!is.na(.data[[clonotype.column]]))

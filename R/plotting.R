@@ -1284,22 +1284,20 @@ PlotSHM <- function(
         reference,
         chain = c("VDJ", "VJ"),
         clonotype.column = "clonotype",
-        order = T)
-    {
-
+        order = T
+) {
     chain <- match.arg(chain)
 
     distances <- GetMutationRate(
-    object = object,
-    clonotype = clonotype,
-    regions = regions,
-    reference = reference,
-    chain = chain,
-    clonotype.column = clonotype.column
+        object = object,
+        clonotype = clonotype,
+        regions = regions,
+        reference = reference,
+        chain = chain,
+        clonotype.column = clonotype.column
     )
 
-
     object <- AddMetaData(object, distances, "mutationrate")
-    return(FeaturePlot(object = object, features = "mutationrate", cols = ColorScale("turning red", n = 2), order = order, pt.size = 1))
 
+    return(FeaturePlot(object = object, features = "mutationrate", cols = ColorScale("turning red", n = 2), order = order, pt.size = 1))
 }
