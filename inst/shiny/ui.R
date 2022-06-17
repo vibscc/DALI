@@ -34,29 +34,25 @@ fillPage(
                 )
             ),
             tabPanel("Clone view",
-                fluidRow(
-                    column(12, uiOutput("reduction.tabs.expansion") %>% withSpinner())
-                ),
-                fluidRow(
-                    column(8,
-                        fluidRow(
-                            sidebarPanel(width = 2,
-                                selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
-                                selectizeInput("clonotype.group", label = "Group", choices = NULL),
-                                sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
-                                checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
-                            )
-                        ),
-                        fluidRow(
-                            column(3, plotOutput("cdr3.frequency")),
-                            column(5, plotOutput("trajectory.plot") %>% withSpinner())
-                        )),
-                        column(4,
-                            sidebarPanel(width = 12,
-                                selectInput("traject.red", label = "Reduction", choices = NULL),
-                                selectInput("traject.start.method", label = "Startclsuter calculated by:", choices = c("Gene Expression", "Cluster ID"), selected = "Cluster ID"),
-                                uiOutput("trajectory.selection")
+                    fluidRow(
+                        column(12, uiOutput("reduction.tabs.expansion") %>% withSpinner())
+                    ),
+                    fluidRow(
+                        column(8,
+                            fluidRow(
+                                sidebarPanel(width = 2,
+                                    selectInput("clonotype.group.by", label = "Group data by", choices = NULL),
+                                    selectizeInput("clonotype.group", label = "Group", choices = NULL),
+                                    sliderInput("cdr3.frequency.threshold", value = 1, min = 0, max = 250, label = "Highlight threshold"),
+                                    checkboxInput("cdr3.frequency.show.missing", label = "Show cells without VDJ data")
+                                )
                             ),
+                            fluidRow(
+                                column(3, plotOutput("cdr3.frequency")),
+                                column(5, plotOutput("trajectory.plot") %>% withSpinner()),
+                            )),
+                        column(4,
+                            uiOutput("trajectory.UI"),
                             sidebarPanel(width = 12,
                                 selectizeInput("featureplot.clonotype", label = "Clonotype location", choices = NULL),
                                 selectizeInput("featureplot.reduction", label = "Reduction", choices = NULL),
