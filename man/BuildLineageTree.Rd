@@ -9,7 +9,7 @@ BuildLineageTree(sequences, distance.method = "lv", outgroup = NULL, root = F)
 \arguments{
 \item{sequences}{Named vector of sequences}
 
-\item{distance.method}{Method to use to compute distances between the sequences. Default = lv (Levenshtein)}
+\item{distance.method}{Method used to calculate the distance/difference}
 
 \item{outgroup}{Outgroup to root the tree}
 

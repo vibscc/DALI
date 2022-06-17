@@ -11,7 +11,7 @@ LineageTree(
   reference,
   chain = c("VDJ", "VJ"),
   color.tip.by = NULL,
-  clonotype.column = NULL
+  clonotype.column = "clonotype"
 )
 }
 \arguments{

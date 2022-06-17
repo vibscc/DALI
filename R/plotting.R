@@ -1261,3 +1261,41 @@ VolcanoPlotDEG <- function(deg, sig.P = 0.05, sig.logFC = 0.6, color.scheme = c(
        scale_color_manual(values = colors) +
        labs(x = expression(Log[2](FC)), y = expression(-log[10](Adj-P-value)))
 }
+
+#' Plots a Dimensionality reduction plot with cells colored by mutation rate
+#' @param object Seurat object
+#' @param  clonotype clonotype to plot its mutation rate. Default plots every clonotype
+#' @param regions VDJ region to use sequence from.
+#' @param reference path to reference fasta sequence file
+#' @param chain Which chain to use
+#' @param  clonotype.column name of the metadata column that contains the clonotypes
+#' @param order Plot positive cells in the foreground. Default = True
+#'
+#' @importFrom Seurat AddMetaData FeaturePlot
+#'
+#' @export
+
+PlotSHM <- function(
+        object,
+        clonotype = NULL,
+        regions = "V",
+        reference,
+        chain = c("VDJ", "VJ"),
+        clonotype.column = "clonotype",
+        order = T
+) {
+    chain <- match.arg(chain)
+
+    distances <- GetMutationRate(
+        object = object,
+        clonotype = clonotype,
+        regions = regions,
+        reference = reference,
+        chain = chain,
+        clonotype.column = clonotype.column
+    )
+
+    object <- AddMetaData(object, distances, "mutationrate")
+
+    return(FeaturePlot(object = object, features = "mutationrate", cols = ColorScale("turning red", n = 2), order = order, pt.size = 1))
+}
