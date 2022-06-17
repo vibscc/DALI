@@ -285,6 +285,8 @@ GetDistance <- function(sequences, distance.method = "lv") {
 #' @param regions VDJ regions to use sequence for. Default = V
 #' @param reference path to the reference fasta file
 #' @param chain Which chain to use?
+#'
+#' @importFrom dplyr %>%
 
 GetSequences <- function(object, metadata, regions = "V", reference, chain = c("VDJ", "VJ")) {
     cells <- rownames(metadata)

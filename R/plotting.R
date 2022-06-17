@@ -1282,7 +1282,7 @@ PlotSHM <- function(
         clonotype = NULL,
         regions = "V",
         reference,
-        chain = c("VDJ, VJ"),
+        chain = c("VDJ", "VJ"),
         clonotype.column = "clonotype",
         order = T)
     {
