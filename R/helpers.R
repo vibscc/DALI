@@ -521,3 +521,19 @@ EqualiseTableRows <- function(plot_data_x, plot_data_y) {
     return(plot_data_x)
 }
 
+#' Helperfunction to subset BCR or TCR data in a Seurat object
+#'
+#' @param object Seurat object to be subsetted
+#' @param assay BCR or TCR assay
+#'
+#' @importFrom dplyr %>%
+
+SubsetAssay <- function(object, assay = c('TCR', 'BCR')) {
+    assay <- match.arg(assay)
+
+    barcodes <- c()
+    for (df in object@misc$VDJ[[assay]]) {
+        barcodes <- c(barcodes, df$barcode) %>% unique()
+    }
+    return(object[,barcodes])
+}

@@ -1299,3 +1299,156 @@ PlotSHM <- function(
 
     return(FeaturePlot(object = object, features = "mutationrate", cols = ColorScale("turning red", n = 2), order = order, pt.size = 1))
 }
+
+#' Function to create a Trajectory analyses from from BCR or VDJ cell data using the dynoplot package
+#'
+#' @param object Seurat Object
+#' @param method Method to calculate trajectory analyses. See https://dynverse.org/reference/dynmethods/ for options
+#' @param reduction Dimensionality reduction for the plot
+#' @param assay BCR or TCR assay. If not specified it will take all the data.
+#' @param color.by Meta.data column to color the datapoints by. If empty a gradient will be used.
+#' @param min.occurence Minimum occurence of a clonotype for it to be indicated on the graph. Default values = 5.
+#' @param color.scheme Colorscheme of the colorgradient used to color by pseudotime when no color.by argument is provided.
+#' @param size_cells Size of the plotted dots. Default size = 3.
+#' @param alpha_cells Transparancy of the plotted dots. Default alpha = 0.5.
+#'
+#' @importFrom ggplot2 scale_colour_gradient2
+#' @importFrom utils installed.packages
+#'
+#' @export
+
+TrajectoryPlot <- function(
+        object,
+        method,
+        reduction,
+        assay = NULL,
+        min.occurence = 5,
+        color.by = NULL,
+        color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
+        size_cells = 3,
+        alpha_cells = 0.5)
+{
+    # Check if dynplot & dynwrap are installed
+    if (sum(c("dynverse") %in% installed.packages()) > 0) {
+        stop("Package dynverse needs to be installed to use this function")
+    }
+
+    color.scheme <- match.arg(color.scheme)
+
+    # Keep only specified assay data if assay is specified
+    if (!is.null(assay) && assay %in% c('TCR', 'BCR')) {
+        # get cells that are TCR/BCR cells if a subset is asked
+        object <- SubsetAssay(object = object, assay = assay)
+    } else if (!is.null(assay)){
+        stop("Unrecognized assay: ", assay)
+    }
+
+    # Check if the dimensionality reduction i spresent
+    if (is.null(object@reductions[[reduction]])) {
+        stop("Dimensionality reduction ", reduction," was not performed for the Seurat object")
+    }
+    dimred <- object@reductions[[reduction]]@cell.embeddings
+
+    if (!is.null(color.by)) {
+        # don't color clonotypes with hardly any representation (change to NA)
+        grouping <- object[[color.by]]
+        table_groups <- table(grouping)
+
+        for (i in 1:nrow(grouping)) {
+            if (is.na(grouping[i, 1])) {
+                next
+            }
+            if (table_groups[grouping[i, 1]] < min.occurence ) {
+                grouping[i, 1] <- NA
+            }
+        }
+        grouping <- as.character(grouping[,1])
+        names(grouping) <- object[[color.by]] %>% rownames()
+    }
+
+    dataset <- dynwrap::wrap_expression(
+        counts = Matrix::t(object@assays$RNA@counts),
+        expression = Matrix::t(object@assays$RNA@data)
+    )
+
+    # Check if method is an existing dyno method
+    model <- tryCatch(
+        dynwrap::infer_trajectory(dataset, method)
+    , error = function(e) {return(NA)})
+    if (is.na(model)[1]) {
+        stop("Method is not recognized. Choose a method from: \n", paste0("ti_", dynwrap::get_ti_methods()$id, collapse = "(), "), "." )
+    }
+
+    if (is.null(color.by)) {
+        # colorscheme when no color.by specified; the default option
+        spectrum <- ColorScale(color.scheme, n = 3)
+        pseudotime <-  dynwrap::calculate_pseudotime(model)
+        midpoint <- max(pseudotime)/2
+
+        trajectoryplot <- dynplot::plot_dimred(model, "pseudotime",
+                                      pseudotime = pseudotime,
+                                      dimred = dimred, alpha_cells = alpha_cells,
+                                      size_cells = size_cells) +
+            scale_colour_gradient2(low = spectrum[1], mid = spectrum[2], high = spectrum[3], midpoint = midpoint)
+
+    } else {
+        trajectoryplot <- dynplot::plot_dimred(model, grouping = grouping, dimred = dimred, alpha_cells = alpha_cells, size_cells = size_cells)
+    }
+
+    return(trajectoryplot)
+}
+
+#' Plotfunction to plot a simple Trajectory Analysis plot for the DALI shiny app
+#'
+#' @param object Seurat object
+#' @param reduction Dimensionality reduction as basis for the analysis and plot.
+#' @param gene Gene to base trajectory analysis on. Default = the first in the expression matrix
+#' @param start_cluster_id ID of the cluster to root the trajectory tree on
+#' @param color.theme Colorscheme for the plot.
+#'
+#' @importFrom slingshot slingshot
+#' @importFrom dplyr first
+#' @importFrom Seurat FindNeighbors FindClusters
+#' @importFrom graphics legend lines
+
+ShinyTrajectoryPlot <- function(object, reduction, gene, start_cluster_id, color.theme = "DALI") {
+    # Check if the reduction is actually present
+    if (is.null(object@reductions[[reduction]])) {
+        stop(reduction, " reduction was not performed on the object")
+    }
+
+    set.seed(1)
+
+    dimred <- object@reductions[[reduction]]@cell.embeddings
+    clustering <- object@meta.data$seurat_clusters
+
+    if (!is.null(gene)) {
+        # Check if the gene is present in the expression matrix
+        if (is.null(object@assays$RNA@counts[gene, ])) {
+            stop("Gene ", gene, " was not detected in the expression matrix")
+        }
+        start_cluster_id <- tibble(
+            expression = object@assays$RNA@counts[gene,],
+            cluster_id = clustering
+        ) %>%
+            group_by(cluster_id) %>%
+            summarise(expression = mean(expression)) %>%
+            arrange(desc(expression)) %>%
+            pull(cluster_id) %>%
+            first() %>%
+            as.character()
+    } else if (is.null(start_cluster_id)) {
+        stop("Please Specify a Start Cluster ID or Gene to base the Trajectory tree")
+    } else if (!(start_cluster_id %in% levels(clustering))) {
+        stop( start_cluster_id," is not a valid cluster ID")
+    }
+
+    lineage <- slingshot(dimred, clustering, start.clus = start_cluster_id, allow.breaks = T)
+
+    colors <- GetCategoricalColorPalette(levels(object@meta.data$seurat_clusters))
+
+    plot(dimred, col = colors[clustering], asp = 1, pch = 16)
+    for (lineage in lineage@metadata$curves) {
+        lines(lineage, lwd = 3, col = 'black')
+    }
+}
