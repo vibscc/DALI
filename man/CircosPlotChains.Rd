@@ -4,7 +4,12 @@
 \alias{CircosPlotChains}
 \title{Circosplot for VDJ chain useage distribution}
 \usage{
-CircosPlotChains(object, group.by = NULL, subset = NULL, color.theme = "DALI")
+CircosPlotChains(
+  object,
+  group.by = NULL,
+  subset = NULL,
+  color.theme = ColorThemes()
+)
 }
 \arguments{
 \item{object}{Seurat object}
