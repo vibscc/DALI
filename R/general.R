@@ -235,7 +235,7 @@ Read_AIRR <- function(object, files, assay, fields, columns, only.productive = T
 #' @param force Add VDJ data without checking overlap in cell-barcodes. Default = FALSE
 #' @param sort.by Column to sort the data to determine if chain is primary or secondary. Options = umis, reads
 #'
-#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate mutate_all na_if rename_all select
+#' @importFrom dplyr %>% add_count all_of arrange desc filter mutate mutate_if na_if rename_all select
 #' @importFrom tibble column_to_rownames rownames_to_column
 #' @importFrom rlang .data
 
@@ -290,7 +290,7 @@ ReadData <- function(object, assay, data, fields, columns = NULL, force = F, sor
     vdj.regex <- if (assay == "TCR") "^TR[BD]" else "^IGH"
     vj.regex <- if (assay == "TCR") "^TR[AG]" else "^IG[KL]"
 
-    data <- data %>% mutate_all(~ na_if(.x, ""))
+    data <- data %>% mutate_if(is.character, ~ na_if(., ""))
 
     vdj <- data %>%
         filter(grepl(vdj.regex, .data[[FieldForColumn("c_gene", fields, columns)]])) %>%
