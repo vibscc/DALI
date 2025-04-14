@@ -584,7 +584,11 @@ GetInfoForMetadata <- function(object, assay, chain) {
     columns.to.ignore <- grep("sequence", colnames(data))
 
     if (length(columns.to.ignore) > 0) {
-        return(data[, -columns.to.ignore])
+        data <- data[, -columns.to.ignore]
+    }
+
+    if (nrow(data) == 0) {
+        return(data.frame())
     }
 
     return(data)
