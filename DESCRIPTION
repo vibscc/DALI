@@ -1,12 +1,12 @@
 Package: DALI
 Type: Package
 Title: Diversity AnaLysis Interface
-Version: 2.1.2
+Version: 2.1.3
 Authors@R: c(
     person(
         "Kevin",
         "Verstaen",
-        email = "kevin.verstaen@irc.vib-ugent.be",
+        email = "kevin.verstaen@vib.be",
         role = c("cre", "aut")
     ),
     person(
@@ -18,7 +18,7 @@ Authors@R: c(
     person(
         "Jana",
         "Roels",
-        email = "jana.roels@irc.vib-ugent.be",
+        email = "jana.roels@vib.be",
         role = c("ctb")
     ),
     person(
@@ -32,7 +32,7 @@ Description: Analyse VDJ data in the Seurat ecosystem.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 biocViews:
 Remotes:
     dynverse/dynplot,
