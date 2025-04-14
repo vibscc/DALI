@@ -181,6 +181,7 @@ BarplotChainRegion <- function(
 #' @param cluster.rows Should rows (genes) be clustered in the heatmap. Default = FALSE
 #' @param cluster.cols Should columns (groups) be clustered in the heatmap. Default = FALSE
 #' @param color.scheme Colorscheme to use for the heatmap. Options: "coolwarm", "viridis". Default = "coolwarm"
+#' @param angle_col Angle of the column labels, right now one can choose only from few predefined options (0, 45, 90, 270 and 315) (parameter from pheatmap::pheatmap())
 #' @param ... parameters to pass to pheatmap::pheatmap()
 #'
 #' @importFrom dplyr case_when count filter group_by mutate select %>%
@@ -204,6 +205,7 @@ HeatmapChainRegion <- function(
   cluster.rows = F,
   cluster.cols = F,
   color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
+  angle_col = 0,
   ...
 ) {
 
@@ -251,7 +253,7 @@ HeatmapChainRegion <- function(
   plot.data <- data[families, ]
   rownames(plot.data) <- families
 
-  return(pheatmap::pheatmap(plot.data, color = ColorScale(color.scheme), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = 0))
+  return(pheatmap::pheatmap(plot.data, color = ColorScale(color.scheme), cluster_rows = cluster.rows, cluster_cols = cluster.cols, angle_col = angle_col, ...))
 }
 
 #' Barplot with clonotype distribution

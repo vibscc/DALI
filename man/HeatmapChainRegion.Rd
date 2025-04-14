@@ -16,6 +16,7 @@ HeatmapChainRegion(
   cluster.rows = F,
   cluster.cols = F,
   color.scheme = c("coolwarm", "viridis", "gray to blue", "turning red"),
+  angle_col = 0,
   ...
 )
 }
@@ -41,6 +42,8 @@ HeatmapChainRegion(
 \item{cluster.cols}{Should columns (groups) be clustered in the heatmap. Default = FALSE}
 
 \item{color.scheme}{Colorscheme to use for the heatmap. Options: "coolwarm", "viridis". Default = "coolwarm"}
+
+\item{angle_col}{Angle of the column labels, right now one can choose only from few predefined options (0, 45, 90, 270 and 315) (parameter from pheatmap::pheatmap())}
 
 \item{...}{parameters to pass to pheatmap::pheatmap()}
 }
