@@ -26,7 +26,7 @@ test_that("shows warning for missing airr file", {
 
 test_that("fails on invalid input", {
     expect_error(Read10X_vdj(seuratObj, "../testdata", quiet = T))
-    expect_error(Read10X_vdj(seuratobj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", assay = "foo", quiet = T))
+    expect_error(Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", assay = "foo", quiet = T))
     expect_error(Read10X_vdj(seuratObj, "../testdata/cellranger_4.0.0/10x_sc5p_v2_hs_PBMC", assay = "TCR", quiet = T))
 })
 
